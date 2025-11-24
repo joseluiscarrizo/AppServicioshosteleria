@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, Phone, Mail, Search, Check, X, GripVertical } from 'lucide-react';
+import { User, Phone, Mail, Search, Check, X, GripVertical, AlertCircle, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { format } from 'date-fns';
 
 const especialidadColors = {
   general: 'bg-slate-100 text-slate-700',
@@ -20,9 +21,32 @@ export default function CamarerosPanel({
   pedidosPorCamarero, 
   selectedCamarero, 
   onSelectCamarero,
-  onDragStart 
+  onDragStart,
+  disponibilidades = [],
+  festivos = [],
+  fechaFiltro
 }) {
   const [busqueda, setBusqueda] = useState('');
+
+  const getDisponibilidadHoy = (camareroId) => {
+    const fechaStr = fechaFiltro || format(new Date(), 'yyyy-MM-dd');
+    
+    // Verificar festivo
+    const festivo = festivos.find(f => f.fecha === fechaStr && f.afecta_todos);
+    if (festivo) {
+      return { tipo: 'festivo', info: festivo };
+    }
+
+    // Buscar disponibilidad específica
+    const disp = disponibilidades.find(d => 
+      d.camarero_id === camareroId && d.fecha === fechaStr
+    );
+    if (disp) {
+      return { tipo: disp.tipo, info: disp };
+    }
+
+    return { tipo: 'disponible', info: null };
+  };
 
   const camarerosFiltrados = camareros.filter(c => 
     c.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -52,20 +76,27 @@ export default function CamarerosPanel({
           {camarerosFiltrados.map((camarero) => {
             const numPedidos = pedidosPorCamarero[camarero.nombre] || 0;
             const isSelected = selectedCamarero?.id === camarero.id;
+            const dispHoy = getDisponibilidadHoy(camarero.id);
+            const noDisponibleHoy = dispHoy.tipo !== 'disponible' && dispHoy.tipo !== 'parcial';
+            const esParcial = dispHoy.tipo === 'parcial';
 
             return (
               <motion.div
                 key={camarero.id}
-                draggable
-                onDragStart={(e) => onDragStart(e, camarero)}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
+                draggable={!noDisponibleHoy}
+                onDragStart={(e) => !noDisponibleHoy && onDragStart(e, camarero)}
+                whileHover={{ scale: noDisponibleHoy ? 1 : 1.01 }}
+                whileTap={{ scale: noDisponibleHoy ? 1 : 0.99 }}
                 onClick={() => onSelectCamarero(isSelected ? null : camarero)}
                 className={`p-3 rounded-xl border cursor-pointer transition-all ${
                   isSelected 
                     ? 'border-[#1e3a5f] bg-[#1e3a5f]/5 shadow-md' 
-                    : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
-                } ${!camarero.disponible ? 'opacity-50' : ''}`}
+                    : noDisponibleHoy 
+                      ? 'border-red-200 bg-red-50/50'
+                      : esParcial
+                        ? 'border-cyan-200 bg-cyan-50/30'
+                        : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                } ${!camarero.disponible || noDisponibleHoy ? 'opacity-60' : ''}`}
               >
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-lg bg-slate-100 cursor-grab">
@@ -89,6 +120,20 @@ export default function CamarerosPanel({
                     </div>
                     
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {noDisponibleHoy && (
+                        <Badge className="text-xs bg-red-100 text-red-700 border-red-200">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          {dispHoy.tipo === 'festivo' ? 'Festivo' : 
+                           dispHoy.tipo === 'vacaciones' ? 'Vacaciones' :
+                           dispHoy.tipo === 'baja' ? 'Baja' : 'No disponible'}
+                        </Badge>
+                      )}
+                      {esParcial && (
+                        <Badge className="text-xs bg-cyan-100 text-cyan-700 border-cyan-200">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {dispHoy.info?.hora_inicio}-{dispHoy.info?.hora_fin}
+                        </Badge>
+                      )}
                       <Badge className={`text-xs ${especialidadColors[camarero.especialidad] || especialidadColors.general}`}>
                         {camarero.especialidad?.replace('_', ' ') || 'general'}
                       </Badge>

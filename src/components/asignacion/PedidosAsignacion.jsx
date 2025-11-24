@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Search, Calendar, MapPin, User, UserMinus, ArrowRight, Check, X } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ClipboardList, Search, Calendar, MapPin, User, UserMinus, ArrowRight, Check, X, AlertCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,11 +25,47 @@ export default function PedidosAsignacion({
   onDesasignar,
   onDrop,
   selectedCamarero,
-  filtroAsignacion 
+  filtroAsignacion,
+  disponibilidades = [],
+  festivos = []
 }) {
   const [busqueda, setBusqueda] = useState('');
   const [filtroFecha, setFiltroFecha] = useState('');
   const [dragOver, setDragOver] = useState(null);
+
+  // Función para verificar disponibilidad de un camarero en una fecha
+  const getDisponibilidadCamarero = (camareroNombre, fecha) => {
+    const camarero = camareros.find(c => c.nombre === camareroNombre);
+    if (!camarero) return { disponible: false, tipo: 'no_encontrado' };
+
+    // Verificar festivo
+    const festivo = festivos.find(f => f.fecha === fecha && f.afecta_todos);
+    if (festivo) {
+      return { disponible: false, tipo: 'festivo', info: festivo };
+    }
+
+    // Buscar disponibilidad específica
+    const disp = disponibilidades.find(d => 
+      d.camarero_id === camarero.id && d.fecha === fecha
+    );
+    
+    if (disp) {
+      if (disp.tipo === 'disponible') return { disponible: true, tipo: 'disponible' };
+      if (disp.tipo === 'parcial') return { disponible: true, tipo: 'parcial', info: disp };
+      return { disponible: false, tipo: disp.tipo, info: disp };
+    }
+
+    return { disponible: true, tipo: 'disponible' };
+  };
+
+  // Obtener camareros disponibles para una fecha específica
+  const getCamarerosDisponibles = (fecha) => {
+    return camareros.filter(c => {
+      if (!c.disponible) return false;
+      const disp = getDisponibilidadCamarero(c.nombre, fecha);
+      return disp.disponible;
+    });
+  };
 
   const pedidosFiltrados = pedidos.filter(p => {
     const matchBusqueda = 
@@ -148,27 +185,56 @@ export default function PedidosAsignacion({
                     </div>
 
                     {/* Camarero asignado */}
-                    <div className="mt-3 flex items-center gap-2">
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
                       {pedido.camarero ? (
-                        <div className="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1.5">
-                          <User className="w-4 h-4 text-slate-500" />
-                          <span className="text-sm font-medium text-slate-700">
-                            {pedido.camarero}
-                          </span>
-                          {pedido.cod_camarero && (
-                            <span className="text-xs text-slate-400 font-mono">
-                              #{pedido.cod_camarero}
-                            </span>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 text-slate-400 hover:text-red-500 hover:bg-red-50"
-                            onClick={() => onDesasignar(pedido)}
-                          >
-                            <UserMinus className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
+                        <>
+                          {(() => {
+                            const dispCamarero = getDisponibilidadCamarero(pedido.camarero, pedido.dia);
+                            const tieneProblema = !dispCamarero.disponible;
+                            return (
+                              <div className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${
+                                tieneProblema ? 'bg-red-100 border border-red-200' : 'bg-slate-100'
+                              }`}>
+                                <User className={`w-4 h-4 ${tieneProblema ? 'text-red-500' : 'text-slate-500'}`} />
+                                <span className={`text-sm font-medium ${tieneProblema ? 'text-red-700' : 'text-slate-700'}`}>
+                                  {pedido.camarero}
+                                </span>
+                                {pedido.cod_camarero && (
+                                  <span className="text-xs text-slate-400 font-mono">
+                                    #{pedido.cod_camarero}
+                                  </span>
+                                )}
+                                {tieneProblema && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <AlertCircle className="w-4 h-4 text-red-500" />
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>No disponible: {dispCamarero.tipo.replace('_', ' ')}</p>
+                                        {dispCamarero.info?.motivo && <p className="text-xs">{dispCamarero.info.motivo}</p>}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                                {dispCamarero.tipo === 'parcial' && (
+                                  <Badge className="text-xs bg-cyan-100 text-cyan-700">
+                                    <Clock className="w-3 h-3 mr-1" />
+                                    {dispCamarero.info?.hora_inicio}-{dispCamarero.info?.hora_fin}
+                                  </Badge>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                  onClick={() => onDesasignar(pedido)}
+                                >
+                                  <UserMinus className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            );
+                          })()}
+                        </>
                       ) : (
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-amber-600 font-medium">
@@ -179,15 +245,31 @@ export default function PedidosAsignacion({
                             const camarero = camareros.find(c => c.id === camareroId);
                             if (camarero) onAsignar(pedido, camarero);
                           }}>
-                            <SelectTrigger className="w-[180px] h-8 text-sm">
+                            <SelectTrigger className="w-[200px] h-8 text-sm">
                               <SelectValue placeholder="Asignar camarero" />
                             </SelectTrigger>
                             <SelectContent>
-                              {camareros.filter(c => c.disponible).map(c => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.nombre} (#{c.codigo})
-                                </SelectItem>
-                              ))}
+                              {getCamarerosDisponibles(pedido.dia).map(c => {
+                                const dispC = getDisponibilidadCamarero(c.nombre, pedido.dia);
+                                return (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    <div className="flex items-center gap-2">
+                                      <span>{c.nombre}</span>
+                                      <span className="text-xs text-slate-400">#{c.codigo}</span>
+                                      {dispC.tipo === 'parcial' && (
+                                        <span className="text-xs text-cyan-600">
+                                          ({dispC.info?.hora_inicio}-{dispC.info?.hora_fin})
+                                        </span>
+                                      )}
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })}
+                              {getCamarerosDisponibles(pedido.dia).length === 0 && (
+                                <div className="px-2 py-1 text-sm text-slate-500">
+                                  No hay camareros disponibles
+                                </div>
+                              )}
                             </SelectContent>
                           </Select>
                         </div>

@@ -30,6 +30,16 @@ export default function Asignacion() {
     queryFn: () => base44.entities.Pedido.list('-dia', 200)
   });
 
+  const { data: disponibilidades = [] } = useQuery({
+    queryKey: ['disponibilidades'],
+    queryFn: () => base44.entities.Disponibilidad.list('-fecha', 500)
+  });
+
+  const { data: festivos = [] } = useQuery({
+    queryKey: ['festivos'],
+    queryFn: () => base44.entities.Festivo.list('fecha')
+  });
+
   // Contar pedidos por camarero
   const pedidosPorCamarero = useMemo(() => {
     const conteo = {};
@@ -222,6 +232,8 @@ export default function Asignacion() {
                 selectedCamarero={selectedCamarero}
                 onSelectCamarero={setSelectedCamarero}
                 onDragStart={handleDragStart}
+                disponibilidades={disponibilidades}
+                festivos={festivos}
               />
             </div>
 
@@ -235,6 +247,8 @@ export default function Asignacion() {
                 onDrop={handleDrop}
                 selectedCamarero={selectedCamarero}
                 filtroAsignacion={filtroAsignacion}
+                disponibilidades={disponibilidades}
+                festivos={festivos}
               />
             </div>
           </div>
