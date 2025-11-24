@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import PedidoForm from '../components/pedidos/PedidoForm';
 import PedidosTable from '../components/pedidos/PedidosTable';
 import ExcelHandler from '../components/pedidos/ExcelHandler';
+import NotificationService from '../components/notificaciones/NotificationService';
+import { showNotificationToast } from '../components/notificaciones/NotificationToast';
 
 export default function Pedidos() {
   const [showForm, setShowForm] = useState(false);
@@ -30,9 +32,44 @@ export default function Pedidos() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Pedido.update(id, data),
+    mutationFn: async ({ id, data, originalPedido }) => {
+      const result = await base44.entities.Pedido.update(id, data);
+      
+      // Verificar cambios de estado y enviar notificaciones
+      if (originalPedido) {
+        if (originalPedido.enviado !== data.enviado) {
+          await NotificationService.notificarCambioEstado(
+            { ...data, id }, 
+            'enviado', 
+            originalPedido.enviado, 
+            data.enviado
+          );
+          showNotificationToast(
+            'estado_cambio',
+            data.enviado ? 'Pedido Enviado' : 'Pedido Desmarcado',
+            `El pedido de ${data.camarero} para ${data.cliente} ha sido actualizado.`
+          );
+        }
+        if (originalPedido.confirmado !== data.confirmado) {
+          await NotificationService.notificarCambioEstado(
+            { ...data, id }, 
+            'confirmado', 
+            originalPedido.confirmado, 
+            data.confirmado
+          );
+          showNotificationToast(
+            data.confirmado ? 'exito' : 'alerta',
+            data.confirmado ? 'Pedido Confirmado' : 'Pedido Pendiente',
+            `El pedido de ${data.camarero} para ${data.cliente} ha sido actualizado.`
+          );
+        }
+      }
+      
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
       setShowForm(false);
       setEditingPedido(null);
       toast.success('Pedido actualizado');
@@ -57,7 +94,11 @@ export default function Pedidos() {
 
   const handleSubmit = (data) => {
     if (editingPedido) {
-      updateMutation.mutate({ id: editingPedido.id, data });
+      updateMutation.mutate({ 
+        id: editingPedido.id, 
+        data, 
+        originalPedido: editingPedido 
+      });
     } else {
       createMutation.mutate(data);
     }

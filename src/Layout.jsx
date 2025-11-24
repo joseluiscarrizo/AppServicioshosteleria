@@ -1,13 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { ClipboardList, FileText, Menu, X } from 'lucide-react';
+import { ClipboardList, FileText, Menu, X, UserCog } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
+import NotificationBell from './components/notificaciones/NotificationBell';
 
 const navItems = [
   { name: 'Pedidos', page: 'Pedidos', icon: ClipboardList },
-  { name: 'Informes', page: 'Informes', icon: FileText }
+  { name: 'Informes', page: 'Informes', icon: FileText },
+  { name: 'Coordinadores', page: 'Coordinadores', icon: UserCog }
 ];
 
 export default function Layout({ children, currentPageName }) {
@@ -46,6 +48,9 @@ export default function Layout({ children, currentPageName }) {
                   </Button>
                 </Link>
               ))}
+              <div className="ml-2 border-l border-slate-200 pl-2">
+                <NotificationBell />
+              </div>
             </nav>
 
             {/* Mobile Menu Button */}
