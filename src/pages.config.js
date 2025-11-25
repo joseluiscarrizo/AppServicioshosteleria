@@ -3,6 +3,7 @@ import Informes from './pages/Informes';
 import Coordinadores from './pages/Coordinadores';
 import Asignacion from './pages/Asignacion';
 import Disponibilidad from './pages/Disponibilidad';
+import TiempoReal from './pages/TiempoReal';
 import __Layout from './Layout.jsx';
 
 
@@ -12,6 +13,7 @@ export const PAGES = {
     "Coordinadores": Coordinadores,
     "Asignacion": Asignacion,
     "Disponibilidad": Disponibilidad,
+    "TiempoReal": TiempoReal,
 }
 
 export const pagesConfig = {
