@@ -50,10 +50,42 @@ export default function Asignacion() {
   });
 
   const createAsignacionMutation = useMutation({
-    mutationFn: (data) => base44.entities.AsignacionCamarero.create(data),
-    onSuccess: () => {
+    mutationFn: async (data) => {
+      const asignacion = await base44.entities.AsignacionCamarero.create(data);
+      return { asignacion, data };
+    },
+    onSuccess: async ({ asignacion, data }) => {
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
-      toast.success('Camarero asignado');
+      
+      // Enviar notificación al camarero
+      const pedido = pedidos.find(p => p.id === data.pedido_id);
+      const camarero = camareros.find(c => c.id === data.camarero_id);
+      
+      if (pedido && camarero) {
+        try {
+          await base44.entities.NotificacionCamarero.create({
+            camarero_id: camarero.id,
+            camarero_nombre: camarero.nombre,
+            asignacion_id: asignacion.id,
+            pedido_id: pedido.id,
+            tipo: 'nueva_asignacion',
+            titulo: `Nueva Asignación: ${pedido.cliente}`,
+            mensaje: `Has sido asignado a un evento en ${pedido.lugar_evento || 'ubicación por confirmar'}`,
+            cliente: pedido.cliente,
+            lugar_evento: pedido.lugar_evento,
+            fecha: pedido.dia,
+            hora_entrada: pedido.entrada,
+            hora_salida: pedido.salida,
+            leida: false,
+            respondida: false,
+            respuesta: 'pendiente'
+          });
+        } catch (e) {
+          console.error('Error enviando notificación:', e);
+        }
+      }
+      
+      toast.success('Camarero asignado y notificado');
     }
   });
 

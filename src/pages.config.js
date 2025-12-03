@@ -4,6 +4,7 @@ import Coordinadores from './pages/Coordinadores';
 import Asignacion from './pages/Asignacion';
 import Disponibilidad from './pages/Disponibilidad';
 import TiempoReal from './pages/TiempoReal';
+import VistaMovil from './pages/VistaMovil';
 import __Layout from './Layout.jsx';
 
 
@@ -14,6 +15,7 @@ export const PAGES = {
     "Asignacion": Asignacion,
     "Disponibilidad": Disponibilidad,
     "TiempoReal": TiempoReal,
+    "VistaMovil": VistaMovil,
 }
 
 export const pagesConfig = {

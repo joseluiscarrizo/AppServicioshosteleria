@@ -12,7 +12,8 @@ const navItems = [
   { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
   { name: 'Disponibilidad', page: 'Disponibilidad', icon: CalendarDays },
   { name: 'Informes', page: 'Informes', icon: FileText },
-  { name: 'Coordinadores', page: 'Coordinadores', icon: UserCog }
+  { name: 'Coordinadores', page: 'Coordinadores', icon: UserCog },
+  { name: 'Portal Camarero', page: 'VistaMovil', icon: UserPlus }
 ];
 
 export default function Layout({ children, currentPageName }) {
