@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, RefreshCw, X, ChevronRight } from 'lucide-react';
+import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, RefreshCw, X, ChevronRight, Star, Filter, Award } from 'lucide-react';
 import { format, parseISO, differenceInHours } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -31,6 +31,8 @@ export default function Asignacion() {
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtroFecha, setFiltroFecha] = useState('');
+  const [filtroHabilidad, setFiltroHabilidad] = useState('');
+  const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
 
   const queryClient = useQueryClient();
 
@@ -150,7 +152,7 @@ export default function Asignacion() {
     return true;
   };
 
-  // Obtener camareros disponibles para un pedido
+  // Obtener camareros disponibles para un pedido (con filtros de habilidades)
   const getCamarerosDisponibles = (pedido) => {
     const asignacionesPedido = getAsignacionesPedido(pedido.id);
     const idsAsignados = asignacionesPedido.map(a => a.camarero_id);
@@ -158,9 +160,43 @@ export default function Asignacion() {
     return camareros.filter(c => {
       if (idsAsignados.includes(c.id)) return false;
       if (!c.disponible) return false;
-      return puedoAsignarCamarero(c.id, pedido);
-    });
+      if (!puedoAsignarCamarero(c.id, pedido)) return false;
+      
+      // Filtro por especialidad requerida
+      if (pedido.especialidad_requerida && pedido.especialidad_requerida !== 'general') {
+        if (c.especialidad !== pedido.especialidad_requerida) return false;
+      }
+      
+      // Filtro por habilidades requeridas
+      if (pedido.habilidades_requeridas?.length > 0) {
+        const tieneHabilidades = pedido.habilidades_requeridas.every(h => 
+          c.habilidades?.includes(h)
+        );
+        if (!tieneHabilidades) return false;
+      }
+      
+      // Filtro por idiomas requeridos
+      if (pedido.idiomas_requeridos?.length > 0) {
+        const tieneIdiomas = pedido.idiomas_requeridos.every(i => 
+          c.idiomas?.includes(i)
+        );
+        if (!tieneIdiomas) return false;
+      }
+      
+      // Filtros manuales del coordinador
+      if (filtroEspecialidad && c.especialidad !== filtroEspecialidad) return false;
+      if (filtroHabilidad && !c.habilidades?.includes(filtroHabilidad)) return false;
+      
+      return true;
+    }).sort((a, b) => (b.valoracion_promedio || 0) - (a.valoracion_promedio || 0)); // Ordenar por valoración
   };
+  
+  // Obtener todas las habilidades únicas
+  const todasHabilidades = useMemo(() => {
+    const habs = new Set();
+    camareros.forEach(c => c.habilidades?.forEach(h => habs.add(h)));
+    return Array.from(habs).sort();
+  }, [camareros]);
 
   // Filtrar pedidos
   const pedidosFiltrados = useMemo(() => {
@@ -323,16 +359,67 @@ export default function Asignacion() {
                 {selectedPedido ? (
                   <>
                     <div className="p-4 border-b bg-slate-50">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-3">
                         <div>
                           <h3 className="font-semibold text-slate-800">{selectedPedido.cliente}</h3>
                           <p className="text-sm text-slate-500">
                             {selectedPedido.lugar_evento} • {selectedPedido.dia ? format(new Date(selectedPedido.dia), 'dd MMM yyyy', { locale: es }) : ''} • {selectedPedido.entrada} - {selectedPedido.salida}
                           </p>
+                          {(selectedPedido.habilidades_requeridas?.length > 0 || selectedPedido.especialidad_requerida) && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {selectedPedido.especialidad_requerida && selectedPedido.especialidad_requerida !== 'general' && (
+                                <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700">
+                                  {selectedPedido.especialidad_requerida}
+                                </Badge>
+                              )}
+                              {selectedPedido.habilidades_requeridas?.map(h => (
+                                <Badge key={h} variant="outline" className="text-xs bg-blue-50 text-blue-700">{h}</Badge>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setSelectedPedido(null)}>
                           <X className="w-5 h-5" />
                         </Button>
+                      </div>
+                      {/* Filtros de camareros */}
+                      <div className="flex gap-2 flex-wrap">
+                        <Select value={filtroEspecialidad} onValueChange={setFiltroEspecialidad}>
+                          <SelectTrigger className="w-36 h-8 text-xs">
+                            <Filter className="w-3 h-3 mr-1" />
+                            <SelectValue placeholder="Especialidad" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={null}>Todas</SelectItem>
+                            <SelectItem value="general">General</SelectItem>
+                            <SelectItem value="cocteleria">Coctelería</SelectItem>
+                            <SelectItem value="banquetes">Banquetes</SelectItem>
+                            <SelectItem value="eventos_vip">Eventos VIP</SelectItem>
+                            <SelectItem value="buffet">Buffet</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select value={filtroHabilidad} onValueChange={setFiltroHabilidad}>
+                          <SelectTrigger className="w-36 h-8 text-xs">
+                            <Award className="w-3 h-3 mr-1" />
+                            <SelectValue placeholder="Habilidad" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={null}>Todas</SelectItem>
+                            {todasHabilidades.map(h => (
+                              <SelectItem key={h} value={h}>{h}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {(filtroEspecialidad || filtroHabilidad) && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 text-xs"
+                            onClick={() => { setFiltroEspecialidad(''); setFiltroHabilidad(''); }}
+                          >
+                            Limpiar filtros
+                          </Button>
+                        )}
                       </div>
                     </div>
 
@@ -411,10 +498,19 @@ export default function Asignacion() {
                                     <SelectTrigger className="h-8 text-sm">
                                       <SelectValue placeholder="Asignar camarero" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="max-h-60">
                                       {getCamarerosDisponibles(selectedPedido).map(c => (
                                         <SelectItem key={c.id} value={c.id}>
-                                          {c.nombre} (#{c.codigo})
+                                          <div className="flex items-center gap-2">
+                                            <span>{c.nombre}</span>
+                                            <span className="text-slate-400 text-xs">#{c.codigo}</span>
+                                            {c.valoracion_promedio > 0 && (
+                                              <span className="flex items-center gap-0.5 text-amber-500 text-xs">
+                                                <Star className="w-3 h-3 fill-amber-400" />
+                                                {c.valoracion_promedio.toFixed(1)}
+                                              </span>
+                                            )}
+                                          </div>
                                         </SelectItem>
                                       ))}
                                       {getCamarerosDisponibles(selectedPedido).length === 0 && (
