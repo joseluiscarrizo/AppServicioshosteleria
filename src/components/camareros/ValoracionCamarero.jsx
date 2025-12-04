@@ -1,0 +1,121 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Star } from 'lucide-react';
+import { toast } from 'sonner';
+
+const StarRating = ({ value, onChange, label }) => (
+  <div className="space-y-1">
+    <Label className="text-sm text-slate-600">{label}</Label>
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map(star => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange(star)}
+          className="focus:outline-none"
+        >
+          <Star
+            className={`w-6 h-6 transition-colors ${
+              star <= value ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+export default function ValoracionCamarero({ open, onClose, camarero, pedido }) {
+  const [puntuacion, setPuntuacion] = useState(5);
+  const [puntualidad, setPuntualidad] = useState(5);
+  const [profesionalidad, setProfesionalidad] = useState(5);
+  const [actitud, setActitud] = useState(5);
+  const [comentario, setComentario] = useState('');
+
+  const queryClient = useQueryClient();
+
+  const valorarMutation = useMutation({
+    mutationFn: async () => {
+      // Crear valoración
+      await base44.entities.Valoracion.create({
+        camarero_id: camarero.id,
+        camarero_nombre: camarero.nombre,
+        pedido_id: pedido.id,
+        cliente: pedido.cliente,
+        fecha_evento: pedido.dia,
+        puntuacion,
+        puntualidad,
+        profesionalidad,
+        actitud,
+        comentario
+      });
+
+      // Actualizar promedio del camarero
+      const totalActual = camarero.total_valoraciones || 0;
+      const promedioActual = camarero.valoracion_promedio || 0;
+      const nuevoTotal = totalActual + 1;
+      const nuevoPromedio = ((promedioActual * totalActual) + puntuacion) / nuevoTotal;
+
+      await base44.entities.Camarero.update(camarero.id, {
+        valoracion_promedio: Math.round(nuevoPromedio * 10) / 10,
+        total_valoraciones: nuevoTotal
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['camareros'] });
+      queryClient.invalidateQueries({ queryKey: ['valoraciones'] });
+      toast.success('Valoración guardada');
+      onClose();
+    }
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    valorarMutation.mutate();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Valorar a {camarero?.nombre}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="bg-slate-50 p-3 rounded-lg text-sm">
+            <p><strong>Evento:</strong> {pedido?.cliente}</p>
+            <p><strong>Fecha:</strong> {pedido?.dia}</p>
+          </div>
+
+          <StarRating value={puntuacion} onChange={setPuntuacion} label="Puntuación General" />
+          <StarRating value={puntualidad} onChange={setPuntualidad} label="Puntualidad" />
+          <StarRating value={profesionalidad} onChange={setProfesionalidad} label="Profesionalidad" />
+          <StarRating value={actitud} onChange={setActitud} label="Actitud" />
+
+          <div>
+            <Label className="text-sm text-slate-600">Comentario (opcional)</Label>
+            <Textarea
+              value={comentario}
+              onChange={(e) => setComentario(e.target.value)}
+              placeholder="Observaciones sobre el desempeño..."
+              className="mt-1"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={valorarMutation.isPending}>
+              Guardar Valoración
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
