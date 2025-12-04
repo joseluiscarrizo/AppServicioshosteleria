@@ -5,7 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Clock, Search, Calendar, RefreshCw } from 'lucide-react';
+import { Clock, Search, Calendar, RefreshCw, Star } from 'lucide-react';
+import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -19,6 +20,7 @@ const estadoColors = {
 export default function TiempoReal() {
   const [busqueda, setBusqueda] = useState('');
   const [filtroFecha, setFiltroFecha] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [valoracionModal, setValoracionModal] = useState({ open: false, camarero: null, pedido: null });
 
   const queryClient = useQueryClient();
 
@@ -205,12 +207,26 @@ export default function TiempoReal() {
                         <TableCell>{fila.pedido.lugar_evento || '-'}</TableCell>
                         <TableCell>
                           {fila.asignacion ? (
-                            <span className="font-medium">
-                              {fila.asignacion.camarero_nombre}
-                              <span className="text-xs text-slate-500 ml-1">
-                                (#{fila.asignacion.camarero_codigo})
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">
+                                {fila.asignacion.camarero_nombre}
+                                <span className="text-xs text-slate-500 ml-1">
+                                  (#{fila.asignacion.camarero_codigo})
+                                </span>
                               </span>
-                            </span>
+                              {fila.asignacion.estado === 'alta' && (
+                                <button
+                                  onClick={() => {
+                                    const cam = camareros.find(c => c.id === fila.asignacion.camarero_id);
+                                    if (cam) setValoracionModal({ open: true, camarero: cam, pedido: fila.pedido });
+                                  }}
+                                  className="text-amber-500 hover:text-amber-600"
+                                  title="Valorar camarero"
+                                >
+                                  <Star className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
                           ) : (
                             <Select onValueChange={(camareroId) => {
                               const camarero = camareros.find(c => c.id === camareroId);
@@ -317,6 +333,16 @@ export default function TiempoReal() {
           </Card>
         </div>
       </div>
+
+      {/* Modal de valoración */}
+      {valoracionModal.camarero && (
+        <ValoracionCamarero
+          open={valoracionModal.open}
+          onClose={() => setValoracionModal({ open: false, camarero: null, pedido: null })}
+          camarero={valoracionModal.camarero}
+          pedido={valoracionModal.pedido}
+        />
+      )}
     </div>
   );
 }
