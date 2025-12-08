@@ -12,6 +12,7 @@ import { format, parseISO, differenceInHours } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import TareasService from '../components/camareros/TareasService';
 
 const estadoColors = {
   pendiente: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -65,6 +66,7 @@ export default function Asignacion() {
       
       if (pedido && camarero) {
         try {
+          // Crear notificación
           await base44.entities.NotificacionCamarero.create({
             camarero_id: camarero.id,
             camarero_nombre: camarero.nombre,
@@ -82,8 +84,11 @@ export default function Asignacion() {
             respondida: false,
             respuesta: 'pendiente'
           });
+
+          // Crear tareas automáticas
+          await TareasService.crearTareasIniciales(asignacion, pedido, camarero);
         } catch (e) {
-          console.error('Error enviando notificación:', e);
+          console.error('Error enviando notificación o creando tareas:', e);
         }
       }
       
@@ -99,7 +104,12 @@ export default function Asignacion() {
   });
 
   const deleteAsignacionMutation = useMutation({
-    mutationFn: (id) => base44.entities.AsignacionCamarero.delete(id),
+    mutationFn: async (asignacion) => {
+      // Eliminar tareas asociadas primero
+      await TareasService.eliminarTareasAsignacion(asignacion.id);
+      // Eliminar asignación
+      await base44.entities.AsignacionCamarero.delete(asignacion.id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
       toast.success('Asignación eliminada');
@@ -448,7 +458,7 @@ export default function Asignacion() {
                                       variant="ghost"
                                       size="icon"
                                       className="h-6 w-6 text-slate-400 hover:text-red-500"
-                                      onClick={() => deleteAsignacionMutation.mutate(asignacion.id)}
+                                      onClick={() => deleteAsignacionMutation.mutate(asignacion)}
                                     >
                                       <X className="w-4 h-4" />
                                     </Button>
