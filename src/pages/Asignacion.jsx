@@ -7,12 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, RefreshCw, X, ChevronRight, Star, Filter, Award } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar as CalendarIcon, RefreshCw, X, ChevronRight, Star, Filter, Award } from 'lucide-react';
 import { format, parseISO, differenceInHours } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import TareasService from '../components/camareros/TareasService';
+import CalendarioAsignaciones from '../components/asignacion/CalendarioAsignaciones';
+import RecomendacionesCamareros from '../components/asignacion/RecomendacionesCamareros';
 
 const estadoColors = {
   pendiente: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -29,6 +32,7 @@ const estadoBgColors = {
 };
 
 export default function Asignacion() {
+  const [activeTab, setActiveTab] = useState('asignaciones');
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtroFecha, setFiltroFecha] = useState('');
@@ -247,8 +251,21 @@ export default function Asignacion() {
             <UserPlus className="w-8 h-8 text-[#1e3a5f]" />
             Asignación de Camareros
           </h1>
-          <p className="text-slate-500 mt-1">Asigna camareros a los pedidos</p>
+          <p className="text-slate-500 mt-1">Asigna camareros a los pedidos con recomendaciones inteligentes</p>
         </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList>
+            <TabsTrigger value="asignaciones">
+              <Users className="w-4 h-4 mr-2" />
+              Asignaciones
+            </TabsTrigger>
+            <TabsTrigger value="calendario">
+              <CalendarIcon className="w-4 h-4 mr-2" />
+              Calendario
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {/* Leyenda de colores */}
         <div className="flex flex-wrap gap-4 mb-6">
@@ -282,6 +299,8 @@ export default function Asignacion() {
           <div className="flex items-center justify-center h-96">
             <RefreshCw className="w-8 h-8 animate-spin text-[#1e3a5f]" />
           </div>
+        ) : activeTab === 'calendario' ? (
+          <CalendarioAsignaciones />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Panel de Pedidos */}
@@ -434,7 +453,15 @@ export default function Asignacion() {
                     </div>
 
                     <ScrollArea className="flex-1 p-4">
-                      <div className="flex flex-wrap gap-3">
+                      {/* Recomendaciones Inteligentes */}
+                      <RecomendacionesCamareros
+                        pedido={selectedPedido}
+                        camareros={camareros}
+                        asignaciones={asignaciones}
+                        onAsignar={(camarero) => handleAsignarCamarero(selectedPedido, camarero)}
+                      />
+
+                      <div className="flex flex-wrap gap-3 mt-4">
                         {/* Slots de camareros */}
                         {Array.from({ length: selectedPedido.cantidad_camareros || 0 }).map((_, index) => {
                           const asignacion = getAsignacionesPedido(selectedPedido.id)[index];
