@@ -9,14 +9,16 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ClipboardList, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, ClipboardList, X, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import AIExtractor from '../components/pedidos/AIExtractor';
 
 export default function Pedidos() {
   const [showForm, setShowForm] = useState(false);
+  const [showAIExtractor, setShowAIExtractor] = useState(false);
   const [editingPedido, setEditingPedido] = useState(null);
   const [formData, setFormData] = useState({
     cliente: '',
@@ -118,6 +120,23 @@ export default function Pedidos() {
     }
   }, [formData.entrada, formData.salida]);
 
+  const handleAIExtraction = (extractedData) => {
+    setFormData({
+      cliente: extractedData.cliente || '',
+      lugar_evento: extractedData.lugar_evento || '',
+      direccion_completa: extractedData.direccion_completa || '',
+      cantidad_camareros: extractedData.cantidad_camareros || 1,
+      dia: extractedData.dia || '',
+      entrada: extractedData.entrada || '',
+      salida: extractedData.salida || '',
+      t_horas: extractedData.t_horas || 0,
+      camisa: extractedData.camisa || '',
+      extra_transporte: extractedData.extra_transporte || false,
+      notas: extractedData.notas || ''
+    });
+    setShowForm(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -130,13 +149,23 @@ export default function Pedidos() {
             </h1>
             <p className="text-slate-500 mt-1">Gestiona los pedidos de clientes</p>
           </div>
-          <Button 
-            onClick={() => setShowForm(true)}
-            className="bg-[#1e3a5f] hover:bg-[#152a45] text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Pedido
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowAIExtractor(true)}
+              variant="outline"
+              className="border-purple-600 text-purple-600 hover:bg-purple-50"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Crear con IA
+            </Button>
+            <Button 
+              onClick={() => setShowForm(true)}
+              className="bg-[#1e3a5f] hover:bg-[#152a45] text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nuevo Pedido
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -370,6 +399,13 @@ export default function Pedidos() {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* AI Extractor Modal */}
+        <AIExtractor 
+          open={showAIExtractor}
+          onClose={() => setShowAIExtractor(false)}
+          onPedidoExtraido={handleAIExtraction}
+        />
       </div>
     </div>
   );
