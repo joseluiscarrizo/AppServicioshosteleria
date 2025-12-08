@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bell, Calendar, MapPin, Clock, User, Navigation, Phone } from 'lucide-react';
+import { Bell, Calendar, MapPin, Clock, User, Navigation, Phone, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import NotificacionesCamarero from '../components/camareros/NotificacionesCamarero';
@@ -117,23 +117,27 @@ export default function VistaMovil() {
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3 mb-4">
-                <TabsTrigger value="notificaciones" className="relative">
-                  <Bell className="w-4 h-4 mr-1" />
-                  Alertas
+              <TabsList className="grid w-full grid-cols-4 mb-4">
+                <TabsTrigger value="notificaciones" className="relative text-xs sm:text-sm">
+                  <Bell className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Alertas</span>
                   {notificacionesPendientes.length > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                       {notificacionesPendientes.length}
                     </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="pedidos">
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Pedidos
+                <TabsTrigger value="tareas" className="text-xs sm:text-sm">
+                  <CheckCircle2 className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Tareas</span>
                 </TabsTrigger>
-                <TabsTrigger value="mapa">
-                  <Navigation className="w-4 h-4 mr-1" />
-                  Mapa
+                <TabsTrigger value="pedidos" className="text-xs sm:text-sm">
+                  <Calendar className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Pedidos</span>
+                </TabsTrigger>
+                <TabsTrigger value="mapa" className="text-xs sm:text-sm">
+                  <Navigation className="w-4 h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Mapa</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -142,6 +146,10 @@ export default function VistaMovil() {
                   camareroId={selectedCamarero.id} 
                   camareroNombre={selectedCamarero.nombre}
                 />
+              </TabsContent>
+
+              <TabsContent value="tareas">
+                <TareasPendientes camareroId={selectedCamarero.id} />
               </TabsContent>
 
               <TabsContent value="pedidos">
