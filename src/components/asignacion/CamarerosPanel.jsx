@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, Phone, Mail, Search, Check, X, GripVertical, AlertCircle, Clock } from 'lucide-react';
+import { User, Phone, Mail, Search, Check, X, GripVertical, AlertCircle, Clock, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 
@@ -134,17 +134,23 @@ export default function CamarerosPanel({
                           {dispHoy.info?.hora_inicio}-{dispHoy.info?.hora_fin}
                         </Badge>
                       )}
+                      {camarero.valoracion_promedio > 0 && (
+                        <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-amber-500" />
+                          {camarero.valoracion_promedio.toFixed(1)}
+                        </Badge>
+                      )}
                       <Badge className={`text-xs ${especialidadColors[camarero.especialidad] || especialidadColors.general}`}>
                         {camarero.especialidad?.replace('_', ' ') || 'general'}
                       </Badge>
+                      {camarero.habilidades?.slice(0, 2).map(h => (
+                        <Badge key={h} variant="outline" className="text-xs">
+                          {h}
+                        </Badge>
+                      ))}
                       <Badge variant="outline" className="text-xs">
                         {numPedidos} pedido{numPedidos !== 1 ? 's' : ''}
                       </Badge>
-                      {camarero.tallas_camisa && (
-                        <Badge variant="outline" className="text-xs">
-                          Talla: {camarero.tallas_camisa}
-                        </Badge>
-                      )}
                     </div>
 
                     {(camarero.telefono || camarero.email) && (

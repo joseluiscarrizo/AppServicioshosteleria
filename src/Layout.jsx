@@ -1,18 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock } from 'lucide-react';
+import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
 import NotificationBell from './components/notificaciones/NotificationBell';
 
 const navItems = [
   { name: 'Pedidos', page: 'Pedidos', icon: ClipboardList },
-  { name: 'Asignación', page: 'Asignacion', icon: UserPlus },
+  { name: 'Camareros', page: 'Camareros', icon: UserPlus },
+  { name: 'Asignación', page: 'Asignacion', icon: UserCog },
   { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
   { name: 'Disponibilidad', page: 'Disponibilidad', icon: CalendarDays },
   { name: 'Informes', page: 'Informes', icon: FileText },
-  { name: 'Coordinadores', page: 'Coordinadores', icon: UserCog },
   { name: 'Portal Camarero', page: 'VistaMovil', icon: UserPlus }
 ];
 
