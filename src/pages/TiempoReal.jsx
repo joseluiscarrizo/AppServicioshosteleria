@@ -133,6 +133,44 @@ export default function TiempoReal() {
           </div>
         </div>
 
+        {/* Eventos Próximos */}
+        <Card className="mb-6 overflow-hidden">
+          <div className="p-4 bg-slate-50 border-b">
+            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-[#1e3a5f]" />
+              Próximos Eventos (ordenados por fecha)
+            </h3>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {pedidos
+                .filter(p => p.dia)
+                .sort((a, b) => a.dia.localeCompare(b.dia))
+                .slice(0, 6)
+                .map(pedido => {
+                  const asignacionesPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
+                  return (
+                    <Card key={pedido.id} className="p-3 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-medium text-slate-800 text-sm">{pedido.cliente}</h4>
+                          <p className="text-xs text-slate-500">{pedido.lugar_evento || 'Sin ubicación'}</p>
+                        </div>
+                        <span className="text-xs font-semibold px-2 py-1 rounded bg-[#1e3a5f]/10 text-[#1e3a5f]">
+                          {asignacionesPedido.length}/{pedido.cantidad_camareros || 0}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-600">
+                        <Calendar className="w-3 h-3" />
+                        {format(new Date(pedido.dia), 'dd MMM yyyy', { locale: es })}
+                      </div>
+                    </Card>
+                  );
+                })}
+            </div>
+          </div>
+        </Card>
+
         {/* Leyenda */}
         <div className="flex flex-wrap gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm">
           <span className="text-sm font-medium text-slate-700">Estados:</span>

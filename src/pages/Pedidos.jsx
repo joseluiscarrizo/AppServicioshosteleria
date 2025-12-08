@@ -15,6 +15,7 @@ import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import AIExtractor from '../components/pedidos/AIExtractor';
+import TurnosEditor from '../components/pedidos/TurnosEditor';
 
 export default function Pedidos() {
   const [showForm, setShowForm] = useState(false);
@@ -23,11 +24,8 @@ export default function Pedidos() {
   const [formData, setFormData] = useState({
     cliente: '',
     lugar_evento: '',
-    cantidad_camareros: 1,
     dia: '',
-    entrada: '',
-    salida: '',
-    t_horas: 0,
+    turnos: [],
     camisa: '',
     extra_transporte: false,
     notas: ''
@@ -72,11 +70,8 @@ export default function Pedidos() {
     setFormData({
       cliente: '',
       lugar_evento: '',
-      cantidad_camareros: 1,
       dia: '',
-      entrada: '',
-      salida: '',
-      t_horas: 0,
+      turnos: [],
       camisa: '',
       extra_transporte: false,
       notas: ''
@@ -88,11 +83,8 @@ export default function Pedidos() {
     setFormData({
       cliente: pedido.cliente || '',
       lugar_evento: pedido.lugar_evento || '',
-      cantidad_camareros: pedido.cantidad_camareros || 1,
       dia: pedido.dia ? pedido.dia.split('T')[0] : '',
-      entrada: pedido.entrada || '',
-      salida: pedido.salida || '',
-      t_horas: pedido.t_horas || 0,
+      turnos: pedido.turnos || [],
       camisa: pedido.camisa || '',
       extra_transporte: pedido.extra_transporte || false,
       notas: pedido.notas || ''
@@ -109,16 +101,7 @@ export default function Pedidos() {
     }
   };
 
-  // Calcular horas automáticamente
-  React.useEffect(() => {
-    if (formData.entrada && formData.salida) {
-      const [entH, entM] = formData.entrada.split(':').map(Number);
-      const [salH, salM] = formData.salida.split(':').map(Number);
-      let horas = (salH + salM/60) - (entH + entM/60);
-      if (horas < 0) horas += 24;
-      setFormData(prev => ({ ...prev, t_horas: Math.round(horas * 100) / 100 }));
-    }
-  }, [formData.entrada, formData.salida]);
+
 
   const handleAIExtraction = (extractedData) => {
     setFormData({
@@ -312,49 +295,13 @@ export default function Pedidos() {
                     placeholder="Ubicación"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Cantidad de Camareros *</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={formData.cantidad_camareros}
-                    onChange={(e) => setFormData({ ...formData, cantidad_camareros: parseInt(e.target.value) || 1 })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label>Día *</Label>
                   <Input
                     type="date"
                     value={formData.dia}
                     onChange={(e) => setFormData({ ...formData, dia: e.target.value })}
                     required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Hora Entrada</Label>
-                  <Input
-                    type="time"
-                    value={formData.entrada}
-                    onChange={(e) => setFormData({ ...formData, entrada: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Hora Salida</Label>
-                  <Input
-                    type="time"
-                    value={formData.salida}
-                    onChange={(e) => setFormData({ ...formData, salida: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Total Horas</Label>
-                  <Input
-                    type="number"
-                    step="0.5"
-                    value={formData.t_horas}
-                    readOnly
-                    className="bg-slate-50"
                   />
                 </div>
                 <div className="space-y-2">
@@ -366,6 +313,11 @@ export default function Pedidos() {
                   />
                 </div>
               </div>
+
+              <TurnosEditor 
+                turnos={formData.turnos} 
+                onChange={(turnos) => setFormData({ ...formData, turnos })} 
+              />
               
               <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
                 <Switch
