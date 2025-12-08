@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Calendar, Users, TrendingUp, DollarSign } from 'lucide-react';
+import { FileText, Calendar, Users, TrendingUp, DollarSign, Building2, UserCheck } from 'lucide-react';
 import ResumenPeriodo from '../components/informes/ResumenPeriodo';
 import RendimientoCamareros from '../components/informes/RendimientoCamareros';
 import ReporteDisponibilidad from '../components/informes/ReporteDisponibilidad';
 import ReporteFinanciero from '../components/informes/ReporteFinanciero';
+import InformeCliente from '../components/informes/InformeCliente';
+import InformeCamarero from '../components/informes/InformeCamarero';
 
 export default function Informes() {
   const [activeTab, setActiveTab] = useState('resumen');
@@ -22,26 +24,30 @@ export default function Informes() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 mb-6">
             <TabsTrigger value="resumen" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              <span className="hidden sm:inline">Resumen Período</span>
-              <span className="sm:hidden">Resumen</span>
+              <span className="hidden sm:inline">Resumen</span>
             </TabsTrigger>
             <TabsTrigger value="rendimiento" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               <span className="hidden sm:inline">Rendimiento</span>
-              <span className="sm:hidden">Rend.</span>
             </TabsTrigger>
             <TabsTrigger value="disponibilidad" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Disponibilidad</span>
-              <span className="sm:hidden">Disp.</span>
             </TabsTrigger>
             <TabsTrigger value="financiero" className="flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
               <span className="hidden sm:inline">Financiero</span>
-              <span className="sm:hidden">Fin.</span>
+            </TabsTrigger>
+            <TabsTrigger value="cliente" className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Por Cliente</span>
+            </TabsTrigger>
+            <TabsTrigger value="camarero" className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4" />
+              <span className="hidden sm:inline">Por Camarero</span>
             </TabsTrigger>
           </TabsList>
 
@@ -56,6 +62,12 @@ export default function Informes() {
           </TabsContent>
           <TabsContent value="financiero">
             <ReporteFinanciero />
+          </TabsContent>
+          <TabsContent value="cliente">
+            <InformeCliente />
+          </TabsContent>
+          <TabsContent value="camarero">
+            <InformeCamarero />
           </TabsContent>
         </Tabs>
       </div>
