@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, User, Star, Search, Filter, Award, MessageSquare, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Pencil, User, Star, Search, Filter, Award, MessageSquare, CheckCircle, XCircle, CalendarDays } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import GestionCamareros from '../components/asignacion/GestionCamareros';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
@@ -96,13 +98,21 @@ export default function Camareros() {
             </h1>
             <p className="text-slate-500 mt-1">Gestiona tu equipo de camareros, habilidades y valoraciones</p>
           </div>
-          <Button 
-            onClick={() => { setEditingCamarero(null); setShowForm(true); }}
-            className="bg-[#1e3a5f] hover:bg-[#152a45] text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Camarero
-          </Button>
+          <div className="flex gap-2">
+            <Link to={createPageUrl('Disponibilidad')}>
+              <Button variant="outline">
+                <CalendarDays className="w-4 h-4 mr-2" />
+                Gestionar Disponibilidad
+              </Button>
+            </Link>
+            <Button 
+              onClick={() => { setEditingCamarero(null); setShowForm(true); }}
+              className="bg-[#1e3a5f] hover:bg-[#152a45] text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nuevo Camarero
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}

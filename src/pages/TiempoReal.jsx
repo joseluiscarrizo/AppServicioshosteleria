@@ -3,10 +3,14 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Clock, Search, Calendar, RefreshCw, Star } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Clock, Search, Calendar, RefreshCw, Star, Users, Mail, MessageCircle } from 'lucide-react';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
+import HojaAsistencia from '../components/tiemporeal/HojaAsistencia';
+import EnviarWhatsApp from '../components/whatsapp/EnviarWhatsApp';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -21,6 +25,7 @@ export default function TiempoReal() {
   const [busqueda, setBusqueda] = useState('');
   const [filtroFecha, setFiltroFecha] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [valoracionModal, setValoracionModal] = useState({ open: false, camarero: null, pedido: null });
+  const [detalleEventoModal, setDetalleEventoModal] = useState({ open: false, pedido: null });
 
   const queryClient = useQueryClient();
 
@@ -150,7 +155,18 @@ export default function TiempoReal() {
                 .map(pedido => {
                   const asignacionesPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
                   return (
-                    <Card key={pedido.id} className="p-3 hover:shadow-md transition-shadow">
+                    <Card 
+                      key={pedido.id} 
+                      className={`p-3 hover:shadow-md transition-shadow cursor-pointer ${
+                        asignacionesPedido.length === pedido.cantidad_camareros && 
+                        asignacionesPedido.every(a => a.estado === 'confirmado' || a.estado === 'alta')
+                          ? 'border-2 border-emerald-500 bg-emerald-50'
+                          : asignacionesPedido.some(a => a.estado === 'pendiente' || a.estado === 'enviado')
+                          ? 'border-2 border-red-500 bg-red-50'
+                          : 'border border-slate-200'
+                      }`}
+                      onClick={() => setDetalleEventoModal({ open: true, pedido })}
+                    >
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h4 className="font-medium text-slate-800 text-sm">{pedido.cliente}</h4>
@@ -165,11 +181,87 @@ export default function TiempoReal() {
                         {format(new Date(pedido.dia), 'dd MMM yyyy', { locale: es })}
                       </div>
                     </Card>
-                  );
-                })}
-            </div>
-          </div>
-        </Card>
+                    );
+                    })}
+                    </div>
+                    </div>
+                    </Card>
+
+                    {/* Modal de Detalle del Evento */}
+                    <Dialog open={detalleEventoModal.open} onOpenChange={(open) => setDetalleEventoModal({ open, pedido: null })}>
+                    <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-[#1e3a5f]" />
+                    {detalleEventoModal.pedido?.cliente}
+                    </DialogTitle>
+                    </DialogHeader>
+
+                    {detalleEventoModal.pedido && (
+                    <div className="space-y-4">
+                    <div className="bg-slate-50 p-4 rounded-lg">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="font-medium">Lugar:</span> {detalleEventoModal.pedido.lugar_evento}
+                      </div>
+                      <div>
+                        <span className="font-medium">Fecha:</span> {detalleEventoModal.pedido.dia}
+                      </div>
+                      <div>
+                        <span className="font-medium">Horario:</span> {detalleEventoModal.pedido.entrada} - {detalleEventoModal.pedido.salida}
+                      </div>
+                      <div>
+                        <span className="font-medium">Camisa:</span> {detalleEventoModal.pedido.camisa || 'No especificado'}
+                      </div>
+                    </div>
+                    </div>
+
+                    <div>
+                    <h4 className="font-semibold mb-3">Camareros Asignados</h4>
+                    <div className="space-y-2">
+                      {asignaciones.filter(a => a.pedido_id === detalleEventoModal.pedido.id).map(asignacion => {
+                        const camarero = camareros.find(c => c.id === asignacion.camarero_id);
+                        if (!camarero) return null;
+
+                        return (
+                          <div key={asignacion.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <p className="font-medium">{camarero.nombre}</p>
+                                <p className="text-xs text-slate-500">{camarero.telefono}</p>
+                              </div>
+                            </div>
+                            <div className={`px-3 py-1 rounded text-sm font-medium ${
+                              asignacion.estado === 'confirmado' || asignacion.estado === 'alta'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : asignacion.estado === 'enviado'
+                                ? 'bg-orange-100 text-orange-700'
+                                : 'bg-red-100 text-red-700'
+                            }`}>
+                              {asignacion.estado}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4 border-t">
+                    <HojaAsistencia
+                      pedido={detalleEventoModal.pedido}
+                      asignaciones={asignaciones.filter(a => a.pedido_id === detalleEventoModal.pedido.id)}
+                      camareros={camareros}
+                    />
+                    <EnviarWhatsApp
+                      pedido={detalleEventoModal.pedido}
+                      asignaciones={asignaciones.filter(a => a.pedido_id === detalleEventoModal.pedido.id)}
+                      camareros={camareros}
+                    />
+                    </div>
+                    </div>
+                    )}
+                    </DialogContent>
+                    </Dialog>
 
         {/* Leyenda */}
         <div className="flex flex-wrap gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm">
