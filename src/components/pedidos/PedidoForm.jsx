@@ -20,6 +20,7 @@ export default function PedidoForm({ pedido, onSubmit, onCancel }) {
     coordinador: '',
     dia: '',
     cliente: '',
+    cliente_email: '',
     tipo_cliente: '',
     lugar_evento: '',
     camisa: '',
@@ -123,6 +124,18 @@ export default function PedidoForm({ pedido, onSubmit, onCancel }) {
               value={formData.cliente}
               onChange={(e) => handleChange('cliente', e.target.value)}
               placeholder="Nombre del cliente"
+              className="border-slate-200 focus:border-[#1e3a5f] focus:ring-[#1e3a5f]"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cliente_email">Email del Cliente</Label>
+            <Input
+              id="cliente_email"
+              type="email"
+              value={formData.cliente_email}
+              onChange={(e) => handleChange('cliente_email', e.target.value)}
+              placeholder="email@cliente.com"
               className="border-slate-200 focus:border-[#1e3a5f] focus:ring-[#1e3a5f]"
             />
           </div>
