@@ -17,7 +17,10 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
     return 45;
   };
 
-  const generarMensajeWhatsApp = (camarero, incluirTransporte) => {
+  const generarMensajeWhatsApp = (camarero, incluirTransporte, asignacionId) => {
+    const baseUrl = window.location.origin;
+    const linkAceptar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacionId}`;
+    
     let mensaje = `Hola ${camarero.nombre}! 👋\n\n`;
     mensaje += `📅 *Día:* ${pedido.dia}\n`;
     mensaje += `🏢 *Cliente:* ${pedido.cliente}\n`;
@@ -50,7 +53,10 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
     mensaje += `👔 *Uniforme:* Zapatos, pantalón y delantal. *TODO DE COLOR NEGRO*\n\n`;
     mensaje += `👕 *CAMISA:* ${pedido.camisa || 'Blanca'}\n\n`;
     mensaje += `✨ *UNIFORME IMPECABLE*\n\n`;
-    mensaje += `OK?? 👍`;
+    mensaje += `⬇️ *CONFIRMA TU ASISTENCIA* ⬇️\n`;
+    mensaje += `${linkAceptar}\n\n`;
+    mensaje += `✅ Acepto Servicio\n`;
+    mensaje += `❌ Rechazo Servicio`;
 
     return mensaje;
   };
@@ -64,7 +70,11 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
       for (const camarero of camarerosSeleccionados) {
         if (!camarero.telefono) continue;
 
-        const mensaje = generarMensajeWhatsApp(camarero, pedido.extra_transporte);
+        // Buscar la asignación del camarero
+        const asignacion = asignaciones.find(a => a.camarero_id === camarero.id);
+        if (!asignacion) continue;
+
+        const mensaje = generarMensajeWhatsApp(camarero, pedido.extra_transporte, asignacion.id);
         
         // Crear URL de WhatsApp
         const telefono = camarero.telefono.replace(/\D/g, '');

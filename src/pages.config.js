@@ -6,6 +6,7 @@ import Disponibilidad from './pages/Disponibilidad';
 import TiempoReal from './pages/TiempoReal';
 import VistaMovil from './pages/VistaMovil';
 import Camareros from './pages/Camareros';
+import ConfirmarServicio from './pages/ConfirmarServicio';
 import __Layout from './Layout.jsx';
 
 
@@ -18,6 +19,7 @@ export const PAGES = {
     "TiempoReal": TiempoReal,
     "VistaMovil": VistaMovil,
     "Camareros": Camareros,
+    "ConfirmarServicio": ConfirmarServicio,
 }
 
 export const pagesConfig = {
