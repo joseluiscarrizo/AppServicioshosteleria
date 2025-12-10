@@ -11,9 +11,8 @@ const navItems = [
   { name: 'Camareros', page: 'Camareros', icon: UserPlus },
   { name: 'Asignación', page: 'Asignacion', icon: UserCog },
   { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
-  { name: 'Disponibilidad', page: 'Disponibilidad', icon: CalendarDays },
-  { name: 'Informes', page: 'Informes', icon: FileText },
-  { name: 'Portal Camarero', page: 'VistaMovil', icon: UserPlus }
+  { name: 'Coordinadores', page: 'Coordinadores', icon: Users },
+  { name: 'Informes', page: 'Informes', icon: FileText }
 ];
 
 export default function Layout({ children, currentPageName }) {
