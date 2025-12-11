@@ -160,44 +160,93 @@ export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -100 }}
                 >
-                  <Card className="p-4 border-l-4 border-l-amber-500 bg-amber-50/50">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-slate-800">{notif.titulo}</h4>
-                        <p className="text-sm text-slate-600 mt-1">{notif.mensaje}</p>
-                        
-                        <div className="flex flex-wrap gap-3 mt-3 text-sm text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {notif.fecha ? format(new Date(notif.fecha), 'dd MMM yyyy', { locale: es }) : '-'}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {notif.hora_entrada} - {notif.hora_salida}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
-                            {notif.lugar_evento || 'Sin ubicación'}
-                          </span>
+                  <Card className="p-5 border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-white shadow-lg">
+                    <div className="space-y-4">
+                      {/* Título Principal */}
+                      <div className="text-center pb-3 border-b border-slate-200">
+                        <h4 className="text-xl font-bold text-slate-800 mb-1">
+                          🔔 Nueva Asignación de Servicio
+                        </h4>
+                        <p className="text-sm text-slate-600">
+                          Has sido seleccionado para el siguiente evento
+                        </p>
+                      </div>
+
+                      {/* Información del Evento */}
+                      <div className="bg-white rounded-lg p-4 space-y-3 border border-slate-200">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <Calendar className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs text-slate-500">Cliente</p>
+                            <p className="font-semibold text-slate-800">{notif.cliente}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                            <Calendar className="w-4 h-4 text-emerald-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs text-slate-500">Fecha</p>
+                            <p className="font-semibold text-slate-800">
+                              {notif.fecha ? format(new Date(notif.fecha), "EEEE, dd 'de' MMMM yyyy", { locale: es }) : '-'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                            <Clock className="w-4 h-4 text-amber-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs text-slate-500">Horario</p>
+                            <p className="font-semibold text-slate-800">
+                              {notif.hora_entrada} - {notif.hora_salida}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                            <MapPin className="w-4 h-4 text-purple-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs text-slate-500">Ubicación</p>
+                            <p className="font-semibold text-slate-800">
+                              {notif.lugar_evento || 'Por confirmar'}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                      
-                      <div className="flex gap-2">
+
+                      {/* Mensaje de Confirmación */}
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+                        <p className="font-semibold text-amber-900 mb-1">
+                          ⚠️ Confirma tu asistencia
+                        </p>
+                        <p className="text-xs text-amber-700">
+                          Por favor, confirma si puedes asistir a este servicio
+                        </p>
+                      </div>
+
+                      {/* Botones de Acción */}
+                      <div className="grid grid-cols-2 gap-3 pt-2">
                         <Button
                           onClick={() => handleAceptar(notif)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white h-12 text-base font-semibold shadow-md"
                           disabled={responderMutation.isPending}
                         >
-                          <Check className="w-4 h-4 mr-1" />
-                          Aceptar
+                          <CheckCircle className="w-5 h-5 mr-2" />
+                          Confirmar
                         </Button>
                         <Button
-                          variant="outline"
                           onClick={() => handleRechazar(notif)}
-                          className="border-red-300 text-red-600 hover:bg-red-50"
+                          className="bg-red-600 hover:bg-red-700 text-white h-12 text-base font-semibold shadow-md"
                           disabled={responderMutation.isPending}
                         >
-                          <X className="w-4 h-4 mr-1" />
+                          <XCircle className="w-5 h-5 mr-2" />
                           Rechazar
                         </Button>
                       </div>
