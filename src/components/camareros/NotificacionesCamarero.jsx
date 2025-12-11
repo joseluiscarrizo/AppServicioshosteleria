@@ -68,6 +68,11 @@ export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
           });
         }
         
+        // Cambiar estado del camarero a ocupado
+        await base44.entities.Camarero.update(camareroId, {
+          estado_actual: 'ocupado'
+        });
+        
         // Notificar al coordinador
         await base44.entities.Notificacion.create({
           tipo: 'estado_cambio',
@@ -81,6 +86,11 @@ export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
         if (notif?.asignacion_id) {
           await base44.entities.AsignacionCamarero.delete(notif.asignacion_id);
         }
+        
+        // Cambiar estado del camarero a disponible
+        await base44.entities.Camarero.update(camareroId, {
+          estado_actual: 'disponible'
+        });
         
         // Notificar al coordinador
         await base44.entities.Notificacion.create({
