@@ -68,6 +68,8 @@ export default function Pedidos() {
     setShowForm(false);
     setEditingPedido(null);
     setFormData({
+      numero_cliente: 0,
+      numero_pedido_cliente: 0,
       cliente: '',
       cliente_email: '',
       cliente_email_2: '',
@@ -85,6 +87,8 @@ export default function Pedidos() {
   const handleEdit = (pedido) => {
     setEditingPedido(pedido);
     setFormData({
+      numero_cliente: pedido.numero_cliente || 0,
+      numero_pedido_cliente: pedido.numero_pedido_cliente || 0,
       cliente: pedido.cliente || '',
       cliente_email: pedido.cliente_email || '',
       cliente_email_2: pedido.cliente_email_2 || '',
@@ -102,10 +106,30 @@ export default function Pedidos() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Generar números automáticos si es nuevo
+    let dataToSubmit = { ...formData };
+    if (!editingPedido) {
+      const maxNumeroCliente = pedidos.reduce((max, p) => Math.max(max, p.numero_cliente || 0), 0);
+      const maxNumeroPedido = pedidos.reduce((max, p) => Math.max(max, p.numero_pedido_cliente || 0), 0);
+      dataToSubmit.numero_cliente = maxNumeroCliente + 1;
+      dataToSubmit.numero_pedido_cliente = maxNumeroPedido + 1;
+    }
+    
+    // Calcular totales de turnos
+    const cantidadTotal = (formData.turnos || []).reduce((sum, t) => sum + (t.cantidad_camareros || 0), 0);
+    const horasTotal = (formData.turnos || []).reduce((sum, t) => sum + (t.t_horas || 0), 0);
+    const primerTurno = (formData.turnos || [])[0] || {};
+    
+    dataToSubmit.cantidad_camareros = cantidadTotal;
+    dataToSubmit.entrada = primerTurno.entrada;
+    dataToSubmit.salida = primerTurno.salida;
+    dataToSubmit.t_horas = horasTotal;
+    
     if (editingPedido) {
-      updateMutation.mutate({ id: editingPedido.id, data: formData });
+      updateMutation.mutate({ id: editingPedido.id, data: dataToSubmit });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(dataToSubmit);
     }
   };
 
@@ -202,6 +226,7 @@ export default function Pedidos() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
+                  <TableHead className="font-semibold">Nº</TableHead>
                   <TableHead className="font-semibold">Cliente</TableHead>
                   <TableHead className="font-semibold">Lugar</TableHead>
                   <TableHead className="font-semibold text-center">Camareros</TableHead>
@@ -223,6 +248,9 @@ export default function Pedidos() {
                       exit={{ opacity: 0 }}
                       className="border-b hover:bg-slate-50/50"
                     >
+                      <TableCell className="font-mono text-sm text-slate-500">
+                        #{pedido.numero_pedido_cliente || '-'}
+                      </TableCell>
                       <TableCell className="font-medium">{pedido.cliente}</TableCell>
                       <TableCell className="text-slate-600">{pedido.lugar_evento || '-'}</TableCell>
                       <TableCell className="text-center">
@@ -274,7 +302,7 @@ export default function Pedidos() {
                 </AnimatePresence>
                 {pedidos.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-32 text-center text-slate-500">
+                    <TableCell colSpan={10} className="h-32 text-center text-slate-500">
                       No hay pedidos registrados
                     </TableCell>
                   </TableRow>
@@ -291,6 +319,24 @@ export default function Pedidos() {
               <DialogTitle>{editingPedido ? 'Editar Pedido' : 'Nuevo Pedido'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Números automáticos */}
+              {!editingPedido && (
+                <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 rounded-lg">
+                  <div>
+                    <Label className="text-xs text-slate-500">Nº Cliente (auto)</Label>
+                    <p className="font-mono font-semibold text-slate-700">
+                      #{(pedidos.reduce((max, p) => Math.max(max, p.numero_cliente || 0), 0) + 1)}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-slate-500">Nº Pedido (auto)</Label>
+                    <p className="font-mono font-semibold text-slate-700">
+                      #{(pedidos.reduce((max, p) => Math.max(max, p.numero_pedido_cliente || 0), 0) + 1)}
+                    </p>
+                  </div>
+                </div>
+              )}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Cliente *</Label>
