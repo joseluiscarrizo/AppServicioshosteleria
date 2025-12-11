@@ -71,7 +71,7 @@ export default function Asignacion() {
       
       if (pedido && camarero) {
         try {
-          // Crear notificación
+          // Crear notificación al camarero
           await base44.entities.NotificacionCamarero.create({
             camarero_id: camarero.id,
             camarero_nombre: camarero.nombre,
@@ -92,6 +92,66 @@ export default function Asignacion() {
 
           // Crear tareas automáticas
           await TareasService.crearTareasIniciales(asignacion, pedido, camarero);
+          
+          // Notificar al coordinador del camarero
+          if (camarero.coordinador_id) {
+            const coords = await base44.entities.Coordinador.filter({ id: camarero.coordinador_id });
+            const coordinador = coords[0];
+            
+            if (coordinador) {
+              const mensajeNotif = `Se ha asignado a ${camarero.nombre} al servicio de ${pedido.cliente} el ${pedido.dia ? format(new Date(pedido.dia), 'dd/MM/yyyy', { locale: es }) : 'fecha pendiente'}`;
+              
+              // Notificación in-app al coordinador
+              await base44.entities.Notificacion.create({
+                tipo: 'estado_cambio',
+                titulo: '👤 Nueva Asignación de Camarero',
+                mensaje: mensajeNotif,
+                prioridad: 'media',
+                pedido_id: pedido.id,
+                coordinador: coordinador.nombre,
+                email_enviado: false
+              });
+              
+              // Enviar email al coordinador
+              if (coordinador.email && coordinador.notificaciones_email) {
+                try {
+                  await base44.integrations.Core.SendEmail({
+                    to: coordinador.email,
+                    subject: `Nueva Asignación: ${camarero.nombre} - ${pedido.cliente}`,
+                    body: `
+Hola ${coordinador.nombre},
+
+Se ha asignado un nuevo servicio a tu camarero ${camarero.nombre}:
+
+👤 Camarero: ${camarero.nombre} (#${camarero.codigo})
+📋 Cliente: ${pedido.cliente}
+📅 Fecha: ${pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Por confirmar'}
+🕐 Horario: ${pedido.entrada || '-'} - ${pedido.salida || '-'}
+📍 Ubicación: ${pedido.lugar_evento || 'Por confirmar'}
+${pedido.camisa ? `👔 Camisa: ${pedido.camisa}` : ''}
+
+El camarero ha sido notificado y debe confirmar su asistencia.
+
+Saludos,
+Sistema de Gestión de Camareros
+                    `
+                  });
+                  
+                  // Marcar email como enviado
+                  const notifCreada = await base44.entities.Notificacion.filter({ 
+                    mensaje: mensajeNotif 
+                  });
+                  if (notifCreada[0]) {
+                    await base44.entities.Notificacion.update(notifCreada[0].id, { 
+                      email_enviado: true 
+                    });
+                  }
+                } catch (emailError) {
+                  console.error('Error enviando email al coordinador:', emailError);
+                }
+              }
+            }
+          }
         } catch (e) {
           console.error('Error enviando notificación o creando tareas:', e);
         }

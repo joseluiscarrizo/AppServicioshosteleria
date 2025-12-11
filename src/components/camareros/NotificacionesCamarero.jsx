@@ -60,6 +60,16 @@ export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
 
       const notif = notificaciones.find(n => n.id === notificacionId);
       
+      // Obtener información del camarero y coordinador
+      const camarero = await base44.entities.Camarero.filter({ id: camareroId });
+      const coordinadorId = camarero[0]?.coordinador_id;
+      let coordinador = null;
+      
+      if (coordinadorId) {
+        const coords = await base44.entities.Coordinador.filter({ id: coordinadorId });
+        coordinador = coords[0];
+      }
+      
       if (respuesta === 'aceptado') {
         // Actualizar asignación a confirmado
         if (notif?.asignacion_id) {
@@ -73,14 +83,55 @@ export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
           estado_actual: 'ocupado'
         });
         
-        // Notificar al coordinador
+        const mensajeNotif = `${camareroNombre} ha aceptado el servicio de ${notif?.cliente} para el ${notif?.fecha ? format(new Date(notif.fecha), 'dd/MM/yyyy', { locale: es }) : 'fecha pendiente'}`;
+        
+        // Notificar al coordinador in-app
         await base44.entities.Notificacion.create({
           tipo: 'estado_cambio',
-          titulo: 'Asignación Aceptada',
-          mensaje: `${camareroNombre} ha aceptado el pedido de ${notif?.cliente} para el ${notif?.fecha}`,
+          titulo: '✅ Asignación Aceptada',
+          mensaje: mensajeNotif,
           prioridad: 'media',
-          pedido_id: notif?.pedido_id
+          pedido_id: notif?.pedido_id,
+          coordinador: coordinador?.nombre,
+          email_enviado: false
         });
+        
+        // Enviar email al coordinador si tiene email configurado
+        if (coordinador?.email && coordinador?.notificaciones_email) {
+          try {
+            await base44.integrations.Core.SendEmail({
+              to: coordinador.email,
+              subject: `✅ Asignación Aceptada - ${notif?.cliente}`,
+              body: `
+Hola ${coordinador.nombre},
+
+El camarero ${camareroNombre} ha ACEPTADO el servicio:
+
+📋 Cliente: ${notif?.cliente}
+📅 Fecha: ${notif?.fecha ? format(new Date(notif.fecha), "dd 'de' MMMM yyyy", { locale: es }) : 'Pendiente'}
+🕐 Horario: ${notif?.hora_entrada || '-'} - ${notif?.hora_salida || '-'}
+📍 Ubicación: ${notif?.lugar_evento || 'Por confirmar'}
+
+El camarero ya está confirmado y su estado ha cambiado a "Ocupado".
+
+Saludos,
+Sistema de Gestión de Camareros
+              `
+            });
+            
+            // Marcar email como enviado
+            const notifCreada = await base44.entities.Notificacion.filter({ 
+              mensaje: mensajeNotif 
+            });
+            if (notifCreada[0]) {
+              await base44.entities.Notificacion.update(notifCreada[0].id, { 
+                email_enviado: true 
+              });
+            }
+          } catch (emailError) {
+            console.error('Error enviando email:', emailError);
+          }
+        }
       } else if (respuesta === 'rechazado') {
         // Eliminar asignación
         if (notif?.asignacion_id) {
@@ -92,14 +143,57 @@ export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
           estado_actual: 'disponible'
         });
         
-        // Notificar al coordinador
+        const mensajeNotif = `${camareroNombre} ha rechazado el servicio de ${notif?.cliente}${motivo ? `. Motivo: ${motivo}` : ' (sin motivo especificado)'}`;
+        
+        // Notificar al coordinador in-app
         await base44.entities.Notificacion.create({
           tipo: 'alerta',
-          titulo: 'Asignación Rechazada',
-          mensaje: `${camareroNombre} ha rechazado el pedido de ${notif?.cliente}. Motivo: ${motivo || 'No especificado'}`,
+          titulo: '❌ Asignación Rechazada',
+          mensaje: mensajeNotif,
           prioridad: 'alta',
-          pedido_id: notif?.pedido_id
+          pedido_id: notif?.pedido_id,
+          coordinador: coordinador?.nombre,
+          email_enviado: false
         });
+        
+        // Enviar email al coordinador si tiene email configurado
+        if (coordinador?.email && coordinador?.notificaciones_email) {
+          try {
+            await base44.integrations.Core.SendEmail({
+              to: coordinador.email,
+              subject: `❌ URGENTE: Asignación Rechazada - ${notif?.cliente}`,
+              body: `
+Hola ${coordinador.nombre},
+
+⚠️ ATENCIÓN: El camarero ${camareroNombre} ha RECHAZADO el servicio:
+
+📋 Cliente: ${notif?.cliente}
+📅 Fecha: ${notif?.fecha ? format(new Date(notif.fecha), "dd 'de' MMMM yyyy", { locale: es }) : 'Pendiente'}
+🕐 Horario: ${notif?.hora_entrada || '-'} - ${notif?.hora_salida || '-'}
+📍 Ubicación: ${notif?.lugar_evento || 'Por confirmar'}
+
+${motivo ? `💬 Motivo del rechazo: "${motivo}"` : '💬 No se proporcionó motivo del rechazo'}
+
+El camarero está ahora disponible para otras asignaciones. Se recomienda buscar un reemplazo lo antes posible.
+
+Saludos,
+Sistema de Gestión de Camareros
+              `
+            });
+            
+            // Marcar email como enviado
+            const notifCreada = await base44.entities.Notificacion.filter({ 
+              mensaje: mensajeNotif 
+            });
+            if (notifCreada[0]) {
+              await base44.entities.Notificacion.update(notifCreada[0].id, { 
+                email_enviado: true 
+              });
+            }
+          } catch (emailError) {
+            console.error('Error enviando email:', emailError);
+          }
+        }
       }
     },
     onSuccess: (_, variables) => {
