@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,10 +34,16 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
     idiomas: [],
     certificaciones: [],
     experiencia_anios: 0,
-    notas: ''
+    notas: '',
+    coordinador_id: ''
   });
 
   const queryClient = useQueryClient();
+
+  const { data: coordinadores = [] } = useQuery({
+    queryKey: ['coordinadores'],
+    queryFn: () => base44.entities.Coordinador.list('nombre')
+  });
 
   React.useEffect(() => {
     if (editingCamarero) {
@@ -45,7 +51,8 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
         ...editingCamarero,
         habilidades: editingCamarero.habilidades || [],
         idiomas: editingCamarero.idiomas || [],
-        certificaciones: editingCamarero.certificaciones || []
+        certificaciones: editingCamarero.certificaciones || [],
+        coordinador_id: editingCamarero.coordinador_id || ''
       });
     } else {
       setFormData({
@@ -60,7 +67,8 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
         idiomas: [],
         certificaciones: [],
         experiencia_anios: 0,
-        notas: ''
+        notas: '',
+        coordinador_id: ''
       });
     }
   }, [editingCamarero, open]);
@@ -209,6 +217,26 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
                 <Label htmlFor="disponible" className="cursor-pointer">
                   Disponible para asignaciones
                 </Label>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="coordinador">Coordinador Asignado</Label>
+                <Select
+                  value={formData.coordinador_id}
+                  onValueChange={(value) => setFormData({ ...formData, coordinador_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar coordinador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>Ninguno</SelectItem>
+                    {coordinadores.map(coord => (
+                      <SelectItem key={coord.id} value={coord.id}>
+                        {coord.nombre} (#{coord.codigo})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
