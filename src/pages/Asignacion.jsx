@@ -8,14 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, Calendar as CalendarIcon, RefreshCw, X, ChevronRight, Star, Filter, Award } from 'lucide-react';
-import { format, parseISO, differenceInHours } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { toast } from 'sonner';
-import { motion } from 'framer-motion';
-import TareasService from '../components/camareros/TareasService';
-import CalendarioAsignaciones from '../components/asignacion/CalendarioAsignaciones';
-import RecomendacionesCamareros from '../components/asignacion/RecomendacionesCamareros';
+import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, Calendar as CalendarIcon, RefreshCw, X, ChevronRight, Star, Filter, Award, GripVertical } from 'lucide-react';
 
 const estadoColors = {
   pendiente: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -32,10 +25,7 @@ const estadoBgColors = {
 };
 
 export default function Asignacion() {
-  const [activeTab, setActiveTab] = useState('asignaciones');
   const [selectedPedido, setSelectedPedido] = useState(null);
-  const [busqueda, setBusqueda] = useState('');
-  const [filtroFecha, setFiltroFecha] = useState('');
   const [filtroHabilidad, setFiltroHabilidad] = useState('');
   const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
 
@@ -240,6 +230,17 @@ export default function Asignacion() {
     updateAsignacionMutation.mutate({ id: asignacionId, data: { estado: nuevoEstado } });
   };
 
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    
+    const camareroId = result.draggableId;
+    const camarero = camareros.find(c => c.id === camareroId);
+    
+    if (camarero && selectedPedido) {
+      handleAsignarCamarero(selectedPedido, camarero);
+    }
+  };
+
   const isLoading = loadingPedidos;
 
   return (
@@ -254,328 +255,217 @@ export default function Asignacion() {
           <p className="text-slate-500 mt-1">Asigna camareros a los pedidos con recomendaciones inteligentes</p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList>
-            <TabsTrigger value="asignaciones">
-              <Users className="w-4 h-4 mr-2" />
-              Asignaciones
-            </TabsTrigger>
-            <TabsTrigger value="calendario">
-              <CalendarIcon className="w-4 h-4 mr-2" />
-              Calendario
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        {/* Leyenda de colores */}
-        <div className="flex flex-wrap gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-red-500"></div>
-            <span className="text-sm text-slate-600">Incompleto</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-emerald-500"></div>
-            <span className="text-sm text-slate-600">Completo (Confirmados)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-blue-500"></div>
-            <span className="text-sm text-slate-600">Alta</span>
-          </div>
-          <div className="flex items-center gap-2 ml-4 border-l pl-4">
-            <div className="w-4 h-4 rounded bg-orange-400"></div>
-            <span className="text-sm text-slate-600">Enviado</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-emerald-400"></div>
-            <span className="text-sm text-slate-600">Confirmado</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-blue-400"></div>
-            <span className="text-sm text-slate-600">Alta</span>
-          </div>
+        {/* Calendario */}
+        <div className="mb-6">
+          <CalendarioAsignaciones onSelectPedido={setSelectedPedido} />
         </div>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center h-96">
-            <RefreshCw className="w-8 h-8 animate-spin text-[#1e3a5f]" />
-          </div>
-        ) : activeTab === 'calendario' ? (
-          <CalendarioAsignaciones />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Panel de Pedidos */}
-            <div className="lg:col-span-5">
-              <Card className="h-[calc(100vh-280px)] flex flex-col">
-                <div className="p-4 border-b">
-                  <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                    <ClipboardList className="w-5 h-5 text-[#1e3a5f]" />
-                    Pedidos ({pedidosFiltrados.length})
-                  </h3>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <Input
-                        placeholder="Buscar cliente..."
-                        value={busqueda}
-                        onChange={(e) => setBusqueda(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
-                    <Input
-                      type="date"
-                      value={filtroFecha}
-                      onChange={(e) => setFiltroFecha(e.target.value)}
-                      className="w-40"
-                    />
-                  </div>
-                </div>
-
-                <ScrollArea className="flex-1 p-3">
-                  <div className="space-y-2">
-                    {pedidosFiltrados.map(pedido => {
-                      const estado = getEstadoPedido(pedido);
-                      const asignacionesPedido = getAsignacionesPedido(pedido.id);
-                      const isSelected = selectedPedido?.id === pedido.id;
-                      
-                      const bgColor = estado === 'completo' ? 'bg-emerald-500' :
-                                     estado === 'alta' ? 'bg-blue-500' : 'bg-red-500';
-
-                      return (
-                        <motion.div
-                          key={pedido.id}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => setSelectedPedido(pedido)}
-                          className={`p-4 rounded-xl cursor-pointer transition-all border-2 ${
-                            isSelected ? 'border-[#1e3a5f] shadow-lg' : 'border-transparent'
-                          } ${bgColor} text-white`}
+        {/* Asignación con Drag & Drop */}
+        {selectedPedido && (
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Panel Izquierdo: Lista de Camareros Disponibles */}
+              <div className="lg:col-span-5">
+                <Card className="h-[600px] flex flex-col">
+                  <div className="p-4 border-b bg-slate-50">
+                    <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-[#1e3a5f]" />
+                      Camareros Disponibles
+                    </h3>
+                    <div className="flex gap-2 flex-wrap">
+                      <Select value={filtroEspecialidad} onValueChange={setFiltroEspecialidad}>
+                        <SelectTrigger className="w-36 h-8 text-xs">
+                          <Filter className="w-3 h-3 mr-1" />
+                          <SelectValue placeholder="Especialidad" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={null}>Todas</SelectItem>
+                          <SelectItem value="general">General</SelectItem>
+                          <SelectItem value="cocteleria">Coctelería</SelectItem>
+                          <SelectItem value="banquetes">Banquetes</SelectItem>
+                          <SelectItem value="eventos_vip">Eventos VIP</SelectItem>
+                          <SelectItem value="buffet">Buffet</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={filtroHabilidad} onValueChange={setFiltroHabilidad}>
+                        <SelectTrigger className="w-36 h-8 text-xs">
+                          <Award className="w-3 h-3 mr-1" />
+                          <SelectValue placeholder="Habilidad" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={null}>Todas</SelectItem>
+                          {todasHabilidades.map(h => (
+                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {(filtroEspecialidad || filtroHabilidad) && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 text-xs"
+                          onClick={() => { setFiltroEspecialidad(''); setFiltroHabilidad(''); }}
                         >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h4 className="font-semibold">{pedido.cliente}</h4>
-                              <div className="flex items-center gap-2 mt-1 text-white/80 text-sm">
-                                <MapPin className="w-3 h-3" />
-                                <span>{pedido.lugar_evento || 'Sin ubicación'}</span>
-                              </div>
-                              <div className="flex items-center gap-4 mt-2 text-sm">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  {pedido.dia ? format(new Date(pedido.dia), 'dd MMM', { locale: es }) : '-'}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {pedido.entrada || '-'} - {pedido.salida || '-'}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="bg-white/20 rounded-full px-3 py-1 text-sm font-medium">
-                                {asignacionesPedido.length}/{pedido.cantidad_camareros || 0}
-                              </div>
-                              {isSelected && <ChevronRight className="w-5 h-5 mt-2 ml-auto" />}
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
+                          Limpiar
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </ScrollArea>
-              </Card>
-            </div>
 
-            {/* Panel de Asignaciones */}
-            <div className="lg:col-span-7">
-              <Card className="h-[calc(100vh-280px)] flex flex-col">
-                {selectedPedido ? (
-                  <>
-                    <div className="p-4 border-b bg-slate-50">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h3 className="font-semibold text-slate-800">{selectedPedido.cliente}</h3>
-                          <p className="text-sm text-slate-500">
-                            {selectedPedido.lugar_evento} • {selectedPedido.dia ? format(new Date(selectedPedido.dia), 'dd MMM yyyy', { locale: es }) : ''} • {selectedPedido.entrada} - {selectedPedido.salida}
-                          </p>
-                          {(selectedPedido.habilidades_requeridas?.length > 0 || selectedPedido.especialidad_requerida) && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {selectedPedido.especialidad_requerida && selectedPedido.especialidad_requerida !== 'general' && (
-                                <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700">
-                                  {selectedPedido.especialidad_requerida}
-                                </Badge>
+                  <Droppable droppableId="camareros-disponibles" isDropDisabled={true}>
+                    {(provided) => (
+                      <ScrollArea className="flex-1 p-3" ref={provided.innerRef} {...provided.droppableProps}>
+                        <div className="space-y-2">
+                          {getCamarerosDisponibles(selectedPedido).map((camarero, index) => (
+                            <Draggable key={camarero.id} draggableId={camarero.id} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`p-3 rounded-lg border-2 bg-white transition-all ${
+                                    snapshot.isDragging 
+                                      ? 'border-[#1e3a5f] shadow-lg rotate-2' 
+                                      : 'border-slate-200 hover:border-[#1e3a5f]/50 hover:shadow'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <GripVertical className="w-4 h-4 text-slate-400" />
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-slate-800">{camarero.nombre}</span>
+                                        {camarero.valoracion_promedio > 0 && (
+                                          <span className="flex items-center gap-0.5 text-amber-500 text-xs">
+                                            <Star className="w-3 h-3 fill-amber-400" />
+                                            {camarero.valoracion_promedio.toFixed(1)}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="text-xs text-slate-500 font-mono">#{camarero.codigo}</span>
+                                      {camarero.especialidad && (
+                                        <Badge variant="outline" className="text-xs mt-1">
+                                          {camarero.especialidad}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
                               )}
-                              {selectedPedido.habilidades_requeridas?.map(h => (
-                                <Badge key={h} variant="outline" className="text-xs bg-blue-50 text-blue-700">{h}</Badge>
-                              ))}
-                            </div>
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                          {getCamarerosDisponibles(selectedPedido).length === 0 && (
+                            <p className="text-center text-slate-400 py-8">
+                              No hay camareros disponibles
+                            </p>
                           )}
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => setSelectedPedido(null)}>
-                          <X className="w-5 h-5" />
-                        </Button>
-                      </div>
-                      {/* Filtros de camareros */}
-                      <div className="flex gap-2 flex-wrap">
-                        <Select value={filtroEspecialidad} onValueChange={setFiltroEspecialidad}>
-                          <SelectTrigger className="w-36 h-8 text-xs">
-                            <Filter className="w-3 h-3 mr-1" />
-                            <SelectValue placeholder="Especialidad" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={null}>Todas</SelectItem>
-                            <SelectItem value="general">General</SelectItem>
-                            <SelectItem value="cocteleria">Coctelería</SelectItem>
-                            <SelectItem value="banquetes">Banquetes</SelectItem>
-                            <SelectItem value="eventos_vip">Eventos VIP</SelectItem>
-                            <SelectItem value="buffet">Buffet</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Select value={filtroHabilidad} onValueChange={setFiltroHabilidad}>
-                          <SelectTrigger className="w-36 h-8 text-xs">
-                            <Award className="w-3 h-3 mr-1" />
-                            <SelectValue placeholder="Habilidad" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={null}>Todas</SelectItem>
-                            {todasHabilidades.map(h => (
-                              <SelectItem key={h} value={h}>{h}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {(filtroEspecialidad || filtroHabilidad) && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 text-xs"
-                            onClick={() => { setFiltroEspecialidad(''); setFiltroHabilidad(''); }}
-                          >
-                            Limpiar filtros
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                      </ScrollArea>
+                    )}
+                  </Droppable>
+                </Card>
+              </div>
 
-                    <ScrollArea className="flex-1 p-4">
-                      {/* Recomendaciones Inteligentes */}
-                      <RecomendacionesCamareros
-                        pedido={selectedPedido}
-                        camareros={camareros}
-                        asignaciones={asignaciones}
-                        onAsignar={(camarero) => handleAsignarCamarero(selectedPedido, camarero)}
-                      />
-
-                      <div className="flex flex-wrap gap-3 mt-4">
-                        {/* Slots de camareros */}
-                        {Array.from({ length: selectedPedido.cantidad_camareros || 0 }).map((_, index) => {
-                          const asignacion = getAsignacionesPedido(selectedPedido.id)[index];
-                          
-                          return (
-                            <div 
-                              key={index}
-                              className={`w-56 rounded-xl border-2 p-4 transition-all ${
-                                asignacion 
-                                  ? `${estadoBgColors[asignacion.estado]} border-slate-200` 
-                                  : 'bg-slate-50 border-dashed border-slate-300'
-                              }`}
-                            >
-                              {asignacion ? (
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="font-medium text-slate-800">
-                                      {asignacion.camarero_nombre}
-                                    </span>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6 text-slate-400 hover:text-red-500"
-                                      onClick={() => deleteAsignacionMutation.mutate(asignacion)}
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                  <span className="text-xs text-slate-500 font-mono">
-                                    #{asignacion.camarero_codigo}
-                                  </span>
-                                  
-                                  {/* Selector de estado */}
-                                  <Select 
-                                    value={asignacion.estado} 
-                                    onValueChange={(v) => handleCambiarEstado(asignacion.id, v)}
-                                  >
-                                    <SelectTrigger className={`mt-3 h-8 text-sm ${estadoColors[asignacion.estado]}`}>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="pendiente">Pendiente</SelectItem>
-                                      <SelectItem value="enviado">
-                                        <span className="flex items-center gap-2">
-                                          <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                                          Enviado
-                                        </span>
-                                      </SelectItem>
-                                      <SelectItem value="confirmado">
-                                        <span className="flex items-center gap-2">
-                                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                          Confirmado
-                                        </span>
-                                      </SelectItem>
-                                      <SelectItem value="alta">
-                                        <span className="flex items-center gap-2">
-                                          <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                          Alta
-                                        </span>
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              ) : (
-                                <div>
-                                  <p className="text-sm text-slate-400 mb-2">Slot {index + 1}</p>
-                                  <Select onValueChange={(camareroId) => {
-                                    const camarero = camareros.find(c => c.id === camareroId);
-                                    if (camarero) handleAsignarCamarero(selectedPedido, camarero);
-                                  }}>
-                                    <SelectTrigger className="h-8 text-sm">
-                                      <SelectValue placeholder="Asignar camarero" />
-                                    </SelectTrigger>
-                                    <SelectContent className="max-h-60">
-                                      {getCamarerosDisponibles(selectedPedido).map(c => (
-                                        <SelectItem key={c.id} value={c.id}>
-                                          <div className="flex items-center gap-2">
-                                            <span>{c.nombre}</span>
-                                            <span className="text-slate-400 text-xs">#{c.codigo}</span>
-                                            {c.valoracion_promedio > 0 && (
-                                              <span className="flex items-center gap-0.5 text-amber-500 text-xs">
-                                                <Star className="w-3 h-3 fill-amber-400" />
-                                                {c.valoracion_promedio.toFixed(1)}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                      {getCamarerosDisponibles(selectedPedido).length === 0 && (
-                                        <div className="px-2 py-1 text-sm text-slate-500">
-                                          No hay camareros disponibles
-                                        </div>
-                                      )}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
+              {/* Panel Derecho: Slots de Asignación */}
+              <div className="lg:col-span-7">
+                <Card className="h-[600px] flex flex-col">
+                  <div className="p-4 border-b bg-slate-50">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-slate-800">{selectedPedido.cliente}</h3>
+                        <p className="text-sm text-slate-500">
+                          {selectedPedido.lugar_evento} • {selectedPedido.dia ? format(new Date(selectedPedido.dia), 'dd MMM yyyy', { locale: es }) : ''} • {selectedPedido.entrada} - {selectedPedido.salida}
+                        </p>
                       </div>
-                    </ScrollArea>
-                  </>
-                ) : (
-                  <div className="flex-1 flex items-center justify-center text-slate-400">
-                    <div className="text-center">
-                      <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>Selecciona un pedido para gestionar las asignaciones</p>
+                      <Button variant="ghost" size="icon" onClick={() => setSelectedPedido(null)}>
+                        <X className="w-5 h-5" />
+                      </Button>
                     </div>
                   </div>
-                )}
-              </Card>
+
+                  <Droppable droppableId="slots-asignacion">
+                    {(provided, snapshot) => (
+                      <ScrollArea 
+                        className="flex-1 p-4" 
+                        ref={provided.innerRef} 
+                        {...provided.droppableProps}
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {Array.from({ length: selectedPedido.cantidad_camareros || 0 }).map((_, index) => {
+                            const asignacion = getAsignacionesPedido(selectedPedido.id)[index];
+                            
+                            return (
+                              <div 
+                                key={index}
+                                className={`rounded-xl border-2 p-4 min-h-[120px] transition-all ${
+                                  asignacion 
+                                    ? `${estadoBgColors[asignacion.estado]} border-slate-200` 
+                                    : snapshot.isDraggingOver 
+                                    ? 'bg-[#1e3a5f]/10 border-[#1e3a5f] border-dashed'
+                                    : 'bg-slate-50 border-dashed border-slate-300'
+                                }`}
+                              >
+                                {asignacion ? (
+                                  <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="font-medium text-slate-800">
+                                        {asignacion.camarero_nombre}
+                                      </span>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-slate-400 hover:text-red-500"
+                                        onClick={() => deleteAsignacionMutation.mutate(asignacion)}
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                    <span className="text-xs text-slate-500 font-mono">
+                                      #{asignacion.camarero_codigo}
+                                    </span>
+                                    
+                                    <Select 
+                                      value={asignacion.estado} 
+                                      onValueChange={(v) => handleCambiarEstado(asignacion.id, v)}
+                                    >
+                                      <SelectTrigger className={`mt-3 h-8 text-sm ${estadoColors[asignacion.estado]}`}>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="pendiente">Pendiente</SelectItem>
+                                        <SelectItem value="enviado">Enviado</SelectItem>
+                                        <SelectItem value="confirmado">Confirmado</SelectItem>
+                                        <SelectItem value="alta">Alta</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-center h-full">
+                                    <p className="text-sm text-slate-400">
+                                      Arrastra aquí<br/>
+                                      <span className="text-xs">Slot {index + 1}</span>
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {provided.placeholder}
+                      </ScrollArea>
+                    )}
+                  </Droppable>
+                </Card>
+              </div>
             </div>
-          </div>
+          </DragDropContext>
+        )}
+
+        {!selectedPedido && (
+          <Card className="p-12 text-center">
+            <CalendarIcon className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+            <p className="text-slate-500">Selecciona un evento del calendario para asignar camareros</p>
+          </Card>
         )}
       </div>
     </div>

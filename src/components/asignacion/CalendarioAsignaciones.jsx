@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users } from 'luci
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-export default function CalendarioAsignaciones() {
+export default function CalendarioAsignaciones({ onSelectPedido }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const { data: pedidos = [] } = useQuery({
