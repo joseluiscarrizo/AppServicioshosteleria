@@ -7,13 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, User, Star, Search, Filter, Award, MessageSquare, CheckCircle, XCircle, CalendarDays } from 'lucide-react';
+import { Plus, Pencil, User, Star, Search, Filter, Award, MessageSquare, CheckCircle, XCircle, CalendarDays, UserCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import GestionCamareros from '../components/asignacion/GestionCamareros';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import ValoracionesHistorial from '../components/camareros/ValoracionesHistorial';
+import GestionDisponibilidad from '../components/camareros/GestionDisponibilidad';
 
 const especialidadColors = {
   general: 'bg-slate-100 text-slate-700',
@@ -34,6 +35,7 @@ export default function Camareros() {
   const [camareroParaValorar, setCamareroParaValorar] = useState(null);
   const [showHistorial, setShowHistorial] = useState(false);
   const [camareroHistorial, setCamareroHistorial] = useState(null);
+  const [showGestionDisponibilidad, setShowGestionDisponibilidad] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -99,10 +101,18 @@ export default function Camareros() {
             <p className="text-slate-500 mt-1">Gestiona tu equipo de camareros, habilidades y valoraciones</p>
           </div>
           <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowGestionDisponibilidad(true)}
+              variant="outline"
+              className="border-[#1e3a5f] text-[#1e3a5f] hover:bg-[#1e3a5f]/5"
+            >
+              <UserCheck className="w-4 h-4 mr-2" />
+              Disponibilidad
+            </Button>
             <Link to={createPageUrl('Disponibilidad')}>
               <Button variant="outline">
                 <CalendarDays className="w-4 h-4 mr-2" />
-                Gestionar Disponibilidad
+                Calendario
               </Button>
             </Link>
             <Button 
@@ -238,27 +248,15 @@ export default function Camareros() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleDisponibilidadMutation.mutate({ 
-                          id: camarero.id, 
-                          disponible: !camarero.disponible 
-                        })}
-                        className="p-1"
-                      >
-                        {camarero.disponible ? (
-                          <Badge className="bg-emerald-100 text-emerald-700">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Disponible
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-red-100 text-red-700">
-                            <XCircle className="w-3 h-3 mr-1" />
-                            No Disponible
-                          </Badge>
-                        )}
-                      </Button>
+                      <Badge className={
+                        camarero.estado_actual === 'disponible' ? 'bg-emerald-100 text-emerald-700' :
+                        camarero.estado_actual === 'ocupado' ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-700'
+                      }>
+                        {camarero.estado_actual === 'disponible' ? 'Disponible' :
+                         camarero.estado_actual === 'ocupado' ? 'Ocupado' :
+                         'No Disponible'}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className={`${especialidadColors[camarero.especialidad] || especialidadColors.general} text-xs`}>
@@ -372,6 +370,11 @@ export default function Camareros() {
             camarero={camareroHistorial}
           />
         )}
+
+        <GestionDisponibilidad
+          open={showGestionDisponibilidad}
+          onClose={() => setShowGestionDisponibilidad(false)}
+        />
       </div>
     </div>
   );
