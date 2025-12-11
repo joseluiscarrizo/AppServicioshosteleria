@@ -69,10 +69,14 @@ export default function Pedidos() {
     setEditingPedido(null);
     setFormData({
       cliente: '',
+      cliente_email: '',
+      cliente_email_2: '',
+      cliente_email_3: '',
       lugar_evento: '',
+      link_ubicacion: '',
       dia: '',
       turnos: [],
-      camisa: '',
+      camisa: 'blanca',
       extra_transporte: false,
       notas: ''
     });
@@ -82,10 +86,14 @@ export default function Pedidos() {
     setEditingPedido(pedido);
     setFormData({
       cliente: pedido.cliente || '',
+      cliente_email: pedido.cliente_email || '',
+      cliente_email_2: pedido.cliente_email_2 || '',
+      cliente_email_3: pedido.cliente_email_3 || '',
       lugar_evento: pedido.lugar_evento || '',
+      link_ubicacion: pedido.link_ubicacion || '',
       dia: pedido.dia ? pedido.dia.split('T')[0] : '',
       turnos: pedido.turnos || [],
-      camisa: pedido.camisa || '',
+      camisa: pedido.camisa || 'blanca',
       extra_transporte: pedido.extra_transporte || false,
       notas: pedido.notas || ''
     });
@@ -156,6 +164,12 @@ export default function Pedidos() {
           <Card className="p-4">
             <p className="text-sm text-slate-500">Total Pedidos</p>
             <p className="text-2xl font-bold text-slate-800">{pedidos.length}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-sm text-slate-500">Clientes Únicos</p>
+            <p className="text-2xl font-bold text-purple-600">
+              {new Set(pedidos.map(p => p.cliente).filter(Boolean)).size}
+            </p>
           </Card>
           <Card className="p-4">
             <p className="text-sm text-slate-500">Camareros Necesarios</p>
@@ -288,11 +302,30 @@ export default function Pedidos() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Lugar del Evento</Label>
+                  <Label>Email Cliente 1</Label>
                   <Input
-                    value={formData.lugar_evento}
-                    onChange={(e) => setFormData({ ...formData, lugar_evento: e.target.value })}
-                    placeholder="Ubicación"
+                    type="email"
+                    value={formData.cliente_email}
+                    onChange={(e) => setFormData({ ...formData, cliente_email: e.target.value })}
+                    placeholder="email1@cliente.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email Cliente 2</Label>
+                  <Input
+                    type="email"
+                    value={formData.cliente_email_2}
+                    onChange={(e) => setFormData({ ...formData, cliente_email_2: e.target.value })}
+                    placeholder="email2@cliente.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email Cliente 3</Label>
+                  <Input
+                    type="email"
+                    value={formData.cliente_email_3}
+                    onChange={(e) => setFormData({ ...formData, cliente_email_3: e.target.value })}
+                    placeholder="email3@cliente.com"
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
@@ -305,12 +338,32 @@ export default function Pedidos() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Camisa</Label>
+                  <Label>Lugar del Evento</Label>
                   <Input
+                    value={formData.lugar_evento}
+                    onChange={(e) => setFormData({ ...formData, lugar_evento: e.target.value })}
+                    placeholder="Ubicación"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Link Google Maps</Label>
+                  <Input
+                    value={formData.link_ubicacion}
+                    onChange={(e) => setFormData({ ...formData, link_ubicacion: e.target.value })}
+                    placeholder="https://maps.google.com/..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Camisa *</Label>
+                  <select
                     value={formData.camisa}
                     onChange={(e) => setFormData({ ...formData, camisa: e.target.value })}
-                    placeholder="Tipo o color"
-                  />
+                    className="w-full h-10 px-3 rounded-md border border-slate-200 focus:border-[#1e3a5f] focus:ring-[#1e3a5f] focus:outline-none"
+                    required
+                  >
+                    <option value="blanca">Blanca</option>
+                    <option value="negra">Negra</option>
+                  </select>
                 </div>
               </div>
 

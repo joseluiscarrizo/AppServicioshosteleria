@@ -85,12 +85,18 @@ export default function HojaAsistencia({ pedido, asignaciones, camareros }) {
     mutationFn: async () => {
       const hojaHTML = generarHojaHTML();
       
-      if (!pedido.cliente_email) {
-        throw new Error('El pedido no tiene email del cliente configurado');
+      const emails = [
+        pedido.cliente_email,
+        pedido.cliente_email_2,
+        pedido.cliente_email_3
+      ].filter(Boolean);
+
+      if (emails.length === 0) {
+        throw new Error('El pedido no tiene emails del cliente configurados');
       }
       
       await base44.integrations.Core.SendEmail({
-        to: pedido.cliente_email,
+        to: emails.join(','),
         subject: `Hoja de Asistencia - ${pedido.cliente} - ${pedido.dia}`,
         body: hojaHTML
       });
