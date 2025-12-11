@@ -257,11 +257,10 @@ export default function Asignacion() {
         </div>
 
         {/* Asignación con Drag & Drop */}
-        {selectedPedido && (
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Panel Izquierdo: Lista de Camareros Disponibles */}
-              <div className="lg:col-span-5">
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Panel Izquierdo: Lista de Camareros Disponibles */}
+            <div>
                 <Card className="h-[600px] flex flex-col">
                   <div className="p-4 border-b bg-slate-50">
                     <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
@@ -312,7 +311,7 @@ export default function Asignacion() {
                     {(provided) => (
                       <ScrollArea className="flex-1 p-3" ref={provided.innerRef} {...provided.droppableProps}>
                         <div className="space-y-2">
-                          {getCamarerosDisponibles(selectedPedido).map((camarero, index) => (
+                          {selectedPedido && getCamarerosDisponibles(selectedPedido).map((camarero, index) => (
                             <Draggable key={camarero.id} draggableId={camarero.id} index={index}>
                               {(provided, snapshot) => (
                                 <div
@@ -350,7 +349,12 @@ export default function Asignacion() {
                             </Draggable>
                           ))}
                           {provided.placeholder}
-                          {getCamarerosDisponibles(selectedPedido).length === 0 && (
+                          {!selectedPedido && (
+                            <p className="text-center text-slate-400 py-8">
+                              Selecciona un evento del calendario
+                            </p>
+                          )}
+                          {selectedPedido && getCamarerosDisponibles(selectedPedido).length === 0 && (
                             <p className="text-center text-slate-400 py-8">
                               No hay camareros disponibles
                             </p>
@@ -363,19 +367,25 @@ export default function Asignacion() {
               </div>
 
               {/* Panel Derecho: Slots de Asignación */}
-              <div className="lg:col-span-7">
+              <div>
                 <Card className="h-[600px] flex flex-col">
                   <div className="p-4 border-b bg-slate-50">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold text-slate-800">{selectedPedido.cliente}</h3>
-                        <p className="text-sm text-slate-500">
-                          {selectedPedido.lugar_evento} • {selectedPedido.dia ? format(new Date(selectedPedido.dia), 'dd MMM yyyy', { locale: es }) : ''} • {selectedPedido.entrada} - {selectedPedido.salida}
-                        </p>
+                        <h3 className="font-semibold text-slate-800">
+                          {selectedPedido ? selectedPedido.cliente : 'Slots de Asignación'}
+                        </h3>
+                        {selectedPedido && (
+                          <p className="text-sm text-slate-500">
+                            {selectedPedido.lugar_evento} • {selectedPedido.dia ? format(new Date(selectedPedido.dia), 'dd MMM yyyy', { locale: es }) : ''} • {selectedPedido.entrada} - {selectedPedido.salida}
+                          </p>
+                        )}
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => setSelectedPedido(null)}>
-                        <X className="w-5 h-5" />
-                      </Button>
+                      {selectedPedido && (
+                        <Button variant="ghost" size="icon" onClick={() => setSelectedPedido(null)}>
+                          <X className="w-5 h-5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
 
@@ -386,9 +396,17 @@ export default function Asignacion() {
                         ref={provided.innerRef} 
                         {...provided.droppableProps}
                       >
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {Array.from({ length: selectedPedido.cantidad_camareros || 0 }).map((_, index) => {
-                            const asignacion = getAsignacionesPedido(selectedPedido.id)[index];
+                        {!selectedPedido ? (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center text-slate-400">
+                              <CalendarIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                              <p>Selecciona un evento del calendario para asignar camareros</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {Array.from({ length: selectedPedido.cantidad_camareros || 0 }).map((_, index) => {
+                              const asignacion = getAsignacionesPedido(selectedPedido.id)[index];
                             
                             return (
                               <div 
@@ -444,9 +462,10 @@ export default function Asignacion() {
                                   </div>
                                 )}
                               </div>
-                            );
-                          })}
-                        </div>
+                              );
+                            })}
+                          </div>
+                        )}
                         {provided.placeholder}
                       </ScrollArea>
                     )}
