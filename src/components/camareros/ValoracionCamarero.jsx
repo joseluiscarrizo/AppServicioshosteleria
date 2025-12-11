@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Star } from 'lucide-react';
 import { toast } from 'sonner';
@@ -36,6 +37,7 @@ export default function ValoracionCamarero({ open, onClose, camarero, pedido }) 
   const [profesionalidad, setProfesionalidad] = useState(5);
   const [actitud, setActitud] = useState(5);
   const [comentario, setComentario] = useState('');
+  const [coordinador, setCoordinador] = useState('');
 
   const queryClient = useQueryClient();
 
@@ -52,7 +54,8 @@ export default function ValoracionCamarero({ open, onClose, camarero, pedido }) 
         puntualidad,
         profesionalidad,
         actitud,
-        comentario
+        comentario,
+        coordinador: coordinador || undefined
       });
 
       // Actualizar promedio del camarero
@@ -102,6 +105,17 @@ export default function ValoracionCamarero({ open, onClose, camarero, pedido }) 
               value={comentario}
               onChange={(e) => setComentario(e.target.value)}
               placeholder="Observaciones sobre el desempeño..."
+              className="mt-1"
+              rows={3}
+            />
+          </div>
+
+          <div>
+            <Label className="text-sm text-slate-600">Coordinador (opcional)</Label>
+            <Input
+              value={coordinador}
+              onChange={(e) => setCoordinador(e.target.value)}
+              placeholder="Tu nombre"
               className="mt-1"
             />
           </div>

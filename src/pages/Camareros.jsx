@@ -298,6 +298,16 @@ export default function Camareros() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        <Link to={createPageUrl('PerfilCamarero') + '?id=' + camarero.id}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="h-8 w-8"
+                            title="Ver perfil"
+                          >
+                            <User className="w-4 h-4" />
+                          </Button>
+                        </Link>
                         <Button 
                           variant="ghost" 
                           size="icon"

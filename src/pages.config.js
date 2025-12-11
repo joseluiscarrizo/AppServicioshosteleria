@@ -8,6 +8,7 @@ import VistaMovil from './pages/VistaMovil';
 import Camareros from './pages/Camareros';
 import ConfirmarServicio from './pages/ConfirmarServicio';
 import TableroEventos from './pages/TableroEventos';
+import PerfilCamarero from './pages/PerfilCamarero';
 import __Layout from './Layout.jsx';
 
 
@@ -22,6 +23,7 @@ export const PAGES = {
     "Camareros": Camareros,
     "ConfirmarServicio": ConfirmarServicio,
     "TableroEventos": TableroEventos,
+    "PerfilCamarero": PerfilCamarero,
 }
 
 export const pagesConfig = {
