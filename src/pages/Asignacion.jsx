@@ -474,14 +474,6 @@ export default function Asignacion() {
               </div>
             </div>
           </DragDropContext>
-        )}
-
-        {!selectedPedido && (
-          <Card className="p-12 text-center">
-            <CalendarIcon className="w-16 h-16 mx-auto mb-4 text-slate-300" />
-            <p className="text-slate-500">Selecciona un evento del calendario para asignar camareros</p>
-          </Card>
-        )}
       </div>
     </div>
   );
