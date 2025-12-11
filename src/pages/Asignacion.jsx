@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, Calendar as CalendarIcon, RefreshCw, X, ChevronRight, Star, Filter, Award, GripVertical } from 'lucide-react';
+import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, Calendar as CalendarIcon, RefreshCw, X, ChevronRight, Star, Filter, Award, GripVertical, Sparkles } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -17,6 +17,7 @@ import { motion } from 'framer-motion';
 import TareasService from '../components/camareros/TareasService';
 import CalendarioAsignaciones from '../components/asignacion/CalendarioAsignaciones';
 import CargaCamareros from '../components/asignacion/CargaCamareros';
+import AsignacionAutomatica from '../components/asignacion/AsignacionAutomatica';
 
 const estadoColors = {
   pendiente: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -37,6 +38,7 @@ export default function Asignacion() {
   const [filtroHabilidad, setFiltroHabilidad] = useState('');
   const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
   const [mostrarCarga, setMostrarCarga] = useState(false);
+  const [showAsignacionAuto, setShowAsignacionAuto] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -265,8 +267,8 @@ export default function Asignacion() {
           )}
         </div>
 
-        {/* Toggle Carga */}
-        <div className="mb-6 flex justify-end">
+        {/* Controles */}
+        <div className="mb-6 flex justify-between items-center">
           <Button 
             variant="outline" 
             size="sm"
@@ -274,6 +276,16 @@ export default function Asignacion() {
           >
             {mostrarCarga ? 'Ocultar' : 'Mostrar'} Carga de Trabajo
           </Button>
+          
+          {selectedPedido && (
+            <Button 
+              onClick={() => setShowAsignacionAuto(true)}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Asignación Automática
+            </Button>
+          )}
         </div>
 
         {/* Asignación con Drag & Drop */}
@@ -493,8 +505,15 @@ export default function Asignacion() {
                 </Card>
               </div>
             </div>
-          </DragDropContext>
-      </div>
-    </div>
-  );
-}
+            </DragDropContext>
+
+            {/* Modal de Asignación Automática */}
+            <AsignacionAutomatica
+            open={showAsignacionAuto}
+            onClose={() => setShowAsignacionAuto(false)}
+            pedido={selectedPedido}
+            />
+            </div>
+            </div>
+            );
+            }
