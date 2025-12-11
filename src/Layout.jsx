@@ -10,7 +10,6 @@ const navItems = [
   { name: 'Pedidos', page: 'Pedidos', icon: ClipboardList },
   { name: 'Camareros', page: 'Camareros', icon: UserPlus },
   { name: 'Asignación', page: 'Asignacion', icon: UserCog },
-  { name: 'Tablero', page: 'TableroEventos', icon: CalendarDays },
   { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
   { name: 'Coordinadores', page: 'Coordinadores', icon: Users },
   { name: 'Informes', page: 'Informes', icon: FileText }
