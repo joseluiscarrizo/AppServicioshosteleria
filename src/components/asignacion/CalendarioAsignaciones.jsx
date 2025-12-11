@@ -154,7 +154,14 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
               {tieneEventos && (
                 <div className="space-y-1">
                   {datos.pedidos.slice(0, 2).map(pedido => (
-                    <div key={pedido.id} className="text-xs bg-white rounded p-1 border border-slate-200">
+                    <div 
+                      key={pedido.id} 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectPedido?.(pedido);
+                      }}
+                      className="text-xs bg-white rounded p-1 border border-slate-200 hover:bg-slate-50 hover:shadow transition-all cursor-pointer"
+                    >
                       <p className="font-medium text-slate-700 truncate">{pedido.cliente}</p>
                       <div className="flex items-center justify-between text-slate-500 mt-0.5">
                         <span className="flex items-center gap-1">
