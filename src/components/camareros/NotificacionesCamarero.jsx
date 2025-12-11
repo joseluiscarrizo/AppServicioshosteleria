@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 
 export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
   const [showRechazoDialog, setShowRechazoDialog] = useState(false);
@@ -23,9 +24,26 @@ export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
   const { data: notificaciones = [], isLoading } = useQuery({
     queryKey: ['notificaciones-camarero', camareroId],
     queryFn: () => base44.entities.NotificacionCamarero.filter({ camarero_id: camareroId }, '-created_date', 50),
-    enabled: !!camareroId,
-    refetchInterval: 10000
+    enabled: !!camareroId
   });
+
+  // Marcar como leídas automáticamente después de 3 segundos
+  useEffect(() => {
+    const noLeidas = notificaciones.filter(n => !n.leida && n.tipo !== 'nueva_asignacion');
+    if (noLeidas.length > 0) {
+      const timer = setTimeout(async () => {
+        for (const notif of noLeidas) {
+          try {
+            await base44.entities.NotificacionCamarero.update(notif.id, { leida: true });
+          } catch (error) {
+            console.error('Error marking as read:', error);
+          }
+        }
+        queryClient.invalidateQueries({ queryKey: ['notificaciones-camarero', camareroId] });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notificaciones, camareroId, queryClient]);
 
   const pendientes = notificaciones.filter(n => !n.respondida && n.tipo === 'nueva_asignacion');
   const historial = notificaciones.filter(n => n.respondida || n.tipo !== 'nueva_asignacion');
@@ -74,10 +92,19 @@ export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
         });
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['notificaciones-camarero'] });
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
       queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
+      
+      if (variables.respuesta === 'aceptado') {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+      
       setShowRechazoDialog(false);
       setMotivoRechazo('');
     }
@@ -195,7 +222,7 @@ export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
               <p className="text-sm text-slate-400 text-center py-8">No hay notificaciones</p>
             ) : (
               historial.map(notif => (
-                <Card key={notif.id} className={`p-3 ${notif.leida ? 'bg-slate-50' : 'bg-white'}`}>
+                <Card key={notif.id} className={`p-3 ${notif.leida ? 'bg-slate-50' : 'bg-white border-l-2 border-l-blue-500'}`}>
                   <div className="flex items-start gap-3">
                     <div className={`p-2 rounded-lg ${
                       notif.respuesta === 'aceptado' ? 'bg-emerald-100' :
@@ -207,6 +234,9 @@ export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
+                        {!notif.leida && (
+                          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                        )}
                         <span className="font-medium text-sm text-slate-800">{notif.titulo}</span>
                         {notif.respuesta && notif.respuesta !== 'pendiente' && (
                           <Badge className={
