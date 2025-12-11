@@ -4,12 +4,15 @@ import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users, AlertTriangle, AlertCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function CalendarioAsignaciones({ onSelectPedido }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [filtroEstado, setFiltroEstado] = useState('todos');
+  const [vistaDetalle, setVistaDetalle] = useState(false);
 
   const { data: pedidos = [] } = useQuery({
     queryKey: ['pedidos'],
@@ -26,6 +29,11 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
     queryFn: () => base44.entities.Camarero.list('nombre')
   });
 
+  const { data: disponibilidades = [] } = useQuery({
+    queryKey: ['disponibilidades'],
+    queryFn: () => base44.entities.Disponibilidad.list('-fecha', 500)
+  });
+
   // Generar días del calendario
   const dias = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
@@ -33,10 +41,60 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
     return eachDayOfInterval({ start, end });
   }, [currentMonth]);
 
+  // Calcular carga de trabajo por camarero
+  const cargaPorCamarero = useMemo(() => {
+    const carga = {};
+    camareros.forEach(c => {
+      carga[c.id] = { camarero: c, asignaciones: [], totalHoras: 0, dias: new Set() };
+    });
+    
+    asignaciones.forEach(asig => {
+      if (carga[asig.camarero_id]) {
+        carga[asig.camarero_id].asignaciones.push(asig);
+        carga[asig.camarero_id].dias.add(asig.fecha_pedido);
+        
+        // Calcular horas
+        if (asig.hora_entrada && asig.hora_salida) {
+          const [entH, entM] = asig.hora_entrada.split(':').map(Number);
+          const [salH, salM] = asig.hora_salida.split(':').map(Number);
+          let horas = (salH + salM/60) - (entH + entM/60);
+          if (horas < 0) horas += 24;
+          carga[asig.camarero_id].totalHoras += horas;
+        }
+      }
+    });
+    
+    return carga;
+  }, [camareros, asignaciones]);
+
   // Obtener datos por día
   const getDatosDia = (dia) => {
     const fechaStr = format(dia, 'yyyy-MM-dd');
-    const pedidosDia = pedidos.filter(p => p.dia === fechaStr);
+    let pedidosDia = pedidos.filter(p => p.dia === fechaStr);
+    
+    // Aplicar filtro de estado
+    if (filtroEstado !== 'todos') {
+      pedidosDia = pedidosDia.filter(p => {
+        const asigsPedido = asignaciones.filter(a => a.pedido_id === p.id);
+        if (filtroEstado === 'completo') {
+          const total = p.turnos?.length > 0 
+            ? p.turnos.reduce((s, t) => s + (t.cantidad_camareros || 0), 0)
+            : (p.cantidad_camareros || 0);
+          return asigsPedido.length >= total;
+        }
+        if (filtroEstado === 'incompleto') {
+          const total = p.turnos?.length > 0 
+            ? p.turnos.reduce((s, t) => s + (t.cantidad_camareros || 0), 0)
+            : (p.cantidad_camareros || 0);
+          return asigsPedido.length < total;
+        }
+        if (filtroEstado === 'sin_asignar') {
+          return asigsPedido.length === 0;
+        }
+        return true;
+      });
+    }
+    
     const asignacionesDia = asignaciones.filter(a => a.fecha_pedido === fechaStr);
     
     const totalCamareros = pedidosDia.reduce((sum, p) => {
@@ -48,13 +106,25 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
 
     const asignados = asignacionesDia.length;
     const pendientes = totalCamareros - asignados;
+    
+    // Detectar conflictos de disponibilidad
+    const camarerosAsignados = new Set(asignacionesDia.map(a => a.camarero_id));
+    const noDisponibles = disponibilidades.filter(d => 
+      d.fecha === fechaStr && 
+      (d.tipo === 'no_disponible' || d.tipo === 'vacaciones' || d.tipo === 'baja') &&
+      camarerosAsignados.has(d.camarero_id)
+    );
+    
+    const altaDemanda = totalCamareros > camareros.filter(c => c.disponible).length * 0.7;
 
     return {
       pedidos: pedidosDia,
       asignaciones: asignacionesDia,
       totalCamareros,
       asignados,
-      pendientes
+      pendientes,
+      conflictos: noDisponibles.length,
+      altaDemanda
     };
   };
 
@@ -65,31 +135,65 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
   return (
     <Card className="p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-          <CalendarIcon className="w-5 h-5 text-[#1e3a5f]" />
-          Calendario de Asignaciones
-        </h3>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={hoy}>
-            Hoy
-          </Button>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={mesAnterior}>
-              <ChevronLeft className="w-4 h-4" />
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+            <CalendarIcon className="w-5 h-5 text-[#1e3a5f]" />
+            Calendario de Asignaciones
+          </h3>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={hoy}>
+              Hoy
             </Button>
-            <span className="text-sm font-medium text-slate-700 min-w-[140px] text-center">
-              {format(currentMonth, 'MMMM yyyy', { locale: es })}
-            </span>
-            <Button variant="outline" size="icon" onClick={mesSiguiente}>
-              <ChevronRight className="w-4 h-4" />
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={mesAnterior}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm font-medium text-slate-700 min-w-[140px] text-center">
+                {format(currentMonth, 'MMMM yyyy', { locale: es })}
+              </span>
+              <Button variant="outline" size="icon" onClick={mesSiguiente}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Filtros y Vista */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+              <SelectTrigger className="w-48 h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los eventos</SelectItem>
+                <SelectItem value="completo">Completos</SelectItem>
+                <SelectItem value="incompleto">Incompletos</SelectItem>
+                <SelectItem value="sin_asignar">Sin asignar</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Button 
+              variant={vistaDetalle ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setVistaDetalle(!vistaDetalle)}
+            >
+              {vistaDetalle ? 'Vista Simple' : 'Vista Detallada'}
             </Button>
           </div>
+
+          {/* Resumen carga de trabajo */}
+          {vistaDetalle && (
+            <div className="flex items-center gap-2 text-xs text-slate-600">
+              <span>Camareros activos: {Object.values(cargaPorCamarero).filter(c => c.asignaciones.length > 0).length}/{camareros.length}</span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Leyenda */}
-      <div className="flex items-center gap-4 mb-4 text-xs">
+      <div className="flex items-center gap-4 mb-4 text-xs flex-wrap">
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded bg-emerald-500"></div>
           <span className="text-slate-600">Completo</span>
@@ -97,6 +201,14 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded bg-amber-500"></div>
           <span className="text-slate-600">Parcial</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded bg-red-500"></div>
+          <span className="text-slate-600">Alta demanda</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3 text-orange-500" />
+          <span className="text-slate-600">Conflictos disponibilidad</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded bg-slate-300"></div>
@@ -121,11 +233,18 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
           const tieneEventos = datos.pedidos.length > 0;
           
           let colorFondo = 'bg-slate-50';
+          let colorBorde = 'border-slate-200';
+          
           if (tieneEventos) {
-            if (datos.pendientes === 0) {
+            if (datos.altaDemanda) {
+              colorFondo = 'bg-red-50';
+              colorBorde = 'border-red-300';
+            } else if (datos.pendientes === 0) {
               colorFondo = 'bg-emerald-50';
+              colorBorde = 'border-emerald-300';
             } else if (datos.asignados > 0) {
               colorFondo = 'bg-amber-50';
+              colorBorde = 'border-amber-300';
             }
           }
 
@@ -133,8 +252,8 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
             <div
               key={dia.toString()}
               className={`
-                min-h-[100px] p-2 rounded-lg border transition-all
-                ${esHoy ? 'border-[#1e3a5f] border-2 shadow-md' : 'border-slate-200'}
+                ${vistaDetalle ? 'min-h-[140px]' : 'min-h-[100px]'} p-2 rounded-lg border transition-all
+                ${esHoy ? 'border-[#1e3a5f] border-2 shadow-md' : colorBorde}
                 ${!esMesActual ? 'opacity-40' : ''}
                 ${colorFondo}
                 hover:shadow-sm cursor-pointer
@@ -144,40 +263,70 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
                 <span className={`text-sm font-medium ${esHoy ? 'text-[#1e3a5f]' : 'text-slate-700'}`}>
                   {format(dia, 'd')}
                 </span>
-                {tieneEventos && (
-                  <Badge variant="outline" className="text-xs px-1 h-5">
-                    {datos.pedidos.length}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-1">
+                  {datos.conflictos > 0 && (
+                    <AlertTriangle className="w-3 h-3 text-orange-500" title="Conflictos de disponibilidad" />
+                  )}
+                  {tieneEventos && (
+                    <Badge variant="outline" className="text-xs px-1 h-5">
+                      {datos.pedidos.length}
+                    </Badge>
+                  )}
+                </div>
               </div>
 
               {tieneEventos && (
                 <div className="space-y-1">
-                  {datos.pedidos.slice(0, 2).map(pedido => (
-                    <div 
-                      key={pedido.id} 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectPedido?.(pedido);
-                      }}
-                      className="text-xs bg-white rounded p-1 border border-slate-200 hover:bg-slate-50 hover:shadow transition-all cursor-pointer"
-                    >
-                      <p className="font-medium text-slate-700 truncate">{pedido.cliente}</p>
-                      <div className="flex items-center justify-between text-slate-500 mt-0.5">
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          {asignaciones.filter(a => a.pedido_id === pedido.id).length}
-                          /{pedido.turnos?.length > 0 
-                            ? pedido.turnos.reduce((s, t) => s + (t.cantidad_camareros || 0), 0)
-                            : (pedido.cantidad_camareros || 0)
-                          }
-                        </span>
-                      </div>
+                  {vistaDetalle && (
+                    <div className="text-xs text-slate-600 mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {datos.asignados}/{datos.totalCamareros}
+                      </span>
+                      {datos.altaDemanda && (
+                        <AlertCircle className="w-3 h-3 text-red-500" title="Alta demanda" />
+                      )}
                     </div>
-                  ))}
-                  {datos.pedidos.length > 2 && (
+                  )}
+                  
+                  {datos.pedidos.slice(0, vistaDetalle ? 3 : 2).map(pedido => {
+                    const asigsPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
+                    const totalNeeded = pedido.turnos?.length > 0 
+                      ? pedido.turnos.reduce((s, t) => s + (t.cantidad_camareros || 0), 0)
+                      : (pedido.cantidad_camareros || 0);
+                    const porcentaje = totalNeeded > 0 ? Math.round((asigsPedido.length / totalNeeded) * 100) : 0;
+                    
+                    return (
+                      <div 
+                        key={pedido.id} 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectPedido?.(pedido);
+                        }}
+                        className="text-xs bg-white rounded p-1 border border-slate-200 hover:bg-slate-50 hover:shadow transition-all cursor-pointer"
+                      >
+                        <p className="font-medium text-slate-700 truncate">{pedido.cliente}</p>
+                        <div className="flex items-center justify-between text-slate-500 mt-0.5">
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {asigsPedido.length}/{totalNeeded}
+                          </span>
+                          {vistaDetalle && (
+                            <span className={`text-xs font-semibold ${
+                              porcentaje === 100 ? 'text-emerald-600' :
+                              porcentaje > 0 ? 'text-amber-600' :
+                              'text-red-600'
+                            }`}>
+                              {porcentaje}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {datos.pedidos.length > (vistaDetalle ? 3 : 2) && (
                     <p className="text-xs text-slate-500 text-center">
-                      +{datos.pedidos.length - 2} más
+                      +{datos.pedidos.length - (vistaDetalle ? 3 : 2)} más
                     </p>
                   )}
                 </div>

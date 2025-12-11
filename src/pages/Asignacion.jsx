@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import TareasService from '../components/camareros/TareasService';
 import CalendarioAsignaciones from '../components/asignacion/CalendarioAsignaciones';
+import CargaCamareros from '../components/asignacion/CargaCamareros';
 
 const estadoColors = {
   pendiente: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -35,6 +36,7 @@ export default function Asignacion() {
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [filtroHabilidad, setFiltroHabilidad] = useState('');
   const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
+  const [mostrarCarga, setMostrarCarga] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -251,9 +253,27 @@ export default function Asignacion() {
           <p className="text-slate-500 mt-1">Asigna camareros a los pedidos con recomendaciones inteligentes</p>
         </div>
 
-        {/* Calendario */}
-        <div className="mb-6">
-          <CalendarioAsignaciones onSelectPedido={setSelectedPedido} />
+        {/* Calendario y Carga */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className={mostrarCarga ? 'lg:col-span-2' : 'lg:col-span-3'}>
+            <CalendarioAsignaciones onSelectPedido={setSelectedPedido} />
+          </div>
+          {mostrarCarga && (
+            <div>
+              <CargaCamareros mes={new Date()} />
+            </div>
+          )}
+        </div>
+
+        {/* Toggle Carga */}
+        <div className="mb-6 flex justify-end">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setMostrarCarga(!mostrarCarga)}
+          >
+            {mostrarCarga ? 'Ocultar' : 'Mostrar'} Carga de Trabajo
+          </Button>
         </div>
 
         {/* Asignación con Drag & Drop */}
