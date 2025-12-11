@@ -202,17 +202,6 @@ export default function Asignacion() {
     return Array.from(habs).sort();
   }, [camareros]);
 
-  // Filtrar pedidos
-  const pedidosFiltrados = useMemo(() => {
-    return pedidos.filter(p => {
-      const matchBusqueda = !busqueda || 
-        p.cliente?.toLowerCase().includes(busqueda.toLowerCase()) ||
-        p.lugar_evento?.toLowerCase().includes(busqueda.toLowerCase());
-      const matchFecha = !filtroFecha || p.dia === filtroFecha;
-      return matchBusqueda && matchFecha;
-    });
-  }, [pedidos, busqueda, filtroFecha]);
-
   const handleAsignarCamarero = (pedido, camarero) => {
     createAsignacionMutation.mutate({
       pedido_id: pedido.id,
