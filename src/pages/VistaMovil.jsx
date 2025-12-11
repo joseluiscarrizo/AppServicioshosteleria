@@ -7,16 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bell, Calendar, MapPin, Clock, User, Navigation, Phone, CheckCircle2 } from 'lucide-react';
+import { Bell, Calendar, MapPin, Clock, User, Navigation, Phone, CheckCircle2, BellRing } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import NotificacionesCamarero from '../components/camareros/NotificacionesCamarero';
 import MapaEventos from '../components/mapa/MapaEventos';
 import TareasPendientes from '../components/camareros/TareasPendientes';
+import useWebPushNotifications from '../components/notificaciones/WebPushService';
+import { useNotificationPolling } from '../components/notificaciones/NotificationPolling';
 
 export default function VistaMovil() {
   const [selectedCamarero, setSelectedCamarero] = useState(null);
   const [activeTab, setActiveTab] = useState('notificaciones');
+  const { permission, requestPermission, canNotify } = useWebPushNotifications();
 
   const { data: camareros = [] } = useQuery({
     queryKey: ['camareros'],
@@ -41,9 +44,29 @@ export default function VistaMovil() {
       '-created_date',
       50
     ),
-    enabled: !!selectedCamarero?.id,
-    refetchInterval: 10000
+    enabled: !!selectedCamarero?.id
   });
+
+  // Activar polling de notificaciones
+  useNotificationPolling(selectedCamarero?.id, !!selectedCamarero?.id);
+
+  // Auto-seleccionar camarero desde localStorage
+  useEffect(() => {
+    const savedCamareroId = localStorage.getItem('selectedCamareroId');
+    if (savedCamareroId && camareros.length > 0) {
+      const camarero = camareros.find(c => c.id === savedCamareroId);
+      if (camarero) {
+        setSelectedCamarero(camarero);
+      }
+    }
+  }, [camareros]);
+
+  // Guardar selección
+  useEffect(() => {
+    if (selectedCamarero?.id) {
+      localStorage.setItem('selectedCamareroId', selectedCamarero.id);
+    }
+  }, [selectedCamarero]);
 
   // Obtener pedidos del camarero
   const misPedidos = selectedCamarero ? asignaciones
@@ -68,9 +91,30 @@ export default function VistaMovil() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-lg mx-auto px-4 py-6">
         {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-slate-800">Portal Camarero</h1>
-          <p className="text-slate-500 text-sm">Gestiona tus asignaciones</p>
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800">Portal Camarero</h1>
+              <p className="text-slate-500 text-sm">Gestiona tus asignaciones</p>
+            </div>
+            {selectedCamarero && !canNotify && permission !== 'denied' && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={requestPermission}
+                className="border-amber-300 text-amber-700 hover:bg-amber-50"
+              >
+                <BellRing className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">Push</span>
+              </Button>
+            )}
+          </div>
+          {canNotify && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 flex items-center gap-2">
+              <BellRing className="w-4 h-4 text-emerald-600" />
+              <span className="text-xs text-emerald-700">Notificaciones activas</span>
+            </div>
+          )}
         </div>
 
         {/* Selector de Camarero */}
