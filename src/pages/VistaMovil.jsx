@@ -15,12 +15,12 @@ import MapaEventos from '../components/mapa/MapaEventos';
 import TareasPendientes from '../components/camareros/TareasPendientes';
 import useWebPushNotifications from '../components/notificaciones/WebPushService';
 import { useNotificationPolling } from '../components/notificaciones/NotificationPolling';
+import NotificacionesAutomaticas from '../components/notificaciones/NotificacionesAutomaticas';
 
 export default function VistaMovil() {
   const [selectedCamarero, setSelectedCamarero] = useState(null);
   const [activeTab, setActiveTab] = useState('notificaciones');
-  const { showNotification, isAllowed, requestPermission } = useWebPushNotifications();
-  const { permission, requestPermission, canNotify } = useWebPushNotifications();
+  const { showNotification, permission, requestPermission, canNotify } = useWebPushNotifications();
 
   const { data: camareros = [] } = useQuery({
     queryKey: ['camareros'],
@@ -90,6 +90,13 @@ export default function VistaMovil() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      {/* Sistema de Notificaciones Automáticas */}
+      {selectedCamarero && (
+        <NotificacionesAutomaticas 
+          showPushNotifications={canNotify ? showNotification : null}
+        />
+      )}
+      
       <div className="max-w-lg mx-auto px-4 py-6">
         {/* Header */}
         <div className="mb-6">
