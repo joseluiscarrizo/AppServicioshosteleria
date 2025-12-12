@@ -8,6 +8,7 @@ import NotificationBell from './components/notificaciones/NotificationBell';
 
 const navItems = [
   { name: 'Pedidos', page: 'Pedidos', icon: ClipboardList },
+  { name: 'Clientes', page: 'Clientes', icon: Users },
   { name: 'Camareros', page: 'Camareros', icon: UserPlus },
   { name: 'Asignación', page: 'Asignacion', icon: UserCog },
   { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
