@@ -19,6 +19,7 @@ import { useNotificationPolling } from '../components/notificaciones/Notificatio
 export default function VistaMovil() {
   const [selectedCamarero, setSelectedCamarero] = useState(null);
   const [activeTab, setActiveTab] = useState('notificaciones');
+  const { showNotification, isAllowed, requestPermission } = useWebPushNotifications();
   const { permission, requestPermission, canNotify } = useWebPushNotifications();
 
   const { data: camareros = [] } = useQuery({

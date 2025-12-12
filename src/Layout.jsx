@@ -5,6 +5,8 @@ import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Cloc
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
 import NotificationBell from './components/notificaciones/NotificationBell';
+import NotificacionesAutomaticas from './components/notificaciones/NotificacionesAutomaticas';
+import { useWebPushNotifications } from './components/notificaciones/WebPushService';
 
 const navItems = [
   { name: 'Pedidos', page: 'Pedidos', icon: ClipboardList },
@@ -18,9 +20,22 @@ const navItems = [
 
 export default function Layout({ children, currentPageName }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { showNotification, isAllowed, requestPermission } = useWebPushNotifications();
+  
+  // Solicitar permisos al cargar la app
+  React.useEffect(() => {
+    if (!isAllowed && Notification.permission === 'default') {
+      setTimeout(() => requestPermission(), 2000);
+    }
+  }, [isAllowed, requestPermission]);
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Sistema de Notificaciones Automáticas Global */}
+      <NotificacionesAutomaticas 
+        showPushNotifications={isAllowed ? showNotification : null}
+      />
+      
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
