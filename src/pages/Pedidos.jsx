@@ -16,10 +16,12 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import AIExtractor from '../components/pedidos/AIExtractor';
 import TurnosEditor from '../components/pedidos/TurnosEditor';
+import EntradaAutomatica from '../components/pedidos/EntradaAutomatica';
 
 export default function Pedidos() {
   const [showForm, setShowForm] = useState(false);
   const [showAIExtractor, setShowAIExtractor] = useState(false);
+  const [showEntradaAuto, setShowEntradaAuto] = useState(false);
   const [editingPedido, setEditingPedido] = useState(null);
   const [formData, setFormData] = useState({
     cliente: '',
@@ -165,6 +167,14 @@ export default function Pedidos() {
             <p className="text-slate-500 mt-1">Gestiona los pedidos de clientes</p>
           </div>
           <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowEntradaAuto(true)}
+              variant="outline"
+              className="border-emerald-600 text-emerald-600 hover:bg-emerald-50"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Entrada Automatizada
+            </Button>
             <Button 
               onClick={() => setShowAIExtractor(true)}
               variant="outline"
@@ -448,6 +458,16 @@ export default function Pedidos() {
                 </Button>
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Entrada Automatizada */}
+        <Dialog open={showEntradaAuto} onOpenChange={setShowEntradaAuto}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Entrada Automatizada de Pedidos</DialogTitle>
+            </DialogHeader>
+            <EntradaAutomatica />
           </DialogContent>
         </Dialog>
 
