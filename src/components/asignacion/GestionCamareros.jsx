@@ -45,6 +45,11 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
     queryFn: () => base44.entities.Coordinador.list('nombre')
   });
 
+  const { data: camareros = [] } = useQuery({
+    queryKey: ['camareros'],
+    queryFn: () => base44.entities.Camarero.list('codigo')
+  });
+
   React.useEffect(() => {
     if (editingCamarero) {
       setFormData({
@@ -93,10 +98,25 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    let dataToSubmit = { ...formData };
+    
+    // Generar código automático si es nuevo camarero
+    if (!editingCamarero) {
+      const maxCodigo = camareros.reduce((max, c) => {
+        if (c.codigo && c.codigo.startsWith('CAM')) {
+          const num = parseInt(c.codigo.substring(3));
+          return Math.max(max, isNaN(num) ? 0 : num);
+        }
+        return max;
+      }, 0);
+      dataToSubmit.codigo = `CAM${String(maxCodigo + 1).padStart(3, '0')}`;
+    }
+    
     if (editingCamarero) {
-      updateMutation.mutate({ id: editingCamarero.id, data: formData });
+      updateMutation.mutate({ id: editingCamarero.id, data: dataToSubmit });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(dataToSubmit);
     }
   };
 
@@ -124,27 +144,43 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
             </TabsList>
 
             <TabsContent value="info" className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="codigo">Código *</Label>
-                  <Input
-                    id="codigo"
-                    value={formData.codigo}
-                    onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-                    placeholder="CAM001"
-                    required
-                  />
+              {/* Código automático */}
+              {!editingCamarero && (
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <Label className="text-xs text-slate-500">Código Automático del Camarero</Label>
+                  <p className="font-mono font-semibold text-lg text-[#1e3a5f]">
+                    {(() => {
+                      const maxCodigo = camareros.reduce((max, c) => {
+                        if (c.codigo && c.codigo.startsWith('CAM')) {
+                          const num = parseInt(c.codigo.substring(3));
+                          return Math.max(max, isNaN(num) ? 0 : num);
+                        }
+                        return max;
+                      }, 0);
+                      return `CAM${String(maxCodigo + 1).padStart(3, '0')}`;
+                    })()}
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nombre">Nombre *</Label>
-                  <Input
-                    id="nombre"
-                    value={formData.nombre}
-                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                    placeholder="Nombre completo"
-                    required
-                  />
+              )}
+
+              {editingCamarero && (
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <Label className="text-xs text-slate-500">Código del Camarero</Label>
+                  <p className="font-mono font-semibold text-lg text-[#1e3a5f]">
+                    {formData.codigo}
+                  </p>
                 </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="nombre">Nombre *</Label>
+                <Input
+                  id="nombre"
+                  value={formData.nombre}
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  placeholder="Nombre completo"
+                  required
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
