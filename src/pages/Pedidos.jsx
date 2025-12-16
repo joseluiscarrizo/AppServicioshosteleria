@@ -27,8 +27,15 @@ export default function Pedidos() {
   const [editingPedido, setEditingPedido] = useState(null);
   const [edicionRapida, setEdicionRapida] = useState({ open: false, pedido: null, campo: null });
   const [formData, setFormData] = useState({
+    codigo_pedido: '',
     cliente_id: '',
     cliente: '',
+    cliente_email_1: '',
+    cliente_email_2: '',
+    cliente_telefono_1: '',
+    cliente_telefono_2: '',
+    cliente_persona_contacto_1: '',
+    cliente_persona_contacto_2: '',
     lugar_evento: '',
     dia: '',
     turnos: [],
@@ -79,10 +86,17 @@ export default function Pedidos() {
     setShowForm(false);
     setEditingPedido(null);
     setFormData({
+      codigo_pedido: '',
       numero_cliente: 0,
       numero_pedido_cliente: 0,
       cliente_id: '',
       cliente: '',
+      cliente_email_1: '',
+      cliente_email_2: '',
+      cliente_telefono_1: '',
+      cliente_telefono_2: '',
+      cliente_persona_contacto_1: '',
+      cliente_persona_contacto_2: '',
       lugar_evento: '',
       link_ubicacion: '',
       dia: '',
@@ -96,10 +110,17 @@ export default function Pedidos() {
   const handleEdit = (pedido) => {
     setEditingPedido(pedido);
     setFormData({
+      codigo_pedido: pedido.codigo_pedido || '',
       numero_cliente: pedido.numero_cliente || 0,
       numero_pedido_cliente: pedido.numero_pedido_cliente || 0,
       cliente_id: pedido.cliente_id || '',
       cliente: pedido.cliente || '',
+      cliente_email_1: pedido.cliente_email_1 || '',
+      cliente_email_2: pedido.cliente_email_2 || '',
+      cliente_telefono_1: pedido.cliente_telefono_1 || '',
+      cliente_telefono_2: pedido.cliente_telefono_2 || '',
+      cliente_persona_contacto_1: pedido.cliente_persona_contacto_1 || '',
+      cliente_persona_contacto_2: pedido.cliente_persona_contacto_2 || '',
       lugar_evento: pedido.lugar_evento || '',
       link_ubicacion: pedido.link_ubicacion || '',
       dia: pedido.dia ? pedido.dia.split('T')[0] : '',
@@ -117,6 +138,16 @@ export default function Pedidos() {
     // Generar números automáticos si es nuevo
     let dataToSubmit = { ...formData };
     if (!editingPedido) {
+      // Generar código P001, P002, etc.
+      const maxCodigo = pedidos.reduce((max, p) => {
+        if (p.codigo_pedido && p.codigo_pedido.startsWith('P')) {
+          const num = parseInt(p.codigo_pedido.substring(1));
+          return Math.max(max, num);
+        }
+        return max;
+      }, 0);
+      dataToSubmit.codigo_pedido = `P${String(maxCodigo + 1).padStart(3, '0')}`;
+      
       const maxNumeroCliente = pedidos.reduce((max, p) => Math.max(max, p.numero_cliente || 0), 0);
       const maxNumeroPedido = pedidos.reduce((max, p) => Math.max(max, p.numero_pedido_cliente || 0), 0);
       dataToSubmit.numero_cliente = maxNumeroCliente + 1;
@@ -264,8 +295,8 @@ export default function Pedidos() {
                       exit={{ opacity: 0 }}
                       className="border-b hover:bg-slate-50/50"
                     >
-                      <TableCell className="font-mono text-sm text-slate-500">
-                        #{pedido.numero_pedido_cliente || '-'}
+                      <TableCell className="font-mono text-sm font-semibold text-[#1e3a5f]">
+                        {pedido.codigo_pedido || '-'}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -374,21 +405,31 @@ export default function Pedidos() {
               <DialogTitle>{editingPedido ? 'Editar Pedido' : 'Nuevo Pedido'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Números automáticos */}
+              {/* Código automático de pedido */}
               {!editingPedido && (
-                <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 rounded-lg">
-                  <div>
-                    <Label className="text-xs text-slate-500">Nº Cliente (auto)</Label>
-                    <p className="font-mono font-semibold text-slate-700">
-                      #{(pedidos.reduce((max, p) => Math.max(max, p.numero_cliente || 0), 0) + 1)}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-slate-500">Nº Pedido (auto)</Label>
-                    <p className="font-mono font-semibold text-slate-700">
-                      #{(pedidos.reduce((max, p) => Math.max(max, p.numero_pedido_cliente || 0), 0) + 1)}
-                    </p>
-                  </div>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <Label className="text-xs text-slate-500">Número Automático de Pedido</Label>
+                  <p className="font-mono font-semibold text-lg text-[#1e3a5f]">
+                    {(() => {
+                      const maxCodigo = pedidos.reduce((max, p) => {
+                        if (p.codigo_pedido && p.codigo_pedido.startsWith('P')) {
+                          const num = parseInt(p.codigo_pedido.substring(1));
+                          return Math.max(max, num);
+                        }
+                        return max;
+                      }, 0);
+                      return `P${String(maxCodigo + 1).padStart(3, '0')}`;
+                    })()}
+                  </p>
+                </div>
+              )}
+
+              {editingPedido && formData.codigo_pedido && (
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <Label className="text-xs text-slate-500">Número de Pedido</Label>
+                  <p className="font-mono font-semibold text-lg text-[#1e3a5f]">
+                    {formData.codigo_pedido}
+                  </p>
                 </div>
               )}
               
@@ -402,7 +443,13 @@ export default function Pedidos() {
                 setFormData({ 
                   ...formData, 
                   cliente_id: e.target.value,
-                  cliente: selectedCliente?.nombre || ''
+                  cliente: selectedCliente?.nombre || '',
+                  cliente_email_1: selectedCliente?.email_1 || '',
+                  cliente_email_2: selectedCliente?.email_2 || '',
+                  cliente_telefono_1: selectedCliente?.telefono_1 || '',
+                  cliente_telefono_2: selectedCliente?.telefono_2 || '',
+                  cliente_persona_contacto_1: selectedCliente?.persona_contacto_1 || '',
+                  cliente_persona_contacto_2: selectedCliente?.persona_contacto_2 || ''
                 });
               }}
               className="w-full h-10 px-3 rounded-md border border-slate-200 focus:border-[#1e3a5f] focus:ring-[#1e3a5f] focus:outline-none"
