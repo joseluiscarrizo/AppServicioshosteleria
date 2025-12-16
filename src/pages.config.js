@@ -10,6 +10,7 @@ import ConfirmarServicio from './pages/ConfirmarServicio';
 import TableroEventos from './pages/TableroEventos';
 import PerfilCamarero from './pages/PerfilCamarero';
 import Clientes from './pages/Clientes';
+import DashboardCoordinador from './pages/DashboardCoordinador';
 import __Layout from './Layout.jsx';
 
 
@@ -26,6 +27,7 @@ export const PAGES = {
     "TableroEventos": TableroEventos,
     "PerfilCamarero": PerfilCamarero,
     "Clientes": Clientes,
+    "DashboardCoordinador": DashboardCoordinador,
 }
 
 export const pagesConfig = {

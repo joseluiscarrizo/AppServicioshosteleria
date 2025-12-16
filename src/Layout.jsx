@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users } from 'lucide-react';
+import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users, LayoutDashboard } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
 import NotificationBell from './components/notificaciones/NotificationBell';
@@ -9,6 +9,7 @@ import NotificacionesAutomaticas from './components/notificaciones/Notificacione
 import { useWebPushNotifications } from './components/notificaciones/WebPushService';
 
 const navItems = [
+  { name: 'Dashboard', page: 'DashboardCoordinador', icon: LayoutDashboard },
   { name: 'Pedidos', page: 'Pedidos', icon: ClipboardList },
   { name: 'Clientes', page: 'Clientes', icon: Users },
   { name: 'Camareros', page: 'Camareros', icon: UserPlus },
