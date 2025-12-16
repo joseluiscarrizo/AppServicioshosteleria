@@ -31,6 +31,7 @@ export default function Camareros() {
   const [filtroDisponibilidad, setFiltroDisponibilidad] = useState('todos');
   const [filtroEspecialidad, setFiltroEspecialidad] = useState('todos');
   const [filtroHabilidad, setFiltroHabilidad] = useState('todos');
+  const [mostrarReserva, setMostrarReserva] = useState(false);
   const [showValoracion, setShowValoracion] = useState(false);
   const [camareroParaValorar, setCamareroParaValorar] = useState(null);
   const [showHistorial, setShowHistorial] = useState(false);
@@ -55,8 +56,15 @@ export default function Camareros() {
   // Obtener habilidades únicas
   const todasHabilidades = [...new Set(camareros.flatMap(c => c.habilidades || []))].sort();
 
-  // Filtrar camareros
+  // Filtrar camareros activos y en reserva
   const camarerosFiltrados = camareros.filter(c => {
+    // Filtrar por estado de reserva
+    if (mostrarReserva) {
+      if (!c.en_reserva) return false;
+    } else {
+      if (c.en_reserva) return false;
+    }
+
     const matchBusqueda = !busqueda || 
       c.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
       c.codigo?.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -72,6 +80,9 @@ export default function Camareros() {
     
     return matchBusqueda && matchDisponibilidad && matchEspecialidad && matchHabilidad;
   });
+
+  const camarerosFiltradosActivos = camareros.filter(c => !c.en_reserva);
+  const camarerosFiltradosReserva = camareros.filter(c => c.en_reserva);
 
   const handleEdit = (camarero) => {
     setEditingCamarero(camarero);
@@ -126,21 +137,25 @@ export default function Camareros() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <Card className="p-4">
-            <p className="text-sm text-slate-500">Total Camareros</p>
-            <p className="text-2xl font-bold text-slate-800">{camareros.length}</p>
+            <p className="text-sm text-slate-500">Total Activos</p>
+            <p className="text-2xl font-bold text-slate-800">{camarerosFiltradosActivos.length}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-sm text-slate-500">En Reserva</p>
+            <p className="text-2xl font-bold text-amber-600">{camarerosFiltradosReserva.length}</p>
           </Card>
           <Card className="p-4">
             <p className="text-sm text-slate-500">Disponibles</p>
             <p className="text-2xl font-bold text-emerald-600">
-              {camareros.filter(c => c.disponible).length}
+              {camareros.filter(c => c.disponible && !c.en_reserva).length}
             </p>
           </Card>
           <Card className="p-4">
             <p className="text-sm text-slate-500">No Disponibles</p>
             <p className="text-2xl font-bold text-red-600">
-              {camareros.filter(c => !c.disponible).length}
+              {camareros.filter(c => !c.disponible && !c.en_reserva).length}
             </p>
           </Card>
           <Card className="p-4">
@@ -150,6 +165,24 @@ export default function Camareros() {
               {(camareros.reduce((sum, c) => sum + (c.valoracion_promedio || 0), 0) / camareros.length || 0).toFixed(1)}
             </p>
           </Card>
+        </div>
+
+        {/* Tabs para Activos/Reserva */}
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={!mostrarReserva ? 'default' : 'outline'}
+            onClick={() => setMostrarReserva(false)}
+            className={!mostrarReserva ? 'bg-[#1e3a5f] hover:bg-[#152a45]' : ''}
+          >
+            Camareros Activos ({camarerosFiltradosActivos.length})
+          </Button>
+          <Button
+            variant={mostrarReserva ? 'default' : 'outline'}
+            onClick={() => setMostrarReserva(true)}
+            className={mostrarReserva ? 'bg-amber-600 hover:bg-amber-700' : 'border-amber-600 text-amber-600 hover:bg-amber-50'}
+          >
+            En Reserva ({camarerosFiltradosReserva.length})
+          </Button>
         </div>
 
         {/* Filtros */}

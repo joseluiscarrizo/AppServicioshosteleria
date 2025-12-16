@@ -28,6 +28,7 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
     telefono: '',
     email: '',
     disponible: true,
+    en_reserva: false,
     tallas_camisa: '',
     especialidad: 'general',
     habilidades: [],
@@ -66,6 +67,7 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
         telefono: '',
         email: '',
         disponible: true,
+        en_reserva: false,
         tallas_camisa: '',
         especialidad: 'general',
         habilidades: [],
@@ -244,15 +246,27 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="disponible"
-                  checked={formData.disponible}
-                  onCheckedChange={(v) => setFormData({ ...formData, disponible: v })}
-                />
-                <Label htmlFor="disponible" className="cursor-pointer">
-                  Disponible para asignaciones
-                </Label>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="disponible"
+                    checked={formData.disponible}
+                    onCheckedChange={(v) => setFormData({ ...formData, disponible: v })}
+                  />
+                  <Label htmlFor="disponible" className="cursor-pointer">
+                    Disponible para asignaciones
+                  </Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="en_reserva"
+                    checked={formData.en_reserva}
+                    onCheckedChange={(v) => setFormData({ ...formData, en_reserva: v })}
+                  />
+                  <Label htmlFor="en_reserva" className="cursor-pointer">
+                    En Reserva (no aparece en lista activa)
+                  </Label>
+                </div>
               </div>
 
               <div className="space-y-2">
