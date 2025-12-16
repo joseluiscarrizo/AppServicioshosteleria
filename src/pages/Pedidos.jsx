@@ -401,31 +401,16 @@ export default function Pedidos() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Email Cliente 1</Label>
-                  <Input
-                    type="email"
-                    value={formData.cliente_email}
-                    onChange={(e) => setFormData({ ...formData, cliente_email: e.target.value })}
-                    placeholder="email1@cliente.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email Cliente 2</Label>
-                  <Input
-                    type="email"
-                    value={formData.cliente_email_2}
-                    onChange={(e) => setFormData({ ...formData, cliente_email_2: e.target.value })}
-                    placeholder="email2@cliente.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email Cliente 3</Label>
-                  <Input
-                    type="email"
-                    value={formData.cliente_email_3}
-                    onChange={(e) => setFormData({ ...formData, cliente_email_3: e.target.value })}
-                    placeholder="email3@cliente.com"
-                  />
+                  <Label>Camisa *</Label>
+                  <select
+                    value={formData.camisa}
+                    onChange={(e) => setFormData({ ...formData, camisa: e.target.value })}
+                    className="w-full h-10 px-3 rounded-md border border-slate-200 focus:border-[#1e3a5f] focus:ring-[#1e3a5f] focus:outline-none"
+                    required
+                  >
+                    <option value="blanca">Blanca</option>
+                    <option value="negra">Negra</option>
+                  </select>
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label>Día *</Label>
@@ -451,18 +436,6 @@ export default function Pedidos() {
                     onChange={(e) => setFormData({ ...formData, link_ubicacion: e.target.value })}
                     placeholder="https://maps.google.com/..."
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label>Camisa *</Label>
-                  <select
-                    value={formData.camisa}
-                    onChange={(e) => setFormData({ ...formData, camisa: e.target.value })}
-                    className="w-full h-10 px-3 rounded-md border border-slate-200 focus:border-[#1e3a5f] focus:ring-[#1e3a5f] focus:outline-none"
-                    required
-                  >
-                    <option value="blanca">Blanca</option>
-                    <option value="negra">Negra</option>
-                  </select>
                 </div>
               </div>
 
