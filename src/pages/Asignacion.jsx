@@ -399,9 +399,10 @@ Sistema de Gestión de Camareros
                   <CargaTrabajoCamareros mes={new Date()} />
                 </div>
               )}
+            </div>
 
-        {/* Controles */}
-        <div className="mb-6 flex justify-between items-center">
+            {/* Controles */}
+            <div className="mb-6 flex justify-between items-center">
           <Button 
             variant="outline" 
             size="sm"
