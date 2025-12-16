@@ -345,63 +345,20 @@ export default function CalendarioAsignacionRapida() {
             </ScrollArea>
 
             {/* Panel de Camareros Disponibles */}
-            <div className="border-l pl-4">
+            <div className="border-l pl-4 flex flex-col h-full">
               {selectedPedidoAsignacion ? (
-                <div>
-                  <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#1e3a5f]" />
-                    Camareros Disponibles
-                  </h4>
-                  <ScrollArea className="h-[55vh]">
-                    <div className="space-y-2 pr-3">
-                      {getCamarerosDisponibles(selectedPedidoAsignacion).map(camarero => (
-                        <Card 
-                          key={camarero.id}
-                          className="p-3 hover:shadow-md transition-all cursor-pointer hover:border-[#1e3a5f]"
-                          onClick={() => handleAsignarCamarero(selectedPedidoAsignacion, camarero)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-slate-800">{camarero.nombre}</span>
-                                {camarero.valoracion_promedio > 0 && (
-                                  <span className="flex items-center gap-0.5 text-amber-500 text-xs">
-                                    <Star className="w-3 h-3 fill-amber-400" />
-                                    {camarero.valoracion_promedio.toFixed(1)}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-slate-500 font-mono">#{camarero.codigo}</p>
-                              {camarero.especialidad && (
-                                <Badge variant="outline" className="text-xs mt-1">
-                                  {camarero.especialidad}
-                                </Badge>
-                              )}
-                            </div>
-                            <Button size="sm" variant="outline">
-                              <Plus className="w-4 h-4 mr-1" />
-                              Asignar
-                            </Button>
-                          </div>
-                        </Card>
-                      ))}
-                      {getCamarerosDisponibles(selectedPedidoAsignacion).length === 0 && (
-                        <div className="text-center py-8 text-slate-400">
-                          <Users className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                          <p className="text-sm">No hay camareros disponibles</p>
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
-
-                  {/* Asignaciones Actuales */}
+                <>
+                  {/* Asignaciones Actuales - Arriba */}
                   {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).length > 0 && (
-                    <div className="mt-4 pt-4 border-t">
-                      <h5 className="text-sm font-semibold text-slate-700 mb-2">Asignados:</h5>
+                    <div className="mb-4 pb-4 border-b">
+                      <h5 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-emerald-600" />
+                        Camareros Asignados ({asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).length})
+                      </h5>
                       <div className="space-y-1">
                         {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).map(asig => (
-                          <div key={asig.id} className="flex items-center justify-between text-sm p-2 bg-slate-50 rounded">
-                            <span className="text-slate-700">{asig.camarero_nombre}</span>
+                          <div key={asig.id} className="flex items-center justify-between text-sm p-2 bg-emerald-50 border border-emerald-200 rounded">
+                            <span className="text-slate-800 font-medium">{asig.camarero_nombre}</span>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -418,7 +375,56 @@ export default function CalendarioAsignacionRapida() {
                       </div>
                     </div>
                   )}
-                </div>
+
+                  {/* Camareros Disponibles */}
+                  <div className="flex-1 overflow-hidden flex flex-col">
+                    <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-[#1e3a5f]" />
+                      Camareros Disponibles
+                    </h4>
+                    <ScrollArea className="flex-1">
+                      <div className="space-y-2 pr-3">
+                        {getCamarerosDisponibles(selectedPedidoAsignacion).map(camarero => (
+                          <Card 
+                            key={camarero.id}
+                            className="p-3 hover:shadow-md transition-all cursor-pointer hover:border-[#1e3a5f]"
+                            onClick={() => handleAsignarCamarero(selectedPedidoAsignacion, camarero)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-slate-800">{camarero.nombre}</span>
+                                  {camarero.valoracion_promedio > 0 && (
+                                    <span className="flex items-center gap-0.5 text-amber-500 text-xs">
+                                      <Star className="w-3 h-3 fill-amber-400" />
+                                      {camarero.valoracion_promedio.toFixed(1)}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-slate-500 font-mono">#{camarero.codigo}</p>
+                                {camarero.especialidad && (
+                                  <Badge variant="outline" className="text-xs mt-1">
+                                    {camarero.especialidad}
+                                  </Badge>
+                                )}
+                              </div>
+                              <Button size="sm" variant="outline">
+                                <Plus className="w-4 h-4 mr-1" />
+                                Asignar
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+                        {getCamarerosDisponibles(selectedPedidoAsignacion).length === 0 && (
+                          <div className="text-center py-8 text-slate-400">
+                            <Users className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                            <p className="text-sm">No hay camareros disponibles</p>
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </>
               ) : (
                 <div className="flex items-center justify-center h-full text-slate-400">
                   <div className="text-center">
