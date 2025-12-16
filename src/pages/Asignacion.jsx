@@ -17,6 +17,7 @@ import { motion } from 'framer-motion';
 import TareasService from '../components/camareros/TareasService';
 import CalendarioAsignaciones from '../components/asignacion/CalendarioAsignaciones';
 import CargaCamareros from '../components/asignacion/CargaCamareros';
+import CargaTrabajoCamareros from '../components/asignacion/CargaTrabajoCamareros';
 import AsignacionAutomatica from '../components/asignacion/AsignacionAutomatica';
 
 const estadoColors = {
@@ -273,7 +274,7 @@ Sistema de Gestión de Camareros
     return Array.from(habs).sort();
   }, [camareros]);
 
-  const handleAsignarCamarero = (pedido, camarero) => {
+  const handleAsignarCamarero = (pedido, camarero, turnoIdx = null) => {
     // Verificar que no se exceda el límite de camareros
     const cantidadNecesaria = pedido.turnos?.length > 0 
       ? pedido.turnos.reduce((sum, t) => sum + (t.cantidad_camareros || 0), 0)
@@ -286,6 +287,16 @@ Sistema de Gestión de Camareros
       return;
     }
     
+    // Determinar horario según turno
+    let horaEntrada = pedido.entrada;
+    let horaSalida = pedido.salida;
+    
+    if (turnoIdx !== null && pedido.turnos && pedido.turnos[turnoIdx]) {
+      const turno = pedido.turnos[turnoIdx];
+      horaEntrada = turno.entrada;
+      horaSalida = turno.salida;
+    }
+    
     createAsignacionMutation.mutate({
       pedido_id: pedido.id,
       camarero_id: camarero.id,
@@ -293,8 +304,9 @@ Sistema de Gestión de Camareros
       camarero_codigo: camarero.codigo,
       estado: 'pendiente',
       fecha_pedido: pedido.dia,
-      hora_entrada: pedido.entrada,
-      hora_salida: pedido.salida
+      hora_entrada: horaEntrada,
+      hora_salida: horaSalida,
+      turno_index: turnoIdx
     });
   };
 
@@ -307,9 +319,14 @@ Sistema de Gestión de Camareros
     
     const camareroId = result.draggableId;
     const camarero = camareros.find(c => c.id === camareroId);
+    const destinationId = result.destination.droppableId;
+    
+    // Extraer información del droppable: "slot-turno-0" o "slots-asignacion"
+    const turnoMatch = destinationId.match(/slot-turno-(\d+)/);
+    const turnoIdx = turnoMatch ? parseInt(turnoMatch[1]) : null;
     
     if (camarero && selectedPedido) {
-      handleAsignarCamarero(selectedPedido, camarero);
+      handleAsignarCamarero(selectedPedido, camarero, turnoIdx);
     }
   };
 
@@ -334,7 +351,7 @@ Sistema de Gestión de Camareros
           </div>
           {mostrarCarga && (
             <div>
-              <CargaCamareros mes={new Date()} />
+              <CargaTrabajoCamareros mes={new Date()} />
             </div>
           )}
         </div>
@@ -547,21 +564,27 @@ Sistema de Gestión de Camareros
                                         {turno.entrada} - {turno.salida} • {turno.cantidad_camareros} camareros
                                       </span>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                      {Array.from({ length: turno.cantidad_camareros || 0 }).map((_, slotIdx) => {
-                                        const asignacion = asignacionesTurno[slotIdx];
+                                    <Droppable droppableId={`slot-turno-${turnoIdx}`}>
+                                      {(providedTurno, snapshotTurno) => (
+                                        <div 
+                                          ref={providedTurno.innerRef} 
+                                          {...providedTurno.droppableProps}
+                                          className="grid grid-cols-1 md:grid-cols-2 gap-3"
+                                        >
+                                          {Array.from({ length: turno.cantidad_camareros || 0 }).map((_, slotIdx) => {
+                                            const asignacion = asignacionesTurno[slotIdx];
 
-                                        return (
-                                          <div 
-                                            key={slotIdx}
-                                            className={`rounded-xl border-2 p-4 min-h-[120px] transition-all ${
-                                              asignacion 
-                                                ? `${estadoBgColors[asignacion.estado]} border-slate-200` 
-                                                : snapshot.isDraggingOver 
-                                                ? 'bg-[#1e3a5f]/10 border-[#1e3a5f] border-dashed'
-                                                : 'bg-slate-50 border-dashed border-slate-300'
-                                            }`}
-                                          >
+                                            return (
+                                              <div 
+                                                key={slotIdx}
+                                                className={`rounded-xl border-2 p-4 min-h-[120px] transition-all ${
+                                                  asignacion 
+                                                    ? `${estadoBgColors[asignacion.estado]} border-slate-200` 
+                                                    : snapshotTurno.isDraggingOver 
+                                                    ? 'bg-[#1e3a5f]/10 border-[#1e3a5f] border-dashed'
+                                                    : 'bg-slate-50 border-dashed border-slate-300'
+                                                }`}
+                                              >
                                             {asignacion ? (
                                               <div>
                                                 <div className="flex items-center justify-between mb-2">
@@ -606,11 +629,14 @@ Sistema de Gestión de Camareros
                                             )}
                                           </div>
                                         );
-                                      })}
-                                    </div>
-                                  </div>
-                                );
-                              })
+                                        })}
+                                        {providedTurno.placeholder}
+                                        </div>
+                                        )}
+                                        </Droppable>
+                                        </div>
+                                        );
+                                        })
                             ) : (
                               // Vista con un solo horario
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
