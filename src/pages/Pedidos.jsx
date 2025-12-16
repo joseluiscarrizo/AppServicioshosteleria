@@ -48,7 +48,14 @@ export default function Pedidos() {
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ['pedidos'],
-    queryFn: () => base44.entities.Pedido.list('-created_date', 200)
+    queryFn: async () => {
+      try {
+        return await base44.entities.Pedido.list('-created_date', 200);
+      } catch (error) {
+        console.error('Error cargando pedidos:', error);
+        return [];
+      }
+    }
   });
 
   const { data: clientes = [] } = useQuery({
