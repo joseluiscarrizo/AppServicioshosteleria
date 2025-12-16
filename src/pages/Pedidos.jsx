@@ -48,7 +48,7 @@ export default function Pedidos() {
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ['pedidos'],
-    queryFn: () => base44.entities.Pedido.list('-dia', 200)
+    queryFn: () => base44.entities.Pedido.list('-created_date', 200)
   });
 
   const { data: clientes = [] } = useQuery({
@@ -62,6 +62,10 @@ export default function Pedidos() {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       resetForm();
       toast.success('Pedido creado');
+    },
+    onError: (error) => {
+      console.error('Error al crear pedido:', error);
+      toast.error('Error al crear pedido: ' + (error.message || 'Error desconocido'));
     }
   });
 
