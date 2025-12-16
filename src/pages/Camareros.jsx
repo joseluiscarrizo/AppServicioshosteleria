@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, User, Star, Search, Filter, Award, MessageSquare, CheckCircle, XCircle, CalendarDays, UserCheck } from 'lucide-react';
+import { Plus, Pencil, User, Star, Search, Filter, Award, MessageSquare, CheckCircle, XCircle, CalendarDays, UserCheck, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
@@ -64,6 +64,17 @@ export default function Camareros() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['camareros'] });
       toast.success('Disponibilidad actualizada');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Camarero.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['camareros'] });
+      toast.success('Camarero eliminado correctamente');
+    },
+    onError: (error) => {
+      toast.error('Error al eliminar camarero: ' + error.message);
     }
   });
 
@@ -378,6 +389,19 @@ export default function Camareros() {
                           className="h-8 w-8"
                         >
                           <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => {
+                            if (confirm(`¿Estás seguro de eliminar a ${camarero.nombre}? Esta acción no se puede deshacer.`)) {
+                              deleteMutation.mutate(camarero.id);
+                            }
+                          }}
+                          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </TableCell>
