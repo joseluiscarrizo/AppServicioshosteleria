@@ -9,20 +9,23 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ClipboardList, X, Sparkles } from 'lucide-react';
+import { Plus, Pencil, Trash2, ClipboardList, X, Sparkles, Calendar, MapPin, Users, Ban } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Badge } from "@/components/ui/badge";
 import AIExtractor from '../components/pedidos/AIExtractor';
 import TurnosEditor from '../components/pedidos/TurnosEditor';
 import EntradaAutomatica from '../components/pedidos/EntradaAutomatica';
+import EdicionRapida from '../components/pedidos/EdicionRapida';
 
 export default function Pedidos() {
   const [showForm, setShowForm] = useState(false);
   const [showAIExtractor, setShowAIExtractor] = useState(false);
   const [showEntradaAuto, setShowEntradaAuto] = useState(false);
   const [editingPedido, setEditingPedido] = useState(null);
+  const [edicionRapida, setEdicionRapida] = useState({ open: false, pedido: null, campo: null });
   const [formData, setFormData] = useState({
     cliente: '',
     lugar_evento: '',
@@ -237,6 +240,7 @@ export default function Pedidos() {
               <TableHeader>
                 <TableRow className="bg-slate-50">
                   <TableHead className="font-semibold">Nº</TableHead>
+                  <TableHead className="font-semibold">Estado</TableHead>
                   <TableHead className="font-semibold">Cliente</TableHead>
                   <TableHead className="font-semibold">Lugar</TableHead>
                   <TableHead className="font-semibold text-center">Camareros</TableHead>
@@ -261,15 +265,54 @@ export default function Pedidos() {
                       <TableCell className="font-mono text-sm text-slate-500">
                         #{pedido.numero_pedido_cliente || '-'}
                       </TableCell>
-                      <TableCell className="font-medium">{pedido.cliente}</TableCell>
-                      <TableCell className="text-slate-600">{pedido.lugar_evento || '-'}</TableCell>
+                      <TableCell>
+                        <Badge
+                          className={`cursor-pointer ${
+                            pedido.estado_evento === 'cancelado' ? 'bg-red-100 text-red-700 hover:bg-red-200' :
+                            pedido.estado_evento === 'finalizado' ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' :
+                            pedido.estado_evento === 'en_curso' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
+                            'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                          }`}
+                          onClick={() => setEdicionRapida({ open: true, pedido, campo: 'estado' })}
+                        >
+                          {pedido.estado_evento === 'cancelado' && <Ban className="w-3 h-3 mr-1" />}
+                          {pedido.estado_evento === 'cancelado' ? 'Cancelado' :
+                           pedido.estado_evento === 'finalizado' ? 'Finalizado' :
+                           pedido.estado_evento === 'en_curso' ? 'En Curso' : 'Planificado'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell 
+                        className="font-medium cursor-pointer hover:text-[#1e3a5f] hover:underline"
+                        onClick={() => setEdicionRapida({ open: true, pedido, campo: 'cliente' })}
+                      >
+                        {pedido.cliente}
+                      </TableCell>
+                      <TableCell 
+                        className="text-slate-600 cursor-pointer hover:text-[#1e3a5f] hover:underline"
+                        onClick={() => setEdicionRapida({ open: true, pedido, campo: 'lugar' })}
+                      >
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {pedido.lugar_evento || 'Añadir lugar'}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-center">
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#1e3a5f]/10 text-[#1e3a5f] font-semibold">
+                        <span 
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#1e3a5f]/10 text-[#1e3a5f] font-semibold cursor-pointer hover:bg-[#1e3a5f]/20"
+                          onClick={() => setEdicionRapida({ open: true, pedido, campo: 'camareros' })}
+                          title="Gestionar camareros"
+                        >
                           {pedido.cantidad_camareros || 0}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        {pedido.dia ? format(new Date(pedido.dia), 'dd MMM yyyy', { locale: es }) : '-'}
+                      <TableCell
+                        className="cursor-pointer hover:text-[#1e3a5f] hover:underline"
+                        onClick={() => setEdicionRapida({ open: true, pedido, campo: 'fecha' })}
+                      >
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {pedido.dia ? format(new Date(pedido.dia), 'dd MMM yyyy', { locale: es }) : '-'}
+                        </div>
                       </TableCell>
                       <TableCell className="font-mono text-sm">
                         {pedido.entrada || '-'} - {pedido.salida || '-'}
@@ -312,7 +355,7 @@ export default function Pedidos() {
                 </AnimatePresence>
                 {pedidos.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={10} className="h-32 text-center text-slate-500">
+                    <TableCell colSpan={11} className="h-32 text-center text-slate-500">
                       No hay pedidos registrados
                     </TableCell>
                   </TableRow>
@@ -476,6 +519,14 @@ export default function Pedidos() {
           open={showAIExtractor}
           onClose={() => setShowAIExtractor(false)}
           onPedidoExtraido={handleAIExtraction}
+        />
+
+        {/* Edición Rápida */}
+        <EdicionRapida
+          pedido={edicionRapida.pedido}
+          open={edicionRapida.open}
+          onOpenChange={(open) => setEdicionRapida({ ...edicionRapida, open })}
+          campo={edicionRapida.campo}
         />
       </div>
     </div>
