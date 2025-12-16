@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import TareasService from '../components/camareros/TareasService';
 import CalendarioAsignaciones from '../components/asignacion/CalendarioAsignaciones';
+import CalendarioAsignacionRapida from '../components/asignacion/CalendarioAsignacionRapida';
 import CargaCamareros from '../components/asignacion/CargaCamareros';
 import CargaTrabajoCamareros from '../components/asignacion/CargaTrabajoCamareros';
 import AsignacionAutomatica from '../components/asignacion/AsignacionAutomatica';
@@ -40,6 +41,7 @@ export default function Asignacion() {
   const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
   const [mostrarCarga, setMostrarCarga] = useState(false);
   const [showAsignacionAuto, setShowAsignacionAuto] = useState(false);
+  const [vistaCalendario, setVistaCalendario] = useState('avanzado'); // 'avanzado' o 'clasico'
 
   const queryClient = useQueryClient();
 
@@ -366,17 +368,37 @@ Sistema de Gestión de Camareros
           <p className="text-slate-500 mt-1">Asigna camareros a los pedidos con recomendaciones inteligentes</p>
         </div>
 
-        {/* Calendario y Carga */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className={mostrarCarga ? 'lg:col-span-2' : 'lg:col-span-3'}>
-            <CalendarioAsignaciones onSelectPedido={setSelectedPedido} />
-          </div>
-          {mostrarCarga && (
-            <div>
-              <CargaTrabajoCamareros mes={new Date()} />
-            </div>
-          )}
+        {/* Selector de Vista */}
+        <div className="mb-4 flex items-center gap-3">
+          <Select value={vistaCalendario} onValueChange={setVistaCalendario}>
+            <SelectTrigger className="w-64">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="avanzado">📅 Calendario con Asignación Rápida</SelectItem>
+              <SelectItem value="clasico">📋 Vista Clásica con Drag & Drop</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Vista Calendario Avanzado con Asignación Rápida */}
+        {vistaCalendario === 'avanzado' && (
+          <CalendarioAsignacionRapida />
+        )}
+
+        {/* Vista Clásica */}
+        {vistaCalendario === 'clasico' && (
+          <>
+            {/* Calendario y Carga */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              <div className={mostrarCarga ? 'lg:col-span-2' : 'lg:col-span-3'}>
+                <CalendarioAsignaciones onSelectPedido={setSelectedPedido} />
+              </div>
+              {mostrarCarga && (
+                <div>
+                  <CargaTrabajoCamareros mes={new Date()} />
+                </div>
+              )}
 
         {/* Controles */}
         <div className="mb-6 flex justify-between items-center">
@@ -387,7 +409,7 @@ Sistema de Gestión de Camareros
           >
             {mostrarCarga ? 'Ocultar' : 'Mostrar'} Carga de Trabajo
           </Button>
-          
+
           {selectedPedido && (
             <Button 
               onClick={() => setShowAsignacionAuto(true)}
@@ -724,10 +746,12 @@ Sistema de Gestión de Camareros
                 </Card>
               </div>
             </div>
-          </DragDropContext>
+            </DragDropContext>
+            </>
+            )}
 
-          {/* Modal de Asignación Automática */}
-          <AsignacionAutomatica
+            {/* Modal de Asignación Automática */}
+            <AsignacionAutomatica
             open={showAsignacionAuto}
             onClose={() => setShowAsignacionAuto(false)}
             pedido={selectedPedido}
