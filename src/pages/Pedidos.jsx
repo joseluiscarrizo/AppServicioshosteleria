@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ClipboardList, X, Sparkles, Calendar, MapPin, Users, Ban } from 'lucide-react';
+import { Plus, Pencil, Trash2, ClipboardList, X, Sparkles, Calendar, MapPin, Users, Ban, Copy, Repeat } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -19,6 +19,8 @@ import AIExtractor from '../components/pedidos/AIExtractor';
 import TurnosEditor from '../components/pedidos/TurnosEditor';
 import EntradaAutomatica from '../components/pedidos/EntradaAutomatica';
 import EdicionRapida from '../components/pedidos/EdicionRapida';
+import DuplicarEvento from '../components/pedidos/DuplicarEvento';
+import EventoRecurrente from '../components/pedidos/EventoRecurrente';
 
 export default function Pedidos() {
   const [showForm, setShowForm] = useState(false);
@@ -26,6 +28,8 @@ export default function Pedidos() {
   const [showEntradaAuto, setShowEntradaAuto] = useState(false);
   const [editingPedido, setEditingPedido] = useState(null);
   const [edicionRapida, setEdicionRapida] = useState({ open: false, pedido: null, campo: null });
+  const [duplicarDialog, setDuplicarDialog] = useState({ open: false, pedido: null });
+  const [recurrenteDialog, setRecurrenteDialog] = useState({ open: false, pedido: null });
   const [formData, setFormData] = useState({
     codigo_pedido: '',
     cliente_id: '',
@@ -379,6 +383,24 @@ export default function Pedidos() {
                           <Button 
                             variant="ghost" 
                             size="icon"
+                            onClick={() => setDuplicarDialog({ open: true, pedido })}
+                            className="h-8 w-8"
+                            title="Duplicar evento"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => setRecurrenteDialog({ open: true, pedido })}
+                            className="h-8 w-8"
+                            title="Crear eventos recurrentes"
+                          >
+                            <Repeat className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
                             onClick={() => handleEdit(pedido)}
                             className="h-8 w-8"
                           >
@@ -575,7 +597,21 @@ export default function Pedidos() {
           onOpenChange={(open) => setEdicionRapida({ ...edicionRapida, open })}
           campo={edicionRapida.campo}
         />
-      </div>
-    </div>
-  );
-}
+
+        {/* Duplicar Evento */}
+        <DuplicarEvento
+          open={duplicarDialog.open}
+          onOpenChange={(open) => setDuplicarDialog({ ...duplicarDialog, open })}
+          pedidoOriginal={duplicarDialog.pedido}
+        />
+
+        {/* Evento Recurrente */}
+        <EventoRecurrente
+          open={recurrenteDialog.open}
+          onOpenChange={(open) => setRecurrenteDialog({ ...recurrenteDialog, open })}
+          pedidoBase={recurrenteDialog.pedido}
+        />
+        </div>
+        </div>
+        );
+        }
