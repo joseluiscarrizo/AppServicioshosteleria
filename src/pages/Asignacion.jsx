@@ -274,15 +274,26 @@ Sistema de Gestión de Camareros
     return Array.from(habs).sort();
   }, [camareros]);
 
-  const handleAsignarCamarero = (pedido, camarero, turnoIdx = null) => {
+  const handleAsignarCamarero = (pedido, camarero, turnoIdx = null, posicionSlot = null) => {
     // Verificar que no se exceda el límite de camareros
     const cantidadNecesaria = pedido.turnos?.length > 0 
       ? pedido.turnos.reduce((sum, t) => sum + (t.cantidad_camareros || 0), 0)
       : (pedido.cantidad_camareros || 0);
     
-    const asignacionesActuales = getAsignacionesPedido(pedido.id).length;
+    const asignacionesActuales = getAsignacionesPedido(pedido.id);
     
-    if (asignacionesActuales >= cantidadNecesaria) {
+    // Verificar si ya existe una asignación en esa posición
+    if (posicionSlot !== null) {
+      const asignacionExistente = asignacionesActuales.find(
+        a => a.turno_index === turnoIdx && a.posicion_slot === posicionSlot
+      );
+      if (asignacionExistente) {
+        toast.error('Ya hay un camarero asignado en esa posición');
+        return;
+      }
+    }
+    
+    if (asignacionesActuales.length >= cantidadNecesaria) {
       toast.error('Ya se alcanzó el número máximo de camareros para este pedido');
       return;
     }
@@ -306,7 +317,8 @@ Sistema de Gestión de Camareros
       fecha_pedido: pedido.dia,
       hora_entrada: horaEntrada,
       hora_salida: horaSalida,
-      turno_index: turnoIdx
+      turno_index: turnoIdx,
+      posicion_slot: posicionSlot
     });
   };
 
@@ -321,12 +333,22 @@ Sistema de Gestión de Camareros
     const camarero = camareros.find(c => c.id === camareroId);
     const destinationId = result.destination.droppableId;
     
-    // Extraer información del droppable: "slot-turno-0" o "slots-asignacion"
-    const turnoMatch = destinationId.match(/slot-turno-(\d+)/);
-    const turnoIdx = turnoMatch ? parseInt(turnoMatch[1]) : null;
+    // Extraer información del droppable: "slot-turno-0-posicion-2" o "slot-general-3"
+    const turnoMatch = destinationId.match(/slot-turno-(\d+)-posicion-(\d+)/);
+    const generalMatch = destinationId.match(/slot-general-(\d+)/);
     
-    if (camarero && selectedPedido) {
-      handleAsignarCamarero(selectedPedido, camarero, turnoIdx);
+    let turnoIdx = null;
+    let posicionSlot = null;
+    
+    if (turnoMatch) {
+      turnoIdx = parseInt(turnoMatch[1]);
+      posicionSlot = parseInt(turnoMatch[2]);
+    } else if (generalMatch) {
+      posicionSlot = parseInt(generalMatch[1]);
+    }
+    
+    if (camarero && selectedPedido && posicionSlot !== null) {
+      handleAsignarCamarero(selectedPedido, camarero, turnoIdx, posicionSlot);
     }
   };
 
@@ -640,61 +662,65 @@ Sistema de Gestión de Camareros
                               // Vista con un solo horario
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {Array.from({ length: selectedPedido.cantidad_camareros || 0 }).map((_, index) => {
-                                  const asignacion = getAsignacionesPedido(selectedPedido.id)[index];
+                                  const asignacionesPedido = getAsignacionesPedido(selectedPedido.id);
+                                  const asignacion = asignacionesPedido.find(a => a.posicion_slot === index);
 
                                   return (
-                                    <div 
-                                      key={index}
-                                      className={`rounded-xl border-2 p-4 min-h-[120px] transition-all ${
-                                        asignacion 
-                                          ? `${estadoBgColors[asignacion.estado]} border-slate-200` 
-                                          : snapshot.isDraggingOver 
-                                          ? 'bg-[#1e3a5f]/10 border-[#1e3a5f] border-dashed'
-                                          : 'bg-slate-50 border-dashed border-slate-300'
-                                      }`}
-                                    >
-                                      {asignacion ? (
-                                        <div>
-                                          <div className="flex items-center justify-between mb-2">
-                                            <span className="font-medium text-slate-800">
-                                              {asignacion.camarero_nombre}
-                                            </span>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-6 w-6 text-slate-400 hover:text-red-500"
-                                              onClick={() => deleteAsignacionMutation.mutate(asignacion)}
-                                            >
-                                              <X className="w-4 h-4" />
-                                            </Button>
-                                          </div>
-                                          <span className="text-xs text-slate-500 font-mono">
-                                            #{asignacion.camarero_codigo}
-                                          </span>
+                                    <Droppable key={index} droppableId={`slot-general-${index}`}>
+                                      {(providedSlot, snapshotSlot) => (
+                                        <div 
+                                          ref={providedSlot.innerRef}
+                                          {...providedSlot.droppableProps}
+                                          className={`rounded-xl border-2 p-4 min-h-[120px] transition-all ${
+                                            asignacion 
+                                              ? `${estadoBgColors[asignacion.estado]} border-slate-200` 
+                                              : snapshotSlot.isDraggingOver 
+                                              ? 'bg-[#1e3a5f]/10 border-[#1e3a5f] border-dashed scale-105'
+                                              : 'bg-slate-50 border-dashed border-slate-300'
+                                          }`}
+                                        >
+                                          {asignacion ? (
+                                            <div>
+                                              <div className="flex items-center justify-between mb-2">
+                                                <span className="font-medium text-slate-800">
+                                                  {asignacion.camarero_nombre}
+                                                </span>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-6 w-6 text-slate-400 hover:text-red-500"
+                                                  onClick={() => deleteAsignacionMutation.mutate(asignacion)}
+                                                >
+                                                  <X className="w-4 h-4" />
+                                                </Button>
+                                              </div>
+                                              <span className="text-xs text-slate-500 font-mono">
+                                                #{asignacion.camarero_codigo}
+                                              </span>
 
-                                          <Select 
-                                            value={asignacion.estado} 
-                                            onValueChange={(v) => handleCambiarEstado(asignacion.id, v)}
-                                          >
-                                            <SelectTrigger className={`mt-3 h-8 text-sm ${estadoColors[asignacion.estado]}`}>
-                                              <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              <SelectItem value="pendiente">Pendiente</SelectItem>
-                                              <SelectItem value="enviado">Enviado</SelectItem>
-                                              <SelectItem value="confirmado">Confirmado</SelectItem>
-                                              <SelectItem value="alta">Alta</SelectItem>
-                                            </SelectContent>
-                                          </Select>
-                                        </div>
-                                      ) : (
-                                        <div className="flex items-center justify-center h-full">
-                                          <p className="text-sm text-slate-400">
-                                            Arrastra aquí<br/>
-                                            <span className="text-xs">Slot {index + 1}</span>
-                                          </p>
-                                        </div>
-                                      )}
+                                              <Select 
+                                                value={asignacion.estado} 
+                                                onValueChange={(v) => handleCambiarEstado(asignacion.id, v)}
+                                              >
+                                                <SelectTrigger className={`mt-3 h-8 text-sm ${estadoColors[asignacion.estado]}`}>
+                                                  <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem value="pendiente">Pendiente</SelectItem>
+                                                  <SelectItem value="enviado">Enviado</SelectItem>
+                                                  <SelectItem value="confirmado">Confirmado</SelectItem>
+                                                  <SelectItem value="alta">Alta</SelectItem>
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center justify-center h-full">
+                                              <p className="text-sm text-slate-400">
+                                                Arrastra aquí<br/>
+                                                <span className="text-xs">Slot {index + 1}</span>
+                                              </p>
+                                            </div>
+                                          )}
                                           {providedSlot.placeholder}
                                         </div>
                                       )}
