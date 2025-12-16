@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Users, Plus, Pencil, Mail, Phone, Building, Search } from 'lucide-react';
+import { Users, Plus, Pencil, Mail, Phone, Building, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Clientes() {
@@ -33,7 +33,7 @@ export default function Clientes() {
 
   const { data: clientes = [] } = useQuery({
     queryKey: ['clientes'],
-    queryFn: () => base44.entities.Cliente.list('nombre')
+    queryFn: () => base44.entities.Cliente.list('-created_date')
   });
 
   const createMutation = useMutation({
@@ -57,6 +57,18 @@ export default function Clientes() {
       setShowForm(false);
       resetForm();
       toast.success('Cliente actualizado');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Cliente.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clientes'] });
+      toast.success('Cliente eliminado');
+    },
+    onError: (error) => {
+      console.error('Error al eliminar cliente:', error);
+      toast.error('Error al eliminar cliente');
     }
   });
 
@@ -228,13 +240,28 @@ export default function Clientes() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => handleEdit(cliente)}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleEdit(cliente)}
+                        className="h-8 w-8"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => {
+                          if (confirm('¿Estás seguro de eliminar este cliente?')) {
+                            deleteMutation.mutate(cliente.id);
+                          }
+                        }}
+                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
