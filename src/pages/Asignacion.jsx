@@ -274,15 +274,26 @@ Sistema de Gestión de Camareros
     return Array.from(habs).sort();
   }, [camareros]);
 
-  const handleAsignarCamarero = (pedido, camarero, turnoIdx = null) => {
+  const handleAsignarCamarero = (pedido, camarero, turnoIdx = null, posicionSlot = null) => {
     // Verificar que no se exceda el límite de camareros
     const cantidadNecesaria = pedido.turnos?.length > 0 
       ? pedido.turnos.reduce((sum, t) => sum + (t.cantidad_camareros || 0), 0)
       : (pedido.cantidad_camareros || 0);
     
-    const asignacionesActuales = getAsignacionesPedido(pedido.id).length;
+    const asignacionesActuales = getAsignacionesPedido(pedido.id);
     
-    if (asignacionesActuales >= cantidadNecesaria) {
+    // Verificar si ya existe una asignación en esa posición
+    if (turnoIdx !== null && posicionSlot !== null) {
+      const asignacionExistente = asignacionesActuales.find(
+        a => a.turno_index === turnoIdx && a.posicion_slot === posicionSlot
+      );
+      if (asignacionExistente) {
+        toast.error('Ya hay un camarero asignado en esa posición');
+        return;
+      }
+    }
+    
+    if (asignacionesActuales.length >= cantidadNecesaria) {
       toast.error('Ya se alcanzó el número máximo de camareros para este pedido');
       return;
     }
@@ -306,7 +317,8 @@ Sistema de Gestión de Camareros
       fecha_pedido: pedido.dia,
       hora_entrada: horaEntrada,
       hora_salida: horaSalida,
-      turno_index: turnoIdx
+      turno_index: turnoIdx,
+      posicion_slot: posicionSlot
     });
   };
 
@@ -320,13 +332,14 @@ Sistema de Gestión de Camareros
     const camareroId = result.draggableId;
     const camarero = camareros.find(c => c.id === camareroId);
     const destinationId = result.destination.droppableId;
+    const destinationIndex = result.destination.index;
     
     // Extraer información del droppable: "slot-turno-0" o "slots-asignacion"
     const turnoMatch = destinationId.match(/slot-turno-(\d+)/);
     const turnoIdx = turnoMatch ? parseInt(turnoMatch[1]) : null;
     
     if (camarero && selectedPedido) {
-      handleAsignarCamarero(selectedPedido, camarero, turnoIdx);
+      handleAsignarCamarero(selectedPedido, camarero, turnoIdx, destinationIndex);
     }
   };
 
@@ -641,7 +654,8 @@ Sistema de Gestión de Camareros
                               // Vista con un solo horario
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {Array.from({ length: selectedPedido.cantidad_camareros || 0 }).map((_, index) => {
-                                  const asignacion = getAsignacionesPedido(selectedPedido.id)[index];
+                                  const asignacionesPedido = getAsignacionesPedido(selectedPedido.id);
+                                  const asignacion = asignacionesPedido.find(a => a.posicion_slot === index);
 
                                   return (
                                     <div 
