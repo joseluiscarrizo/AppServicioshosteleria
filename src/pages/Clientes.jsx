@@ -43,6 +43,10 @@ export default function Clientes() {
       setShowForm(false);
       resetForm();
       toast.success('Cliente creado');
+    },
+    onError: (error) => {
+      console.error('Error al crear cliente:', error);
+      toast.error('Error al crear cliente: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -78,7 +82,7 @@ export default function Clientes() {
     setShowForm(true);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     
     let dataToSubmit = { ...formData };
@@ -95,10 +99,17 @@ export default function Clientes() {
       dataToSubmit.codigo = `CL${String(maxCodigo + 1).padStart(3, '0')}`;
     }
     
+    // Asegurar que activo está definido
+    if (dataToSubmit.activo === undefined) {
+      dataToSubmit.activo = true;
+    }
+    
+    console.log('Enviando datos:', dataToSubmit);
+    
     if (editingCliente) {
-      await updateMutation.mutateAsync({ id: editingCliente.id, data: dataToSubmit });
+      updateMutation.mutate({ id: editingCliente.id, data: dataToSubmit });
     } else {
-      await createMutation.mutateAsync(dataToSubmit);
+      createMutation.mutate(dataToSubmit);
     }
   };
 
