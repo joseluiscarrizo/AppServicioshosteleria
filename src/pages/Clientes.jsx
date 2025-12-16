@@ -17,13 +17,14 @@ export default function Clientes() {
   const [editingCliente, setEditingCliente] = useState(null);
   const [busqueda, setBusqueda] = useState('');
   const [formData, setFormData] = useState({
+    codigo: '',
     nombre: '',
-    email_principal: '',
-    email_secundario: '',
-    email_terciario: '',
-    telefono: '',
-    telefono_secundario: '',
-    empresa: '',
+    email_1: '',
+    email_2: '',
+    telefono_1: '',
+    telefono_2: '',
+    persona_contacto_1: '',
+    persona_contacto_2: '',
     notas: '',
     activo: true
   });
@@ -57,13 +58,14 @@ export default function Clientes() {
 
   const resetForm = () => {
     setFormData({
+      codigo: '',
       nombre: '',
-      email_principal: '',
-      email_secundario: '',
-      email_terciario: '',
-      telefono: '',
-      telefono_secundario: '',
-      empresa: '',
+      email_1: '',
+      email_2: '',
+      telefono_1: '',
+      telefono_2: '',
+      persona_contacto_1: '',
+      persona_contacto_2: '',
       notas: '',
       activo: true
     });
@@ -78,18 +80,35 @@ export default function Clientes() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    let dataToSubmit = { ...formData };
+    
+    // Generar código automático si es nuevo cliente
+    if (!editingCliente) {
+      const maxCodigo = clientes.reduce((max, c) => {
+        if (c.codigo && c.codigo.startsWith('CL')) {
+          const num = parseInt(c.codigo.substring(2));
+          return Math.max(max, num);
+        }
+        return max;
+      }, 0);
+      dataToSubmit.codigo = `CL${String(maxCodigo + 1).padStart(3, '0')}`;
+    }
+    
     if (editingCliente) {
-      updateMutation.mutate({ id: editingCliente.id, data: formData });
+      updateMutation.mutate({ id: editingCliente.id, data: dataToSubmit });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(dataToSubmit);
     }
   };
 
   const clientesFiltrados = clientes.filter(c =>
     c.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    c.email_principal?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    c.empresa?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    c.telefono?.includes(busqueda)
+    c.codigo?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    c.email_1?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    c.email_2?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    c.telefono_1?.includes(busqueda) ||
+    c.telefono_2?.includes(busqueda)
   );
 
   return (
@@ -135,7 +154,7 @@ export default function Clientes() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
-              placeholder="Buscar por nombre, email, empresa o teléfono..."
+              placeholder="Buscar por código, nombre, email o teléfono..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               className="pl-9"
@@ -147,10 +166,11 @@ export default function Clientes() {
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">
+                <TableHead>Código</TableHead>
                 <TableHead>Cliente</TableHead>
-                <TableHead>Email Principal</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Teléfono</TableHead>
-                <TableHead>Empresa</TableHead>
+                <TableHead>Contacto</TableHead>
                 <TableHead className="text-center">Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -158,6 +178,11 @@ export default function Clientes() {
             <TableBody>
               {clientesFiltrados.map(cliente => (
                 <TableRow key={cliente.id}>
+                  <TableCell>
+                    <span className="font-mono font-semibold text-[#1e3a5f]">
+                      {cliente.codigo || '-'}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <div>
                       <p className="font-medium text-slate-800">{cliente.nombre}</p>
@@ -171,22 +196,17 @@ export default function Clientes() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm">{cliente.email_principal || '-'}</span>
+                      <span className="text-sm">{cliente.email_1 || '-'}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Phone className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm">{cliente.telefono || '-'}</span>
+                      <span className="text-sm">{cliente.telefono_1 || '-'}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    {cliente.empresa && (
-                      <div className="flex items-center gap-2">
-                        <Building className="w-4 h-4 text-slate-400" />
-                        <span className="text-sm">{cliente.empresa}</span>
-                      </div>
-                    )}
+                    <span className="text-sm">{cliente.persona_contacto_1 || '-'}</span>
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge className={cliente.activo 
@@ -209,7 +229,7 @@ export default function Clientes() {
               ))}
               {clientesFiltrados.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-slate-500 py-8">
+                  <TableCell colSpan={7} className="text-center text-slate-500 py-8">
                     No se encontraron clientes
                   </TableCell>
                 </TableRow>
@@ -227,76 +247,108 @@ export default function Clientes() {
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nombre">Nombre *</Label>
-                  <Input
-                    id="nombre"
-                    value={formData.nombre}
-                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                    required
-                  />
+              {/* Código Automático */}
+              {!editingCliente && (
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <Label className="text-xs text-slate-500">Código Automático del Cliente</Label>
+                  <p className="font-mono font-semibold text-lg text-[#1e3a5f]">
+                    {(() => {
+                      const maxCodigo = clientes.reduce((max, c) => {
+                        if (c.codigo && c.codigo.startsWith('CL')) {
+                          const num = parseInt(c.codigo.substring(2));
+                          return Math.max(max, num);
+                        }
+                        return max;
+                      }, 0);
+                      return `CL${String(maxCodigo + 1).padStart(3, '0')}`;
+                    })()}
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="empresa">Empresa</Label>
-                  <Input
-                    id="empresa"
-                    value={formData.empresa}
-                    onChange={(e) => setFormData({ ...formData, empresa: e.target.value })}
-                  />
-                </div>
-              </div>
+              )}
 
+              {editingCliente && (
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <Label className="text-xs text-slate-500">Código del Cliente</Label>
+                  <p className="font-mono font-semibold text-lg text-[#1e3a5f]">
+                    {formData.codigo}
+                  </p>
+                </div>
+              )}
+
+              {/* Nombre del Cliente */}
               <div className="space-y-2">
-                <Label htmlFor="email_principal">Email Principal</Label>
+                <Label htmlFor="nombre">Nombre del Cliente *</Label>
                 <Input
-                  id="email_principal"
-                  type="email"
-                  value={formData.email_principal}
-                  onChange={(e) => setFormData({ ...formData, email_principal: e.target.value })}
+                  id="nombre"
+                  value={formData.nombre}
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  required
                 />
               </div>
 
+              {/* Emails */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email_secundario">Email Secundario</Label>
+                  <Label htmlFor="email_1">Mail 1</Label>
                   <Input
-                    id="email_secundario"
+                    id="email_1"
                     type="email"
-                    value={formData.email_secundario}
-                    onChange={(e) => setFormData({ ...formData, email_secundario: e.target.value })}
+                    value={formData.email_1}
+                    onChange={(e) => setFormData({ ...formData, email_1: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email_terciario">Email Terciario</Label>
+                  <Label htmlFor="email_2">Mail 2</Label>
                   <Input
-                    id="email_terciario"
+                    id="email_2"
                     type="email"
-                    value={formData.email_terciario}
-                    onChange={(e) => setFormData({ ...formData, email_terciario: e.target.value })}
+                    value={formData.email_2}
+                    onChange={(e) => setFormData({ ...formData, email_2: e.target.value })}
                   />
                 </div>
               </div>
 
+              {/* Teléfonos */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="telefono">Teléfono Principal (WhatsApp)</Label>
+                  <Label htmlFor="telefono_1">Teléfono 1</Label>
                   <Input
-                    id="telefono"
-                    value={formData.telefono}
-                    onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                    id="telefono_1"
+                    value={formData.telefono_1}
+                    onChange={(e) => setFormData({ ...formData, telefono_1: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="telefono_secundario">Teléfono Secundario</Label>
+                  <Label htmlFor="telefono_2">Teléfono 2</Label>
                   <Input
-                    id="telefono_secundario"
-                    value={formData.telefono_secundario}
-                    onChange={(e) => setFormData({ ...formData, telefono_secundario: e.target.value })}
+                    id="telefono_2"
+                    value={formData.telefono_2}
+                    onChange={(e) => setFormData({ ...formData, telefono_2: e.target.value })}
                   />
                 </div>
               </div>
 
+              {/* Personas de Contacto */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="persona_contacto_1">Persona de Contacto 1</Label>
+                  <Input
+                    id="persona_contacto_1"
+                    value={formData.persona_contacto_1}
+                    onChange={(e) => setFormData({ ...formData, persona_contacto_1: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="persona_contacto_2">Persona de Contacto 2</Label>
+                  <Input
+                    id="persona_contacto_2"
+                    value={formData.persona_contacto_2}
+                    onChange={(e) => setFormData({ ...formData, persona_contacto_2: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Notas */}
               <div className="space-y-2">
                 <Label htmlFor="notas">Notas</Label>
                 <Textarea

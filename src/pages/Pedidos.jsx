@@ -27,6 +27,7 @@ export default function Pedidos() {
   const [editingPedido, setEditingPedido] = useState(null);
   const [edicionRapida, setEdicionRapida] = useState({ open: false, pedido: null, campo: null });
   const [formData, setFormData] = useState({
+    cliente_id: '',
     cliente: '',
     lugar_evento: '',
     dia: '',
@@ -41,6 +42,11 @@ export default function Pedidos() {
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ['pedidos'],
     queryFn: () => base44.entities.Pedido.list('-dia', 200)
+  });
+
+  const { data: clientes = [] } = useQuery({
+    queryKey: ['clientes'],
+    queryFn: () => base44.entities.Cliente.list('nombre')
   });
 
   const createMutation = useMutation({
@@ -75,10 +81,8 @@ export default function Pedidos() {
     setFormData({
       numero_cliente: 0,
       numero_pedido_cliente: 0,
+      cliente_id: '',
       cliente: '',
-      cliente_email: '',
-      cliente_email_2: '',
-      cliente_email_3: '',
       lugar_evento: '',
       link_ubicacion: '',
       dia: '',
@@ -94,10 +98,8 @@ export default function Pedidos() {
     setFormData({
       numero_cliente: pedido.numero_cliente || 0,
       numero_pedido_cliente: pedido.numero_pedido_cliente || 0,
+      cliente_id: pedido.cliente_id || '',
       cliente: pedido.cliente || '',
-      cliente_email: pedido.cliente_email || '',
-      cliente_email_2: pedido.cliente_email_2 || '',
-      cliente_email_3: pedido.cliente_email_3 || '',
       lugar_evento: pedido.lugar_evento || '',
       link_ubicacion: pedido.link_ubicacion || '',
       dia: pedido.dia ? pedido.dia.split('T')[0] : '',
@@ -391,27 +393,41 @@ export default function Pedidos() {
               )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Cliente *</Label>
-                  <Input
-                    value={formData.cliente}
-                    onChange={(e) => setFormData({ ...formData, cliente: e.target.value })}
-                    placeholder="Nombre del cliente"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Camisa *</Label>
-                  <select
-                    value={formData.camisa}
-                    onChange={(e) => setFormData({ ...formData, camisa: e.target.value })}
-                    className="w-full h-10 px-3 rounded-md border border-slate-200 focus:border-[#1e3a5f] focus:ring-[#1e3a5f] focus:outline-none"
-                    required
-                  >
-                    <option value="blanca">Blanca</option>
-                    <option value="negra">Negra</option>
-                  </select>
-                </div>
+              <div className="space-y-2">
+              <Label>Cliente *</Label>
+              <select
+              value={formData.cliente_id}
+              onChange={(e) => {
+                const selectedCliente = clientes.find(c => c.id === e.target.value);
+                setFormData({ 
+                  ...formData, 
+                  cliente_id: e.target.value,
+                  cliente: selectedCliente?.nombre || ''
+                });
+              }}
+              className="w-full h-10 px-3 rounded-md border border-slate-200 focus:border-[#1e3a5f] focus:ring-[#1e3a5f] focus:outline-none"
+              required
+              >
+              <option value="">Seleccionar cliente...</option>
+              {clientes.map(cliente => (
+                <option key={cliente.id} value={cliente.id}>
+                  {cliente.codigo} - {cliente.nombre}
+                </option>
+              ))}
+              </select>
+              </div>
+              <div className="space-y-2">
+              <Label>Camisa *</Label>
+              <select
+              value={formData.camisa}
+              onChange={(e) => setFormData({ ...formData, camisa: e.target.value })}
+              className="w-full h-10 px-3 rounded-md border border-slate-200 focus:border-[#1e3a5f] focus:ring-[#1e3a5f] focus:outline-none"
+              required
+              >
+              <option value="blanca">Blanca</option>
+              <option value="negra">Negra</option>
+              </select>
+              </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label>Día *</Label>
                   <Input
