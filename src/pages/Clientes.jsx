@@ -78,7 +78,7 @@ export default function Clientes() {
     setShowForm(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     let dataToSubmit = { ...formData };
@@ -88,7 +88,7 @@ export default function Clientes() {
       const maxCodigo = clientes.reduce((max, c) => {
         if (c.codigo && c.codigo.startsWith('CL')) {
           const num = parseInt(c.codigo.substring(2));
-          return Math.max(max, num);
+          return Math.max(max, isNaN(num) ? 0 : num);
         }
         return max;
       }, 0);
@@ -96,9 +96,9 @@ export default function Clientes() {
     }
     
     if (editingCliente) {
-      updateMutation.mutate({ id: editingCliente.id, data: dataToSubmit });
+      await updateMutation.mutateAsync({ id: editingCliente.id, data: dataToSubmit });
     } else {
-      createMutation.mutate(dataToSubmit);
+      await createMutation.mutateAsync(dataToSubmit);
     }
   };
 
