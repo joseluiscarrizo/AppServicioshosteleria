@@ -274,23 +274,25 @@ export default function CalendarioAsignacionRapida() {
 
       {/* Panel de Asignación Rápida */}
       <Dialog open={showAsignacionPanel} onOpenChange={setShowAsignacionPanel}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-6xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
                 <CalendarIcon className="w-5 h-5 text-[#1e3a5f]" />
                 Eventos del {selectedDate && format(selectedDate, "d 'de' MMMM yyyy", { locale: es })}
               </span>
-              <Button variant="ghost" size="icon" onClick={() => setShowAsignacionPanel(false)}>
-                <X className="w-5 h-5" />
-              </Button>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[70vh]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[75vh]">
             {/* Lista de Eventos */}
-            <ScrollArea className="pr-4">
-              <div className="space-y-3">
+            <div className="flex flex-col h-full">
+              <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-[#1e3a5f]" />
+                Eventos del Día
+              </h4>
+              <ScrollArea className="flex-1 pr-4">
+                <div className="space-y-3">
                 {pedidosDelDia.map(pedido => {
                   const asigsPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
                   const totalNeeded = pedido.turnos?.length > 0 
@@ -341,34 +343,51 @@ export default function CalendarioAsignacionRapida() {
                     </Card>
                   );
                 })}
-              </div>
-            </ScrollArea>
+                </div>
+              </ScrollArea>
+            </div>
 
             {/* Panel de Camareros Disponibles */}
-            <div className="border-l pl-4 flex flex-col h-full">
+            <div className="border-l border-slate-200 pl-6 flex flex-col h-full">
               {selectedPedidoAsignacion ? (
                 <>
-                  {/* Asignaciones Actuales - Arriba */}
+                  {/* Info del evento seleccionado */}
+                  <div className="mb-4">
+                    <div className="bg-[#1e3a5f]/5 border border-[#1e3a5f]/20 rounded-lg p-3">
+                      <h3 className="font-semibold text-slate-800 mb-1">{selectedPedidoAsignacion.cliente}</h3>
+                      <div className="flex items-center gap-3 text-xs text-slate-600">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {selectedPedidoAsignacion.lugar_evento || 'Sin ubicación'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {selectedPedidoAsignacion.entrada} - {selectedPedidoAsignacion.salida}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Asignaciones Actuales */}
                   {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).length > 0 && (
-                    <div className="mb-4 pb-4 border-b">
-                      <h5 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-emerald-600" />
-                        Camareros Asignados ({asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).length})
+                    <div className="mb-4">
+                      <h5 className="text-sm font-semibold text-emerald-700 mb-2 flex items-center gap-2">
+                        ✓ Camareros Asignados ({asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).length})
                       </h5>
-                      <div className="space-y-1">
+                      <div className="space-y-1.5 max-h-32 overflow-y-auto">
                         {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).map(asig => (
-                          <div key={asig.id} className="flex items-center justify-between text-sm p-2 bg-emerald-50 border border-emerald-200 rounded">
+                          <div key={asig.id} className="flex items-center justify-between text-sm p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg">
                             <span className="text-slate-800 font-medium">{asig.camarero_nombre}</span>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 text-red-500 hover:text-red-700"
+                              className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-50"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 deleteAsignacionMutation.mutate(asig);
                               }}
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-3.5 h-3.5" />
                             </Button>
                           </div>
                         ))}
@@ -377,43 +396,42 @@ export default function CalendarioAsignacionRapida() {
                   )}
 
                   {/* Camareros Disponibles */}
-                  <div className="flex-1 overflow-hidden flex flex-col">
+                  <div className="flex-1 flex flex-col min-h-0">
                     <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
                       <Users className="w-4 h-4 text-[#1e3a5f]" />
-                      Camareros Disponibles
+                      Camareros Disponibles ({getCamarerosDisponibles(selectedPedidoAsignacion).length})
                     </h4>
-                    <ScrollArea className="flex-1">
-                      <div className="space-y-2 pr-3">
+                    <ScrollArea className="flex-1 -mr-2 pr-2">
+                      <div className="space-y-2">
                         {getCamarerosDisponibles(selectedPedidoAsignacion).map(camarero => (
-                          <Card 
+                          <div
                             key={camarero.id}
-                            className="p-3 hover:shadow-md transition-all cursor-pointer hover:border-[#1e3a5f]"
+                            className="p-3 border-2 border-slate-200 rounded-lg hover:border-[#1e3a5f] hover:bg-[#1e3a5f]/5 transition-all cursor-pointer"
                             onClick={() => handleAsignarCamarero(selectedPedidoAsignacion, camarero)}
                           >
                             <div className="flex items-center justify-between">
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-medium text-slate-800">{camarero.nombre}</span>
+                                  <span className="font-medium text-slate-800 truncate">{camarero.nombre}</span>
                                   {camarero.valoracion_promedio > 0 && (
-                                    <span className="flex items-center gap-0.5 text-amber-500 text-xs">
+                                    <span className="flex items-center gap-0.5 text-amber-500 text-xs flex-shrink-0">
                                       <Star className="w-3 h-3 fill-amber-400" />
                                       {camarero.valoracion_promedio.toFixed(1)}
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-xs text-slate-500 font-mono">#{camarero.codigo}</p>
+                                <p className="text-xs text-slate-500 font-mono mt-0.5">#{camarero.codigo}</p>
                                 {camarero.especialidad && (
-                                  <Badge variant="outline" className="text-xs mt-1">
+                                  <Badge variant="outline" className="text-xs mt-1.5">
                                     {camarero.especialidad}
                                   </Badge>
                                 )}
                               </div>
-                              <Button size="sm" variant="outline">
-                                <Plus className="w-4 h-4 mr-1" />
-                                Asignar
+                              <Button size="sm" className="ml-2 bg-[#1e3a5f] hover:bg-[#152a45] text-white flex-shrink-0">
+                                <Plus className="w-4 h-4" />
                               </Button>
                             </div>
-                          </Card>
+                          </div>
                         ))}
                         {getCamarerosDisponibles(selectedPedidoAsignacion).length === 0 && (
                           <div className="text-center py-8 text-slate-400">
