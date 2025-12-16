@@ -24,6 +24,13 @@ const especialidadColors = {
   buffet: 'bg-emerald-100 text-emerald-700'
 };
 
+const nivelExperienciaColors = {
+  junior: 'bg-blue-100 text-blue-700',
+  intermedio: 'bg-emerald-100 text-emerald-700',
+  senior: 'bg-amber-100 text-amber-700',
+  experto: 'bg-purple-100 text-purple-700'
+};
+
 export default function Camareros() {
   const [showForm, setShowForm] = useState(false);
   const [editingCamarero, setEditingCamarero] = useState(null);

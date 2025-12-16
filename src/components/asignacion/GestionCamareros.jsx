@@ -21,6 +21,13 @@ const especialidades = [
   { value: 'buffet', label: 'Buffet' }
 ];
 
+const nivelesExperiencia = [
+  { value: 'junior', label: 'Junior (0-2 años)' },
+  { value: 'intermedio', label: 'Intermedio (2-5 años)' },
+  { value: 'senior', label: 'Senior (5-10 años)' },
+  { value: 'experto', label: 'Experto (10+ años)' }
+];
+
 export default function GestionCamareros({ open, onOpenChange, editingCamarero }) {
   const [formData, setFormData] = useState({
     codigo: '',
@@ -58,7 +65,8 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
         habilidades: editingCamarero.habilidades || [],
         idiomas: editingCamarero.idiomas || [],
         certificaciones: editingCamarero.certificaciones || [],
-        coordinador_id: editingCamarero.coordinador_id || ''
+        coordinador_id: editingCamarero.coordinador_id || '',
+        nivel_experiencia: editingCamarero.nivel_experiencia || 'intermedio'
       });
     } else {
       setFormData({
@@ -70,6 +78,7 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
         en_reserva: false,
         tallas_camisa: '',
         especialidad: 'general',
+        nivel_experiencia: 'intermedio',
         habilidades: [],
         idiomas: [],
         certificaciones: [],
@@ -207,7 +216,7 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="especialidad">Especialidad</Label>
                   <Select 
@@ -224,6 +233,25 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nivel_experiencia">Nivel de Experiencia</Label>
+                  <Select 
+                    value={formData.nivel_experiencia} 
+                    onValueChange={(v) => setFormData({ ...formData, nivel_experiencia: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {nivelesExperiencia.map(n => (
+                        <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="tallas">Talla Camisa</Label>
                   <Input
