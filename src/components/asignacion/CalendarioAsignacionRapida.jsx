@@ -288,7 +288,7 @@ export default function CalendarioAsignacionRapida() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 h-[75vh]">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 h-[75vh]">
             {/* Lista de Eventos */}
             <div className="flex flex-col h-full">
               <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
@@ -374,15 +374,15 @@ export default function CalendarioAsignacionRapida() {
 
                   {/* Asignaciones Actuales */}
                   {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).length > 0 && (
-                    <div className="mb-3">
+                    <div className="mb-3 flex-shrink-0">
                       <h5 className="text-sm font-semibold text-emerald-700 mb-2 flex items-center gap-2">
                         ✓ Asignados ({asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).length})
                       </h5>
-                      <ScrollArea className="max-h-28">
+                      <ScrollArea className="max-h-32">
                         <div className="space-y-1.5 pr-2">
                           {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).map(asig => (
                             <div key={asig.id} className="flex items-center justify-between text-sm p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
-                              <span className="text-slate-800 font-medium text-sm truncate">{asig.camarero_nombre}</span>
+                              <span className="text-slate-800 font-medium text-xs truncate">{asig.camarero_nombre}</span>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -402,32 +402,31 @@ export default function CalendarioAsignacionRapida() {
                   )}
 
                   {/* Camareros Disponibles */}
-                  <div className="flex-1 flex flex-col min-h-0">
-                    <div className="mb-3">
+                  <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                    <div className="mb-2 flex-shrink-0">
                       <h4 
-                        className="font-semibold text-slate-800 mb-2 flex items-center gap-2 cursor-pointer hover:text-[#1e3a5f] transition-colors"
+                        className="font-semibold text-slate-800 mb-2 flex items-center gap-1 cursor-pointer hover:text-[#1e3a5f] transition-colors text-sm"
                         onClick={() => setShowTodosCamareros(true)}
                       >
-                        <Users className="w-4 h-4 text-[#1e3a5f]" />
-                        Disponibles ({getCamarerosDisponibles(selectedPedidoAsignacion).filter(c => 
+                        <Users className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
+                        <span className="truncate">Disponibles ({getCamarerosDisponibles(selectedPedidoAsignacion).filter(c => 
                           !busquedaCamarero || 
                           c.nombre.toLowerCase().includes(busquedaCamarero.toLowerCase()) ||
                           c.codigo.toLowerCase().includes(busquedaCamarero.toLowerCase())
-                        ).length})
-                        <span className="text-xs text-slate-500 font-normal ml-1">(click para ver todos)</span>
+                        ).length})</span>
                       </h4>
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
                         <Input
-                          placeholder="Buscar camarero..."
+                          placeholder="Buscar..."
                           value={busquedaCamarero}
                           onChange={(e) => setBusquedaCamarero(e.target.value)}
-                          className="pl-9 h-9"
+                          className="pl-7 h-8 text-xs"
                         />
                       </div>
                     </div>
-                    <ScrollArea className="flex-1 pr-1">
-                      <div className="space-y-2 pr-1">
+                    <ScrollArea className="flex-1 -mr-2 pr-2">
+                      <div className="space-y-1.5">
                         {getCamarerosDisponibles(selectedPedidoAsignacion)
                           .filter(c => 
                             !busquedaCamarero || 
@@ -437,13 +436,13 @@ export default function CalendarioAsignacionRapida() {
                           .map(camarero => (
                           <div
                             key={camarero.id}
-                            className="p-2.5 border-2 border-slate-200 rounded-lg hover:border-[#1e3a5f] hover:bg-[#1e3a5f]/5 transition-all cursor-pointer"
+                            className="p-2 border-2 border-slate-200 rounded-lg hover:border-[#1e3a5f] hover:bg-[#1e3a5f]/5 transition-all cursor-pointer"
                             onClick={() => handleAsignarCamarero(selectedPedidoAsignacion, camarero)}
                           >
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-start gap-1.5">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 mb-0.5">
-                                  <span className="font-medium text-slate-800 text-sm truncate">{camarero.nombre}</span>
+                                <div className="flex items-center gap-1 mb-0.5">
+                                  <span className="font-medium text-slate-800 text-xs truncate">{camarero.nombre}</span>
                                   {camarero.valoracion_promedio > 0 && (
                                     <span className="flex items-center gap-0.5 text-amber-500 text-xs flex-shrink-0">
                                       <Star className="w-3 h-3 fill-amber-400" />
@@ -458,8 +457,8 @@ export default function CalendarioAsignacionRapida() {
                                   </Badge>
                                 )}
                               </div>
-                              <Button size="sm" className="bg-[#1e3a5f] hover:bg-[#152a45] text-white flex-shrink-0 h-8 w-8 p-0">
-                                <Plus className="w-4 h-4" />
+                              <Button size="sm" className="bg-[#1e3a5f] hover:bg-[#152a45] text-white flex-shrink-0 h-7 w-7 p-0">
+                                <Plus className="w-3 h-3" />
                               </Button>
                             </div>
                           </div>
@@ -470,9 +469,9 @@ export default function CalendarioAsignacionRapida() {
                             c.nombre.toLowerCase().includes(busquedaCamarero.toLowerCase()) ||
                             c.codigo.toLowerCase().includes(busquedaCamarero.toLowerCase())
                           ).length === 0 && (
-                          <div className="text-center py-8 text-slate-400">
-                            <Users className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                            <p className="text-sm">
+                          <div className="text-center py-6 text-slate-400">
+                            <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                            <p className="text-xs">
                               {busquedaCamarero ? 'No se encontraron camareros' : 'No hay camareros disponibles'}
                             </p>
                           </div>
