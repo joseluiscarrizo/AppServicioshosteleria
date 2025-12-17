@@ -20,6 +20,7 @@ export default function CalendarioAsignacionRapida() {
   const [showAsignacionPanel, setShowAsignacionPanel] = useState(false);
   const [selectedPedidoAsignacion, setSelectedPedidoAsignacion] = useState(null);
   const [busquedaCamarero, setBusquedaCamarero] = useState('');
+  const [showTodosCamareros, setShowTodosCamareros] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: pedidos = [] } = useQuery({
@@ -403,13 +404,17 @@ export default function CalendarioAsignacionRapida() {
                   {/* Camareros Disponibles */}
                   <div className="flex-1 flex flex-col min-h-0">
                     <div className="mb-3">
-                      <h4 className="font-semibold text-slate-800 mb-2 flex items-center gap-2">
+                      <h4 
+                        className="font-semibold text-slate-800 mb-2 flex items-center gap-2 cursor-pointer hover:text-[#1e3a5f] transition-colors"
+                        onClick={() => setShowTodosCamareros(true)}
+                      >
                         <Users className="w-4 h-4 text-[#1e3a5f]" />
                         Disponibles ({getCamarerosDisponibles(selectedPedidoAsignacion).filter(c => 
                           !busquedaCamarero || 
                           c.nombre.toLowerCase().includes(busquedaCamarero.toLowerCase()) ||
                           c.codigo.toLowerCase().includes(busquedaCamarero.toLowerCase())
                         ).length})
+                        <span className="text-xs text-slate-500 font-normal ml-1">(click para ver todos)</span>
                       </h4>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -487,7 +492,109 @@ export default function CalendarioAsignacionRapida() {
             </div>
           </div>
         </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+        </Dialog>
+
+        {/* Modal de Todos los Camareros Disponibles */}
+        <Dialog open={showTodosCamareros} onOpenChange={setShowTodosCamareros}>
+        <DialogContent className="max-w-2xl max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-[#1e3a5f]" />
+              Todos los Camareros Disponibles
+              {selectedPedidoAsignacion && (
+                <span className="text-sm font-normal text-slate-500">
+                  para {selectedPedidoAsignacion.cliente}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Búsqueda */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Buscar camarero por nombre o código..."
+                value={busquedaCamarero}
+                onChange={(e) => setBusquedaCamarero(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            {/* Lista de Camareros */}
+            <ScrollArea className="h-[60vh] pr-3">
+              <div className="space-y-2">
+                {selectedPedidoAsignacion && getCamarerosDisponibles(selectedPedidoAsignacion)
+                  .filter(c => 
+                    !busquedaCamarero || 
+                    c.nombre.toLowerCase().includes(busquedaCamarero.toLowerCase()) ||
+                    c.codigo.toLowerCase().includes(busquedaCamarero.toLowerCase())
+                  )
+                  .map(camarero => (
+                    <div
+                      key={camarero.id}
+                      className="p-4 border-2 border-slate-200 rounded-lg hover:border-[#1e3a5f] hover:bg-[#1e3a5f]/5 transition-all cursor-pointer"
+                      onClick={() => {
+                        handleAsignarCamarero(selectedPedidoAsignacion, camarero);
+                        setShowTodosCamareros(false);
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-slate-800">{camarero.nombre}</span>
+                            {camarero.valoracion_promedio > 0 && (
+                              <span className="flex items-center gap-0.5 text-amber-500 text-sm">
+                                <Star className="w-4 h-4 fill-amber-400" />
+                                {camarero.valoracion_promedio.toFixed(1)}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-500 font-mono mb-2">#{camarero.codigo}</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {camarero.especialidad && (
+                              <Badge variant="outline" className="text-xs">
+                                {camarero.especialidad}
+                              </Badge>
+                            )}
+                            {camarero.habilidades?.slice(0, 3).map(hab => (
+                              <Badge key={hab} variant="outline" className="text-xs bg-slate-50">
+                                {hab}
+                              </Badge>
+                            ))}
+                            {camarero.habilidades?.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{camarero.habilidades.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <Button className="bg-[#1e3a5f] hover:bg-[#152a45] text-white">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Asignar
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                {selectedPedidoAsignacion && getCamarerosDisponibles(selectedPedidoAsignacion)
+                  .filter(c => 
+                    !busquedaCamarero || 
+                    c.nombre.toLowerCase().includes(busquedaCamarero.toLowerCase()) ||
+                    c.codigo.toLowerCase().includes(busquedaCamarero.toLowerCase())
+                  ).length === 0 && (
+                  <div className="text-center py-12 text-slate-400">
+                    <Users className="w-16 h-16 mx-auto mb-3 opacity-30" />
+                    <p className="text-base">
+                      {busquedaCamarero ? 'No se encontraron camareros' : 'No hay camareros disponibles'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </DialogContent>
+        </Dialog>
+        </div>
+        );
+        }
