@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { MessageCircle, Loader2, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
   const [open, setOpen] = useState(false);
   const [selectedCamareros, setSelectedCamareros] = useState([]);
+  const queryClient = useQueryClient();
 
   const calcularTiempoTransporte = (puntoEncuentro, destino) => {
     // Estimación simple: 30 minutos por defecto + 15 minutos
@@ -67,6 +68,8 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
         selectedCamareros.includes(c.id)
       );
 
+      const asignacionesActualizadas = [];
+
       for (const camarero of camarerosSeleccionados) {
         if (!camarero.telefono) continue;
 
@@ -84,12 +87,19 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
         // Abrir en nueva pestaña
         window.open(whatsappURL, '_blank');
         
+        // Actualizar estado a "enviado"
+        await base44.entities.AsignacionCamarero.update(asignacion.id, { estado: 'enviado' });
+        asignacionesActualizadas.push(asignacion.id);
+        
         // Pequeña pausa entre mensajes
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
+
+      return asignacionesActualizadas;
     },
     onSuccess: () => {
-      toast.success('Mensajes de WhatsApp preparados');
+      queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+      toast.success('Mensajes enviados y estados actualizados');
       setOpen(false);
     }
   });
