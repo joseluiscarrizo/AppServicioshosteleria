@@ -128,74 +128,72 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
           Enviar WhatsApp
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Enviar Confirmación por WhatsApp</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[70vh] pr-3">
-          <div className="space-y-4">
-            <div className="p-4 bg-slate-50 rounded-lg">
-              <h4 className="font-medium mb-2">Evento: {pedido.cliente}</h4>
-              <p className="text-sm text-slate-600">
-                {pedido.dia} • {pedido.entrada} • {pedido.lugar_evento}
-              </p>
-              {pedido.extra_transporte && (
-                <p className="text-sm text-green-600 mt-1">✓ Incluye transporte</p>
-              )}
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="font-medium">Seleccionar Camareros</h4>
-                <Button variant="outline" size="sm" onClick={seleccionarTodos}>
-                  Seleccionar Todos
-                </Button>
-              </div>
-
-              <div className="border rounded-lg p-3 max-h-80 overflow-y-auto">
-                <div className="space-y-2">
-                  {camarerosAsignados.map(camarero => (
-                    <div 
-                      key={camarero.id}
-                      className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded"
-                    >
-                      <Checkbox
-                        checked={selectedCamareros.includes(camarero.id)}
-                        onCheckedChange={() => toggleCamarero(camarero.id)}
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium">{camarero.nombre}</p>
-                        <p className="text-sm text-slate-500">{camarero.telefono || 'Sin teléfono'}</p>
-                      </div>
-                      {!camarero.telefono && (
-                        <span className="text-xs text-red-500">Sin teléfono</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={() => enviarMutation.mutate()}
-                disabled={selectedCamareros.length === 0 || enviarMutation.isPending}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {enviarMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4 mr-2" />
-                )}
-                Enviar a {selectedCamareros.length} camarero(s)
-              </Button>
-            </div>
+        <div className="flex flex-col flex-1 min-h-0 space-y-4">
+          <div className="p-4 bg-slate-50 rounded-lg flex-shrink-0">
+            <h4 className="font-medium mb-2">Evento: {pedido.cliente}</h4>
+            <p className="text-sm text-slate-600">
+              {pedido.dia} • {pedido.entrada} • {pedido.lugar_evento}
+            </p>
+            {pedido.extra_transporte && (
+              <p className="text-sm text-green-600 mt-1">✓ Incluye transporte</p>
+            )}
           </div>
-        </ScrollArea>
+
+          <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex justify-between items-center mb-3 flex-shrink-0">
+              <h4 className="font-medium">Seleccionar Camareros ({camarerosAsignados.length})</h4>
+              <Button variant="outline" size="sm" onClick={seleccionarTodos}>
+                Seleccionar Todos
+              </Button>
+            </div>
+
+            <ScrollArea className="flex-1 border rounded-lg">
+              <div className="p-3 space-y-2">
+                {camarerosAsignados.map(camarero => (
+                  <div 
+                    key={camarero.id}
+                    className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded"
+                  >
+                    <Checkbox
+                      checked={selectedCamareros.includes(camarero.id)}
+                      onCheckedChange={() => toggleCamarero(camarero.id)}
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium">{camarero.nombre}</p>
+                      <p className="text-sm text-slate-500">{camarero.telefono || 'Sin teléfono'}</p>
+                    </div>
+                    {!camarero.telefono && (
+                      <span className="text-xs text-red-500">Sin teléfono</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2 border-t flex-shrink-0">
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => enviarMutation.mutate()}
+              disabled={selectedCamareros.length === 0 || enviarMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {enviarMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4 mr-2" />
+              )}
+              Enviar a {selectedCamareros.length} camarero(s)
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
