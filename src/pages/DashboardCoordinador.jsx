@@ -17,9 +17,11 @@ import {
   TrendingUp,
   UserCheck,
   Ban,
-  Zap
+  Zap,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
-import { format, isToday, isTomorrow, differenceInHours, addDays } from 'date-fns';
+import { format, isToday, isTomorrow, differenceInHours, addDays, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay, addMonths, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -27,6 +29,7 @@ import { motion } from 'framer-motion';
 
 export default function DashboardCoordinador() {
   const [filtroAlertas, setFiltroAlertas] = useState('todas'); // todas, urgentes, pedidos, cancelaciones
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // Fetch data
   const { data: pedidos = [] } = useQuery({
@@ -157,6 +160,31 @@ export default function DashboardCoordinador() {
     return true;
   });
 
+  // Calendario
+  const dias = React.useMemo(() => {
+    const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
+    const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 1 });
+    return eachDayOfInterval({ start, end });
+  }, [currentMonth]);
+
+  const getDatosDia = (dia) => {
+    const fechaStr = format(dia, 'yyyy-MM-dd');
+    const pedidosDia = pedidos.filter(p => p.dia === fechaStr && p.estado_evento !== 'cancelado');
+    const asignacionesDia = asignaciones.filter(a => a.fecha_pedido === fechaStr);
+    
+    const totalCamareros = pedidosDia.reduce((sum, p) => {
+      if (p.turnos?.length > 0) {
+        return sum + p.turnos.reduce((s, t) => s + (t.cantidad_camareros || 0), 0);
+      }
+      return sum + (p.cantidad_camareros || 0);
+    }, 0);
+
+    const asignados = asignacionesDia.length;
+    const pendientes = totalCamareros - asignados;
+
+    return { pedidos: pedidosDia, totalCamareros, asignados, pendientes };
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -246,93 +274,127 @@ export default function DashboardCoordinador() {
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Alertas Urgentes */}
+          {/* Calendario Mensual */}
           <Card className="lg:col-span-2 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-500" />
-                Alertas Urgentes ({alertasFiltradas.length})
+                <Calendar className="w-5 h-5 text-[#1e3a5f]" />
+                Calendario de Eventos
               </h2>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={filtroAlertas === 'todas' ? 'default' : 'outline'}
-                  onClick={() => setFiltroAlertas('todas')}
-                  className={filtroAlertas === 'todas' ? 'bg-[#1e3a5f]' : ''}
-                >
-                  Todas
+              <div className="flex items-center gap-3">
+                <Button variant="outline" size="sm" onClick={() => setCurrentMonth(new Date())}>
+                  Hoy
                 </Button>
-                <Button
-                  size="sm"
-                  variant={filtroAlertas === 'urgentes' ? 'default' : 'outline'}
-                  onClick={() => setFiltroAlertas('urgentes')}
-                  className={filtroAlertas === 'urgentes' ? 'bg-red-600 hover:bg-red-700' : ''}
-                >
-                  Urgentes
+                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm font-medium text-slate-700 min-w-[140px] text-center">
+                  {format(currentMonth, 'MMMM yyyy', { locale: es })}
+                </span>
+                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+                  <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
             </div>
 
-            <ScrollArea className="h-[500px] pr-4">
-              {alertasFiltradas.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-64 text-slate-400">
-                  <CheckCircle2 className="w-16 h-16 mb-3" />
-                  <p className="text-lg font-medium">Todo bajo control</p>
-                  <p className="text-sm">No hay alertas pendientes</p>
+            {/* Leyenda */}
+            <div className="flex items-center gap-4 mb-4 text-xs flex-wrap">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-emerald-500"></div>
+                <span className="text-slate-600">Completo</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-amber-500"></div>
+                <span className="text-slate-600">Parcial</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-red-500"></div>
+                <span className="text-slate-600">Sin asignar</span>
+              </div>
+            </div>
+
+            {/* Grid del Calendario */}
+            <div className="grid grid-cols-7 gap-2">
+              {/* Headers días */}
+              {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(dia => (
+                <div key={dia} className="text-center text-sm font-semibold text-slate-500 pb-2">
+                  {dia}
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {alertasFiltradas.map(alerta => (
-                    <motion.div
-                      key={alerta.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className={`p-4 rounded-lg border-l-4 ${
-                        alerta.prioridad === 'urgente' ? 'bg-red-50 border-l-red-500' :
-                        alerta.prioridad === 'alta' ? 'bg-amber-50 border-l-amber-500' :
-                        'bg-blue-50 border-l-blue-500'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge className={
-                              alerta.prioridad === 'urgente' ? 'bg-red-600' :
-                              alerta.prioridad === 'alta' ? 'bg-amber-600' : 'bg-blue-600'
-                            }>
-                              {alerta.prioridad === 'urgente' ? <Zap className="w-3 h-3 mr-1" /> : null}
-                              {alerta.prioridad.toUpperCase()}
-                            </Badge>
-                            {alerta.tipo === 'cancelacion' && (
-                              <Badge variant="outline" className="border-red-500 text-red-700">
-                                <Ban className="w-3 h-3 mr-1" />
-                                Cancelado
-                              </Badge>
-                            )}
-                          </div>
-                          <h3 className="font-semibold text-slate-800">{alerta.titulo}</h3>
-                          <p className="text-sm text-slate-600 mt-1">{alerta.descripcion}</p>
+              ))}
+
+              {/* Días */}
+              {dias.map(dia => {
+                const esHoy = isSameDay(dia, new Date());
+                const esMesActual = dia.getMonth() === currentMonth.getMonth();
+                const datos = getDatosDia(dia);
+                const tieneEventos = datos.pedidos.length > 0;
+                
+                let colorFondo = 'bg-slate-50';
+                let colorBorde = 'border-slate-200';
+                
+                if (tieneEventos) {
+                  if (datos.pendientes === 0) {
+                    colorFondo = 'bg-emerald-50';
+                    colorBorde = 'border-emerald-300';
+                  } else if (datos.asignados > 0) {
+                    colorFondo = 'bg-amber-50';
+                    colorBorde = 'border-amber-300';
+                  } else {
+                    colorFondo = 'bg-red-50';
+                    colorBorde = 'border-red-300';
+                  }
+                }
+
+                return (
+                  <div
+                    key={dia.toString()}
+                    className={`
+                      min-h-[90px] p-2 rounded-lg border transition-all
+                      ${esHoy ? 'border-[#1e3a5f] border-2 shadow-md' : colorBorde}
+                      ${!esMesActual ? 'opacity-40' : ''}
+                      ${colorFondo}
+                      ${tieneEventos ? 'cursor-pointer hover:shadow-md hover:scale-105' : ''}
+                    `}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-sm font-medium ${esHoy ? 'text-[#1e3a5f]' : 'text-slate-700'}`}>
+                        {format(dia, 'd')}
+                      </span>
+                      {tieneEventos && (
+                        <Badge variant="outline" className="text-xs px-1 h-5">
+                          {datos.pedidos.length}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {tieneEventos && (
+                      <div className="space-y-1">
+                        <div className="text-xs text-slate-600 flex items-center justify-center gap-1 bg-white/50 rounded py-1">
+                          <Users className="w-3 h-3" />
+                          <span className="font-semibold">{datos.asignados}/{datos.totalCamareros}</span>
                         </div>
-                        <div className="flex gap-2">
-                          {alerta.accion === 'asignar' && (
-                            <Link to={createPageUrl('Asignacion')}>
-                              <Button size="sm" className="bg-[#1e3a5f] hover:bg-[#152a45]">
-                                Asignar
-                              </Button>
-                            </Link>
-                          )}
-                          <Link to={createPageUrl('Pedidos')}>
-                            <Button size="sm" variant="outline">
-                              Ver
-                            </Button>
+                        {datos.pedidos.slice(0, 2).map(pedido => (
+                          <Link 
+                            key={pedido.id} 
+                            to={createPageUrl('TiempoReal')}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="text-xs bg-white rounded p-1 border border-slate-200 hover:bg-slate-50 hover:shadow transition-all cursor-pointer truncate">
+                              <p className="font-medium text-slate-700 truncate">{pedido.cliente}</p>
+                            </div>
                           </Link>
-                        </div>
+                        ))}
+                        {datos.pedidos.length > 2 && (
+                          <p className="text-xs text-slate-500 text-center">
+                            +{datos.pedidos.length - 2}
+                          </p>
+                        )}
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </Card>
 
           {/* Estado de Camareros */}
