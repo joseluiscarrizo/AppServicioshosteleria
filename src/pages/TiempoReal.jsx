@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clock, Search, Calendar, RefreshCw, Star, Users, Mail, MessageCircle } from 'lucide-react';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import HojaAsistencia from '../components/tiemporeal/HojaAsistencia';
@@ -189,8 +190,8 @@ export default function TiempoReal() {
 
                     {/* Modal de Detalle del Evento */}
                     <Dialog open={detalleEventoModal.open} onOpenChange={(open) => setDetalleEventoModal({ open, pedido: null })}>
-                    <DialogContent className="max-w-3xl">
-                    <DialogHeader>
+                    <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+                    <DialogHeader className="flex-shrink-0">
                     <DialogTitle className="flex items-center gap-2">
                     <Users className="w-5 h-5 text-[#1e3a5f]" />
                     {detalleEventoModal.pedido?.cliente}
@@ -198,6 +199,7 @@ export default function TiempoReal() {
                     </DialogHeader>
 
                     {detalleEventoModal.pedido && (
+                    <ScrollArea className="flex-1 pr-4">
                     <div className="space-y-4">
                     <div className="bg-slate-50 p-4 rounded-lg">
                     <div className="grid grid-cols-2 gap-3 text-sm">
@@ -259,6 +261,7 @@ export default function TiempoReal() {
                     />
                     </div>
                     </div>
+                    </ScrollArea>
                     )}
                     </DialogContent>
                     </Dialog>
