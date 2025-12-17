@@ -128,36 +128,36 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
           Enviar WhatsApp
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Enviar Confirmación por WhatsApp</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col flex-1 min-h-0 space-y-4">
-          <div className="p-4 bg-slate-50 rounded-lg flex-shrink-0">
-            <h4 className="font-medium mb-2">Evento: {pedido.cliente}</h4>
-            <p className="text-sm text-slate-600">
-              {pedido.dia} • {pedido.entrada} • {pedido.lugar_evento}
-            </p>
-            {pedido.extra_transporte && (
-              <p className="text-sm text-green-600 mt-1">✓ Incluye transporte</p>
-            )}
-          </div>
-
-          <div className="flex flex-col flex-1 min-h-0">
-            <div className="flex justify-between items-center mb-3 flex-shrink-0">
-              <h4 className="font-medium">Seleccionar Camareros ({camarerosAsignados.length})</h4>
-              <Button variant="outline" size="sm" onClick={seleccionarTodos}>
-                Seleccionar Todos
-              </Button>
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="space-y-4">
+            <div className="p-4 bg-slate-50 rounded-lg">
+              <h4 className="font-medium mb-2">Evento: {pedido.cliente}</h4>
+              <p className="text-sm text-slate-600">
+                {pedido.dia} • {pedido.entrada} • {pedido.lugar_evento}
+              </p>
+              {pedido.extra_transporte && (
+                <p className="text-sm text-green-600 mt-1">✓ Incluye transporte</p>
+              )}
             </div>
 
-            <ScrollArea className="flex-1 border rounded-lg">
-              <div className="p-3 space-y-2">
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="font-medium">Seleccionar Camareros ({camarerosAsignados.length})</h4>
+                <Button variant="outline" size="sm" onClick={seleccionarTodos}>
+                  Seleccionar Todos
+                </Button>
+              </div>
+
+              <div className="space-y-2">
                 {camarerosAsignados.map(camarero => (
                   <div 
                     key={camarero.id}
-                    className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded"
+                    className="flex items-center gap-3 p-3 border rounded-lg hover:bg-slate-50"
                   >
                     <Checkbox
                       checked={selectedCamareros.includes(camarero.id)}
@@ -173,26 +173,26 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           </div>
+        </div>
 
-          <div className="flex justify-end gap-3 pt-2 border-t flex-shrink-0">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={() => enviarMutation.mutate()}
-              disabled={selectedCamareros.length === 0 || enviarMutation.isPending}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {enviarMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4 mr-2" />
-              )}
-              Enviar a {selectedCamareros.length} camarero(s)
-            </Button>
-          </div>
+        <div className="px-6 py-4 border-t bg-white flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => enviarMutation.mutate()}
+            disabled={selectedCamareros.length === 0 || enviarMutation.isPending}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            {enviarMutation.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4 mr-2" />
+            )}
+            Enviar a {selectedCamareros.length} camarero(s)
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
