@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, Plus, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -111,9 +112,9 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 mb-8"
+      className="bg-white rounded-2xl shadow-xl border border-slate-100 mb-8 max-h-[85vh] flex flex-col"
     >
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center p-8 pb-4 border-b">
         <h2 className="text-xl font-semibold text-slate-800">
           {pedido ? 'Editar Pedido' : 'Nuevo Pedido'}
         </h2>
@@ -122,7 +123,8 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <ScrollArea className="flex-1 px-8">
+      <form id="pedido-form" onSubmit={handleSubmit} className="space-y-6 py-6">
         {/* Números automáticos */}
         <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
           <div className="space-y-2">
@@ -299,16 +301,18 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
           />
         </div>
 
-        {/* Botones */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
-          </Button>
-          <Button type="submit" className="bg-[#1e3a5f] hover:bg-[#152a45] text-white">
-            {pedido ? 'Guardar Cambios' : 'Crear Pedido'}
-          </Button>
-        </div>
       </form>
+      </ScrollArea>
+
+      {/* Botones fijos abajo */}
+      <div className="flex justify-end gap-3 p-8 pt-4 border-t bg-white">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button type="submit" form="pedido-form" className="bg-[#1e3a5f] hover:bg-[#152a45] text-white">
+          {pedido ? 'Guardar Cambios' : 'Crear Pedido'}
+        </Button>
+      </div>
     </motion.div>
   );
 }
