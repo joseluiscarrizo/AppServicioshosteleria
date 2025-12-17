@@ -21,6 +21,7 @@ export default function CalendarioAsignacionRapida() {
   const [selectedPedidoAsignacion, setSelectedPedidoAsignacion] = useState(null);
   const [busquedaCamarero, setBusquedaCamarero] = useState('');
   const [showTodosCamareros, setShowTodosCamareros] = useState(false);
+  const [showAsignados, setShowAsignados] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: pedidos = [] } = useQuery({
@@ -82,6 +83,14 @@ export default function CalendarioAsignacionRapida() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
       toast.success('Asignación eliminada');
+    }
+  });
+
+  const updateEstadoMutation = useMutation({
+    mutationFn: ({ id, estado }) => base44.entities.AsignacionCamarero.update(id, { estado }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+      toast.success('Estado actualizado');
     }
   });
 
@@ -375,25 +384,26 @@ export default function CalendarioAsignacionRapida() {
                   {/* Asignaciones Actuales */}
                   {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).length > 0 && (
                     <div className="mb-3 flex-shrink-0">
-                      <h5 className="text-sm font-semibold text-emerald-700 mb-2 flex items-center gap-2">
+                      <h5 
+                        className="text-sm font-semibold text-emerald-700 mb-2 flex items-center gap-2 cursor-pointer hover:text-emerald-800 transition-colors"
+                        onClick={() => setShowAsignados(true)}
+                      >
                         ✓ Asignados ({asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).length})
+                        <span className="text-xs font-normal text-emerald-600">(click para ver todos)</span>
                       </h5>
                       <ScrollArea className="max-h-32">
                         <div className="space-y-1.5 pr-2">
-                          {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).map(asig => (
+                          {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).slice(0, 3).map(asig => (
                             <div key={asig.id} className="flex items-center justify-between text-sm p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
                               <span className="text-slate-800 font-medium text-xs truncate">{asig.camarero_nombre}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteAsignacionMutation.mutate(asig);
-                                }}
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
+                              <div className={`px-2 py-0.5 rounded text-xs ${
+                                asig.estado === 'confirmado' ? 'bg-green-500 text-white' :
+                                asig.estado === 'enviado' ? 'bg-orange-500 text-white' :
+                                'bg-slate-400 text-white'
+                              }`}>
+                                {asig.estado === 'confirmado' ? 'Confirmado' : 
+                                 asig.estado === 'enviado' ? 'Enviado' : 'Sin enviar'}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -592,6 +602,102 @@ export default function CalendarioAsignacionRapida() {
               </div>
             </ScrollArea>
           </div>
+        </DialogContent>
+        </Dialog>
+
+        {/* Modal de Camareros Asignados */}
+        <Dialog open={showAsignados} onOpenChange={setShowAsignados}>
+        <DialogContent className="max-w-2xl max-h-[85vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-emerald-600" />
+            Camareros Asignados
+            {selectedPedidoAsignacion && (
+              <span className="text-sm font-normal text-slate-500">
+                - {selectedPedidoAsignacion.cliente}
+              </span>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+
+        <ScrollArea className="h-[60vh] pr-3">
+          <div className="space-y-2">
+            {selectedPedidoAsignacion && asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).map(asig => {
+              const camarero = camareros.find(c => c.id === asig.camarero_id);
+
+              return (
+                <div key={asig.id} className="p-4 border-2 border-emerald-200 bg-emerald-50 rounded-lg">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-slate-800">{asig.camarero_nombre}</span>
+                        {camarero?.valoracion_promedio > 0 && (
+                          <span className="flex items-center gap-0.5 text-amber-500 text-sm">
+                            <Star className="w-4 h-4 fill-amber-400" />
+                            {camarero.valoracion_promedio.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-500 font-mono mb-2">#{asig.camarero_codigo}</p>
+
+                      <div className="flex items-center gap-3">
+                        <Select 
+                          value={asig.estado} 
+                          onValueChange={(estado) => updateEstadoMutation.mutate({ id: asig.id, estado })}
+                        >
+                          <SelectTrigger className={`w-36 h-8 text-sm ${
+                            asig.estado === 'confirmado' ? 'bg-green-500 text-white border-green-600' :
+                            asig.estado === 'enviado' ? 'bg-orange-500 text-white border-orange-600' :
+                            'bg-slate-400 text-white border-slate-500'
+                          }`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pendiente">
+                              <span className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-slate-400"></span>
+                                Sin enviar
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="enviado">
+                              <span className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-orange-500"></span>
+                                Enviado
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="confirmado">
+                              <span className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                                Confirmado
+                              </span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => deleteAsignacionMutation.mutate(asig)}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Eliminar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {selectedPedidoAsignacion && asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).length === 0 && (
+              <div className="text-center py-12 text-slate-400">
+                <Users className="w-16 h-16 mx-auto mb-3 opacity-30" />
+                <p className="text-base">No hay camareros asignados a este evento</p>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
         </DialogContent>
         </Dialog>
         </div>
