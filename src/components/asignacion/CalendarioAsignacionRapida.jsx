@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users, AlertTriangle, X, Plus, Clock, MapPin, Star } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users, AlertTriangle, X, Plus, Clock, MapPin, Star, Search } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ export default function CalendarioAsignacionRapida() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [showAsignacionPanel, setShowAsignacionPanel] = useState(false);
   const [selectedPedidoAsignacion, setSelectedPedidoAsignacion] = useState(null);
+  const [busquedaCamarero, setBusquedaCamarero] = useState('');
   const queryClient = useQueryClient();
 
   const { data: pedidos = [] } = useQuery({
@@ -156,6 +158,7 @@ export default function CalendarioAsignacionRapida() {
 
   const handleClickDia = (dia) => {
     setSelectedDate(dia);
+    setBusquedaCamarero('');
     const datos = getDatosDia(dia);
     if (datos.pedidos.length > 0) {
       setShowAsignacionPanel(true);
@@ -399,13 +402,34 @@ export default function CalendarioAsignacionRapida() {
 
                   {/* Camareros Disponibles */}
                   <div className="flex-1 flex flex-col min-h-0">
-                    <h4 className="font-semibold text-slate-800 mb-2 flex items-center gap-2">
-                      <Users className="w-4 h-4 text-[#1e3a5f]" />
-                      Disponibles ({getCamarerosDisponibles(selectedPedidoAsignacion).length})
-                    </h4>
+                    <div className="mb-3">
+                      <h4 className="font-semibold text-slate-800 mb-2 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-[#1e3a5f]" />
+                        Disponibles ({getCamarerosDisponibles(selectedPedidoAsignacion).filter(c => 
+                          !busquedaCamarero || 
+                          c.nombre.toLowerCase().includes(busquedaCamarero.toLowerCase()) ||
+                          c.codigo.toLowerCase().includes(busquedaCamarero.toLowerCase())
+                        ).length})
+                      </h4>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          placeholder="Buscar camarero..."
+                          value={busquedaCamarero}
+                          onChange={(e) => setBusquedaCamarero(e.target.value)}
+                          className="pl-9 h-9"
+                        />
+                      </div>
+                    </div>
                     <ScrollArea className="flex-1 pr-1">
                       <div className="space-y-2 pr-1">
-                        {getCamarerosDisponibles(selectedPedidoAsignacion).map(camarero => (
+                        {getCamarerosDisponibles(selectedPedidoAsignacion)
+                          .filter(c => 
+                            !busquedaCamarero || 
+                            c.nombre.toLowerCase().includes(busquedaCamarero.toLowerCase()) ||
+                            c.codigo.toLowerCase().includes(busquedaCamarero.toLowerCase())
+                          )
+                          .map(camarero => (
                           <div
                             key={camarero.id}
                             className="p-2.5 border-2 border-slate-200 rounded-lg hover:border-[#1e3a5f] hover:bg-[#1e3a5f]/5 transition-all cursor-pointer"
@@ -435,10 +459,17 @@ export default function CalendarioAsignacionRapida() {
                             </div>
                           </div>
                         ))}
-                        {getCamarerosDisponibles(selectedPedidoAsignacion).length === 0 && (
+                        {getCamarerosDisponibles(selectedPedidoAsignacion)
+                          .filter(c => 
+                            !busquedaCamarero || 
+                            c.nombre.toLowerCase().includes(busquedaCamarero.toLowerCase()) ||
+                            c.codigo.toLowerCase().includes(busquedaCamarero.toLowerCase())
+                          ).length === 0 && (
                           <div className="text-center py-8 text-slate-400">
                             <Users className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                            <p className="text-sm">No hay camareros disponibles</p>
+                            <p className="text-sm">
+                              {busquedaCamarero ? 'No se encontraron camareros' : 'No hay camareros disponibles'}
+                            </p>
                           </div>
                         )}
                       </div>
