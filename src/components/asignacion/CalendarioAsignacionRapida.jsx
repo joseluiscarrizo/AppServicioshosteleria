@@ -405,7 +405,6 @@ export default function CalendarioAsignacionRapida() {
                     </h4>
                     <ScrollArea className="flex-1 pr-1">
                       <div className="space-y-2 pr-1">
-                      <div className="space-y-2">
                         {getCamarerosDisponibles(selectedPedidoAsignacion).map(camarero => (
                           <div
                             key={camarero.id}
