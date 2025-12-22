@@ -123,8 +123,7 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 min-h-0 h-full">
-        <div className="px-6 py-4 bg-slate-50">
+      <div className="flex-1 overflow-y-auto px-6 py-4 bg-slate-50" style={{ maxHeight: 'calc(88vh - 140px)' }}>
       <form id="pedido-form" onSubmit={handleSubmit} className="space-y-5">
         {/* Números automáticos */}
         <Card className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
@@ -334,8 +333,7 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </Card>
 
       </form>
-        </div>
-      </ScrollArea>
+      </div>
 
       {/* Botones fijos abajo */}
       <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gradient-to-r from-slate-50 to-white shadow-lg flex-shrink-0">
