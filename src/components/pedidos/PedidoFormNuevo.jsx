@@ -149,19 +149,21 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-7xl mx-auto my-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onCancel()}
     >
-      <div className="flex justify-between items-center px-6 py-4 border-b bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f]">
-        <h2 className="text-2xl font-bold text-white">
-          {pedido ? '✏️ Editar Pedido' : '✨ Nuevo Pedido'}
-        </h2>
-        <Button variant="ghost" size="icon" onClick={onCancel} className="text-white hover:bg-white/20">
-          <X className="w-5 h-5" />
-        </Button>
-      </div>
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-7xl max-h-[95vh] flex flex-col">
+        <div className="flex justify-between items-center px-6 py-4 border-b bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] flex-shrink-0">
+          <h2 className="text-2xl font-bold text-white">
+            {pedido ? '✏️ Editar Pedido' : '✨ Nuevo Pedido'}
+          </h2>
+          <Button variant="ghost" size="icon" onClick={onCancel} className="text-white hover:bg-white/20">
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
 
-      <ScrollArea className="h-[calc(90vh-140px)]" type="always">
-        <div className="px-6 py-5 bg-slate-50 pr-4">
+        <div className="flex-1 overflow-y-auto bg-slate-50 px-6 py-5" style={{ maxHeight: 'calc(95vh - 150px)' }}>
+          <div className="pr-2">
       <form id="pedido-form" onSubmit={handleSubmit} className="space-y-5">
         {/* Números automáticos */}
         <Card className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
@@ -376,18 +378,19 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
           />
         </Card>
 
-      </form>
+        </form>
+          </div>
         </div>
-      </ScrollArea>
 
-      {/* Botones fijos abajo */}
-      <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gradient-to-r from-slate-50 to-white shadow-lg">
+        {/* Botones fijos abajo */}
+        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gradient-to-r from-slate-50 to-white shadow-lg flex-shrink-0">
         <Button type="button" variant="outline" onClick={onCancel} className="px-6">
           Cancelar
         </Button>
         <Button type="submit" form="pedido-form" className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] hover:from-[#152a45] hover:to-[#1e3a5f] text-white px-8 shadow-md">
           {pedido ? '💾 Guardar Cambios' : '✨ Crear Pedido'}
         </Button>
+        </div>
       </div>
     </motion.div>
   );
