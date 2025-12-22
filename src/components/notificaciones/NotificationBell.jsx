@@ -9,11 +9,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bell, Check, CheckCheck, AlertTriangle, Clock, RefreshCw, Mail } from 'lucide-react';
+import { Bell, Check, CheckCheck, AlertTriangle, Clock, RefreshCw, Mail, Settings } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationService from './NotificationService';
+import ConfiguracionNotificaciones from './ConfiguracionNotificaciones';
 
 const prioridadColors = {
   baja: 'bg-slate-100 text-slate-600 border-slate-200',
@@ -31,15 +32,35 @@ const tipoIcons = {
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
+  const [lastCount, setLastCount] = useState(0);
   const queryClient = useQueryClient();
 
   const { data: notificaciones = [], isLoading } = useQuery({
     queryKey: ['notificaciones'],
     queryFn: () => base44.entities.Notificacion.list('-created_date', 50),
-    refetchInterval: 30000 // Refrescar cada 30 segundos
+    refetchInterval: 15000 // Refrescar cada 15 segundos para tiempo real
   });
 
   const noLeidas = notificaciones.filter(n => !n.leida);
+
+  // Detectar nuevas notificaciones y reproducir sonido
+  useEffect(() => {
+    if (noLeidas.length > lastCount && lastCount > 0) {
+      const config = JSON.parse(localStorage.getItem('notif_config') || '{}');
+      
+      if (config.sonido !== false) {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUKjj8LdjHAU2kdXy0HwzBSF7xvHglUMMEjTp6tCWQQQPU6vj77VqIQUygNLxx4IzBhRpv+7mnE4MDk+o4+6VQhQKRp/g8r5sIQUqgM/y3IwzBhpqvO7imEYLDlCn5O+1ah8GM4HSz8SAMwYTaL/u45ZFDA1PqOPwrmMcBTKA0s7FgDIGEWi+7t+XRQsNT6jj8K1mHwU0gtDLw30zBhFovO7el0QMDFCo4++zaiQFM4HSzsSANAcQabzu55dFDA1PqOPvsmkeByuBzvLaiTYIGWi76+yaTgwNUKjj77RpHAU2jtfyy3ovBSF6xvDdkEALEV60');
+        audio.volume = (config.volumen || 50) / 100;
+        audio.play().catch(() => {});
+      }
+
+      if (config.vibrar !== false && 'vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200]);
+      }
+    }
+    setLastCount(noLeidas.length);
+  }, [noLeidas.length]);
 
   const marcarLeidaMutation = useMutation({
     mutationFn: (id) => NotificationService.marcarComoLeida(id),
@@ -61,6 +82,7 @@ export default function NotificationBell() {
   }, []);
 
   return (
+    <>
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button 
@@ -86,17 +108,28 @@ export default function NotificationBell() {
       <PopoverContent className="w-96 p-0" align="end">
         <div className="flex items-center justify-between p-4 border-b border-slate-100">
           <h3 className="font-semibold text-slate-800">Notificaciones</h3>
-          {noLeidas.length > 0 && (
+          <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
-              size="sm" 
-              onClick={() => marcarTodasMutation.mutate()}
-              className="text-xs text-[#1e3a5f] hover:bg-[#1e3a5f]/10"
+              size="icon"
+              onClick={() => setShowConfig(true)}
+              className="h-8 w-8 text-slate-600 hover:text-[#1e3a5f]"
+              title="Configuración"
             >
-              <CheckCheck className="w-4 h-4 mr-1" />
-              Marcar todas
+              <Settings className="w-4 h-4" />
             </Button>
-          )}
+            {noLeidas.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => marcarTodasMutation.mutate()}
+                className="text-xs text-[#1e3a5f] hover:bg-[#1e3a5f]/10"
+              >
+                <CheckCheck className="w-4 h-4 mr-1" />
+                Marcar todas
+              </Button>
+            )}
+          </div>
         </div>
         
         <ScrollArea className="h-[400px]">
@@ -161,5 +194,11 @@ export default function NotificationBell() {
         </ScrollArea>
       </PopoverContent>
     </Popover>
+
+    <ConfiguracionNotificaciones 
+      open={showConfig}
+      onClose={() => setShowConfig(false)}
+    />
+  </>
   );
 }

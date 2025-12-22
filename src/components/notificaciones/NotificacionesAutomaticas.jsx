@@ -9,7 +9,7 @@ export default function NotificacionesAutomaticas({ showPushNotifications }) {
   const { data: pedidos = [] } = useQuery({
     queryKey: ['pedidos-automaticas'],
     queryFn: () => base44.entities.Pedido.list('dia', 500),
-    refetchInterval: 5 * 60 * 1000 // Cada 5 minutos
+    refetchInterval: 2 * 60 * 1000 // Cada 2 minutos para tiempo real
   });
 
   const { data: asignaciones = [] } = useQuery({
@@ -141,18 +141,29 @@ export default function NotificacionesAutomaticas({ showPushNotifications }) {
               if (!tieneAlertaReciente) {
                 const mensaje = `⚠️ URGENTE: El evento de ${pedido.cliente} mañana necesita ${cantidadNecesaria} camareros pero solo tiene ${cantidadAsignados} asignados`;
                 
-                await base44.entities.Notificacion.create({
-                  tipo: 'alerta',
-                  titulo: '🚨 Pedido Incompleto - Acción Requerida',
-                  mensaje,
-                  pedido_id: pedido.id,
-                  prioridad: 'urgente',
-                  leida: false
-                });
+                // Verificar configuración del usuario
+                const config = JSON.parse(localStorage.getItem('notif_config') || '{}');
                 
-                // Push notification urgente
-                if (showPushNotifications) {
-                  showPushNotifications('🚨 Pedido Incompleto', mensaje);
+                if (config.alertasUrgentes?.pedidoIncompleto !== false) {
+                  await base44.entities.Notificacion.create({
+                    tipo: 'alerta',
+                    titulo: '🚨 Pedido Incompleto - Acción Requerida',
+                    mensaje,
+                    pedido_id: pedido.id,
+                    prioridad: 'urgente',
+                    leida: false
+                  });
+                  
+                  // Push notification urgente
+                  if (showPushNotifications && config.habilitadas !== false) {
+                    showPushNotifications('🚨 Pedido Incompleto', mensaje);
+                  }
+
+                  // Toast visual
+                  toast.error(mensaje, {
+                    duration: 10000,
+                    icon: '🚨'
+                  });
                 }
                 
                 // Enviar email a coordinadores
