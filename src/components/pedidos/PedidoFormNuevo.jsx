@@ -149,9 +149,9 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-white rounded-2xl shadow-2xl border border-slate-200 mb-8 max-h-[88vh] flex flex-col overflow-hidden w-full max-w-5xl mx-auto"
+      className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-7xl mx-auto my-4"
     >
-      <div className="flex justify-between items-center px-6 py-5 border-b bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] flex-shrink-0">
+      <div className="flex justify-between items-center px-6 py-4 border-b bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f]">
         <h2 className="text-2xl font-bold text-white">
           {pedido ? '✏️ Editar Pedido' : '✨ Nuevo Pedido'}
         </h2>
@@ -160,7 +160,8 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-4 bg-slate-50" style={{ maxHeight: 'calc(88vh - 140px)' }}>
+      <ScrollArea className="h-[calc(85vh-140px)]">
+        <div className="px-6 py-5 bg-slate-50">
       <form id="pedido-form" onSubmit={handleSubmit} className="space-y-5">
         {/* Números automáticos */}
         <Card className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
@@ -376,10 +377,11 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </Card>
 
       </form>
-      </div>
+        </div>
+      </ScrollArea>
 
       {/* Botones fijos abajo */}
-      <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gradient-to-r from-slate-50 to-white shadow-lg flex-shrink-0">
+      <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gradient-to-r from-slate-50 to-white shadow-lg">
         <Button type="button" variant="outline" onClick={onCancel} className="px-6">
           Cancelar
         </Button>
