@@ -162,7 +162,7 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-slate-50 px-6 py-5" style={{ maxHeight: 'calc(95vh - 150px)' }}>
+        <div className="flex-1 overflow-y-scroll bg-slate-50 px-6 py-5 scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200">
           <div className="pr-2">
       <form id="pedido-form" onSubmit={handleSubmit} className="space-y-5">
         {/* Números automáticos */}
