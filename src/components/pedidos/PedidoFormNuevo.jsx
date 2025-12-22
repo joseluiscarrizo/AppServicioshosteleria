@@ -112,9 +112,9 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-white rounded-2xl shadow-2xl border border-slate-200 mb-8 max-h-[90vh] flex flex-col overflow-hidden"
+      className="bg-white rounded-2xl shadow-2xl border border-slate-200 mb-8 max-h-[88vh] flex flex-col overflow-hidden w-full max-w-5xl mx-auto"
     >
-      <div className="flex justify-between items-center px-8 py-6 border-b bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f]">
+      <div className="flex justify-between items-center px-6 py-5 border-b bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] flex-shrink-0">
         <h2 className="text-2xl font-bold text-white">
           {pedido ? '✏️ Editar Pedido' : '✨ Nuevo Pedido'}
         </h2>
@@ -123,10 +123,11 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 px-8 bg-slate-50">
-      <form id="pedido-form" onSubmit={handleSubmit} className="space-y-6 py-6">
+      <ScrollArea className="flex-1 min-h-0 h-full">
+        <div className="px-6 py-4 bg-slate-50">
+      <form id="pedido-form" onSubmit={handleSubmit} className="space-y-5">
         {/* Números automáticos */}
-        <Card className="p-5 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
+        <Card className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
             <span className="text-sm font-semibold text-indigo-900">Identificadores</span>
@@ -152,12 +153,12 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </Card>
 
         {/* Información básica */}
-        <Card className="p-6 bg-white border-slate-200">
-          <div className="flex items-center gap-2 mb-4">
+        <Card className="p-5 bg-white border-slate-200">
+          <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-2 rounded-full bg-[#1e3a5f]"></div>
             <span className="text-sm font-semibold text-slate-800">Información Básica</span>
           </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="cliente" className="text-slate-700 font-medium">Cliente *</Label>
             <Input
@@ -233,8 +234,8 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </Card>
 
         {/* Turnos y Horarios */}
-        <Card className="p-6 bg-white border-slate-200">
-          <div className="flex items-center justify-between mb-4">
+        <Card className="p-5 bg-white border-slate-200">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-[#1e3a5f]"></div>
               <Label className="text-lg font-semibold text-slate-800">⏰ Turnos y Horarios</Label>
@@ -247,8 +248,8 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
 
           <div className="space-y-3">
             {formData.turnos.map((turno, index) => (
-              <Card key={index} className="p-5 bg-gradient-to-br from-slate-50 to-white border-slate-300 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-4">
+              <Card key={index} className="p-4 bg-gradient-to-br from-slate-50 to-white border-slate-300 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-3">
                   <h4 className="font-semibold text-slate-800 flex items-center gap-2">
                     <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1e3a5f] text-white text-xs">
                       {index + 1}
@@ -317,7 +318,7 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </Card>
 
         {/* Notas */}
-        <Card className="p-6 bg-white border-slate-200">
+        <Card className="p-5 bg-white border-slate-200 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-2 rounded-full bg-[#1e3a5f]"></div>
             <Label htmlFor="notas" className="text-lg font-semibold text-slate-800">📝 Notas Adicionales</Label>
@@ -333,10 +334,11 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </Card>
 
       </form>
+        </div>
       </ScrollArea>
 
       {/* Botones fijos abajo */}
-      <div className="flex justify-end gap-3 p-8 pt-5 border-t bg-gradient-to-r from-slate-50 to-white shadow-lg">
+      <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gradient-to-r from-slate-50 to-white shadow-lg flex-shrink-0">
         <Button type="button" variant="outline" onClick={onCancel} className="px-6">
           Cancelar
         </Button>
