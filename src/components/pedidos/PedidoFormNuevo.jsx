@@ -160,8 +160,8 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </Button>
       </div>
 
-      <ScrollArea className="h-[calc(85vh-140px)]">
-        <div className="px-6 py-5 bg-slate-50">
+      <ScrollArea className="h-[calc(90vh-140px)]" type="always">
+        <div className="px-6 py-5 bg-slate-50 pr-4">
       <form id="pedido-form" onSubmit={handleSubmit} className="space-y-5">
         {/* Números automáticos */}
         <Card className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
