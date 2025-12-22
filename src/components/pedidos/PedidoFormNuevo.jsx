@@ -11,12 +11,21 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, Plus, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import SelectorCliente from '../crm/SelectorCliente';
+import InfoCliente from '../crm/InfoCliente';
 
 export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     numero_cliente: 0,
     numero_pedido_cliente: 0,
     cliente: '',
+    cliente_id: null,
+    cliente_email_1: '',
+    cliente_email_2: '',
+    cliente_telefono_1: '',
+    cliente_telefono_2: '',
+    cliente_persona_contacto_1: '',
+    cliente_persona_contacto_2: '',
     lugar_evento: '',
     dia: '',
     link_ubicacion: '',
@@ -26,9 +35,16 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
     notas: ''
   });
 
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
+
   const { data: pedidos = [] } = useQuery({
     queryKey: ['pedidos'],
     queryFn: () => base44.entities.Pedido.list('-numero_cliente', 1000)
+  });
+
+  const { data: clientes = [] } = useQuery({
+    queryKey: ['clientes'],
+    queryFn: () => base44.entities.Cliente.list('nombre')
   });
 
   useEffect(() => {
@@ -38,6 +54,12 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         dia: pedido.dia ? pedido.dia.split('T')[0] : '',
         turnos: pedido.turnos?.length > 0 ? pedido.turnos : [{ cantidad_camareros: 1, entrada: '', salida: '', t_horas: 0 }]
       });
+      
+      // Buscar cliente asociado
+      if (pedido.cliente_id) {
+        const cliente = clientes.find(c => c.id === pedido.cliente_id);
+        if (cliente) setClienteSeleccionado(cliente);
+      }
     } else {
       // Generar números automáticos para nuevo pedido
       const maxNumeroCliente = pedidos.reduce((max, p) => Math.max(max, p.numero_cliente || 0), 0);
@@ -49,7 +71,22 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         numero_pedido_cliente: maxNumeroPedido + 1
       }));
     }
-  }, [pedido, pedidos]);
+  }, [pedido, pedidos, clientes]);
+
+  const handleSelectCliente = (cliente) => {
+    setClienteSeleccionado(cliente);
+    setFormData(prev => ({
+      ...prev,
+      cliente_id: cliente.id,
+      cliente: cliente.nombre,
+      cliente_email_1: cliente.email_1 || '',
+      cliente_email_2: cliente.email_2 || '',
+      cliente_telefono_1: cliente.telefono_1 || '',
+      cliente_telefono_2: cliente.telefono_2 || '',
+      cliente_persona_contacto_1: cliente.persona_contacto_1 || '',
+      cliente_persona_contacto_2: cliente.persona_contacto_2 || ''
+    }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -151,24 +188,23 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
           </div>
         </Card>
 
-        {/* Información básica */}
-        <Card className="p-5 bg-white border-slate-200">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-[#1e3a5f]"></div>
-            <span className="text-sm font-semibold text-slate-800">Información Básica</span>
-          </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="cliente" className="text-slate-700 font-medium">Cliente *</Label>
-            <Input
-              id="cliente"
-              value={formData.cliente}
-              onChange={(e) => handleChange('cliente', e.target.value)}
-              placeholder="Nombre del cliente"
-              required
-              className="border-slate-300 focus:border-[#1e3a5f] focus:ring-[#1e3a5f]"
-            />
-          </div>
+        {/* CRM - Selector de Cliente */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 space-y-5">
+            <Card className="p-5 bg-white border-slate-200">
+              <SelectorCliente 
+                onSelectCliente={handleSelectCliente}
+                clienteActual={clienteSeleccionado}
+              />
+            </Card>
+
+            {/* Información básica */}
+            <Card className="p-5 bg-white border-slate-200">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 rounded-full bg-[#1e3a5f]"></div>
+                <span className="text-sm font-semibold text-slate-800">Información del Evento</span>
+              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
           <div className="space-y-2">
             <Label htmlFor="lugar_evento" className="text-slate-700 font-medium">Lugar del Evento</Label>
