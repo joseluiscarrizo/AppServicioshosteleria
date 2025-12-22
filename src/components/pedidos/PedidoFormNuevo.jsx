@@ -351,6 +351,13 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
             ))}
           </div>
         </Card>
+          </div>
+
+          {/* Info Cliente */}
+          <div className="lg:col-span-1">
+            <InfoCliente cliente={clienteSeleccionado} />
+          </div>
+        </div>
 
         {/* Notas */}
         <Card className="p-5 bg-white border-slate-200 mb-4">
