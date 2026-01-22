@@ -23,7 +23,7 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
     dia: '',
     lugar_evento: '',
     link_ubicacion: '',
-    turnos: [{ entrada: '' }],
+    turnos: [{ cantidad_camareros: 1, entrada: '' }],
     extra_transporte: false,
     notas: ''
   });
@@ -45,7 +45,7 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
       setFormData({
         ...pedido,
         dia: pedido.dia ? pedido.dia.split('T')[0] : '',
-        turnos: pedido.turnos?.length > 0 ? pedido.turnos : [{ entrada: '' }]
+        turnos: pedido.turnos?.length > 0 ? pedido.turnos : [{ cantidad_camareros: 1, entrada: '' }]
       });
       
       if (pedido.cliente_id) {
@@ -107,7 +107,7 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
   const agregarTurno = () => {
     setFormData(prev => ({
       ...prev,
-      turnos: [...prev.turnos, { entrada: '' }]
+      turnos: [...prev.turnos, { cantidad_camareros: 1, entrada: '' }]
     }));
   };
 
@@ -239,6 +239,16 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
                     <div className="flex items-center gap-3">
                       <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1e3a5f] text-white text-sm font-bold flex-shrink-0">
                         {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <Label className="text-xs text-slate-600 mb-1 block">Cantidad de Camareros</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={turno.cantidad_camareros || 1}
+                          onChange={(e) => handleTurnoChange(index, 'cantidad_camareros', parseInt(e.target.value) || 1)}
+                          className="h-10"
+                        />
                       </div>
                       <div className="flex-1">
                         <Label className="text-xs text-slate-600 mb-1 block">Hora de Entrada</Label>
