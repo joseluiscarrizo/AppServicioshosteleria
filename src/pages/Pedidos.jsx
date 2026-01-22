@@ -70,6 +70,11 @@ export default function Pedidos() {
     queryFn: () => base44.entities.Cliente.list('nombre')
   });
 
+  const { data: asignaciones = [] } = useQuery({
+    queryKey: ['asignaciones'],
+    queryFn: () => base44.entities.AsignacionCamarero.list('-created_date', 1000)
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Pedido.create(data),
     onSuccess: () => {
@@ -294,7 +299,8 @@ export default function Pedidos() {
                   <TableHead className="font-semibold">Estado</TableHead>
                   <TableHead className="font-semibold">Cliente</TableHead>
                   <TableHead className="font-semibold">Lugar</TableHead>
-                  <TableHead className="font-semibold text-center">Camareros</TableHead>
+                  <TableHead className="font-semibold text-center">Nº</TableHead>
+                  <TableHead className="font-semibold">Camarero</TableHead>
                   <TableHead className="font-semibold">Día</TableHead>
                   <TableHead className="font-semibold">Entrada</TableHead>
                   <TableHead className="font-semibold">Salida</TableHead>
@@ -318,6 +324,19 @@ export default function Pedidos() {
                       return Array.from({ length: filasCamareros }, (_, camareroIndex) => {
                         const esPrimeraFila = turnoIndex === 0 && camareroIndex === 0;
                         const totalFilas = turnos.reduce((sum, t) => sum + Math.max(1, t.cantidad_camareros || 0), 0);
+                        
+                        // Calcular el número de camarero acumulado
+                        let numeroCamarero = camareroIndex + 1;
+                        for (let i = 0; i < turnoIndex; i++) {
+                          numeroCamarero += Math.max(1, turnos[i].cantidad_camareros || 0);
+                        }
+                        
+                        // Buscar asignación para este pedido y turno
+                        const asignacion = asignaciones.find(a => 
+                          a.pedido_id === pedido.id && 
+                          a.turno_index === turnoIndex &&
+                          a.posicion_slot === camareroIndex
+                        );
                         
                         return (
                           <motion.tr
@@ -369,8 +388,15 @@ export default function Pedidos() {
                             ) : null}
                             <TableCell className="text-center">
                               <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#1e3a5f]/10 text-[#1e3a5f] font-semibold">
-                                1
+                                {numeroCamarero}
                               </span>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {asignacion ? (
+                                <span className="text-slate-700">{asignacion.camarero_nombre}</span>
+                              ) : (
+                                <span className="text-slate-400 italic">Sin asignar</span>
+                              )}
                             </TableCell>
                             {esPrimeraFila ? (
                               <TableCell
