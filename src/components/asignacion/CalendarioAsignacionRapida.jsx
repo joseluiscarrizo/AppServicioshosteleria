@@ -176,8 +176,8 @@ export default function CalendarioAsignacionRapida() {
   };
 
   return (
-    <div className="space-y-4">
-      <Card className="p-6">
+    <div className="space-y-4 h-full flex flex-col">
+      <Card className="p-6 flex-shrink-0">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
@@ -284,6 +284,142 @@ export default function CalendarioAsignacionRapida() {
           })}
         </div>
       </Card>
+
+      {/* Panel Inferior de Camareros Disponibles */}
+      {selectedDate && pedidosDelDia.length > 0 && (
+        <Card className="p-4 flex-1 flex flex-col min-h-0">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+              <Users className="w-5 h-5 text-[#1e3a5f]" />
+              Camareros Disponibles - {format(selectedDate, "d 'de' MMMM", { locale: es })}
+            </h3>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowAsignacionPanel(true)}
+            >
+              Ver Panel Completo
+            </Button>
+          </div>
+
+          {selectedPedidoAsignacion ? (
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Evento seleccionado */}
+              <div className="bg-gradient-to-r from-[#1e3a5f]/5 to-blue-50 border border-[#1e3a5f]/20 rounded-lg p-3 mb-3 flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-800">{selectedPedidoAsignacion.cliente}</h4>
+                    <div className="flex items-center gap-4 text-xs text-slate-600 mt-1">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {selectedPedidoAsignacion.lugar_evento || 'Sin ubicación'}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {selectedPedidoAsignacion.entrada} - {selectedPedidoAsignacion.salida}
+                      </span>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setSelectedPedidoAsignacion(null)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Búsqueda */}
+              <div className="relative mb-3 flex-shrink-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Buscar camarero por nombre o código..."
+                  value={busquedaCamarero}
+                  onChange={(e) => setBusquedaCamarero(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
+
+              {/* Lista de camareros disponibles */}
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+                  {getCamarerosDisponibles(selectedPedidoAsignacion)
+                    .filter(c => 
+                      !busquedaCamarero || 
+                      c.nombre.toLowerCase().includes(busquedaCamarero.toLowerCase()) ||
+                      c.codigo.toLowerCase().includes(busquedaCamarero.toLowerCase())
+                    )
+                    .map(camarero => (
+                      <div
+                        key={camarero.id}
+                        className="p-3 border-2 border-slate-200 rounded-lg hover:border-[#1e3a5f] hover:bg-[#1e3a5f]/5 transition-all cursor-pointer group"
+                        onClick={() => handleAsignarCamarero(selectedPedidoAsignacion, camarero)}
+                      >
+                        <div className="flex flex-col h-full">
+                          <div className="flex items-start justify-between mb-2">
+                            <span className="font-medium text-slate-800 text-sm truncate flex-1">
+                              {camarero.nombre}
+                            </span>
+                            <Plus className="w-4 h-4 text-[#1e3a5f] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                          </div>
+                          <p className="text-xs text-slate-500 font-mono mb-2">#{camarero.codigo}</p>
+                          
+                          {camarero.valoracion_promedio > 0 && (
+                            <div className="flex items-center gap-1 text-amber-500 text-xs mb-2">
+                              <Star className="w-3 h-3 fill-amber-400" />
+                              <span>{camarero.valoracion_promedio.toFixed(1)}</span>
+                            </div>
+                          )}
+                          
+                          {camarero.especialidad && (
+                            <Badge variant="outline" className="text-xs mt-auto">
+                              {camarero.especialidad}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+
+                {getCamarerosDisponibles(selectedPedidoAsignacion)
+                  .filter(c => 
+                    !busquedaCamarero || 
+                    c.nombre.toLowerCase().includes(busquedaCamarero.toLowerCase()) ||
+                    c.codigo.toLowerCase().includes(busquedaCamarero.toLowerCase())
+                  ).length === 0 && (
+                  <div className="text-center py-8 text-slate-400">
+                    <Users className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">
+                      {busquedaCamarero ? 'No se encontraron camareros' : 'No hay camareros disponibles'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center text-slate-400">
+                <CalendarIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Selecciona un evento del día para ver camareros disponibles</p>
+                <div className="flex flex-wrap justify-center gap-2 mt-4">
+                  {pedidosDelDia.map(pedido => (
+                    <Button
+                      key={pedido.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedPedidoAsignacion(pedido)}
+                      className="hover:bg-[#1e3a5f] hover:text-white"
+                    >
+                      {pedido.cliente}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Panel de Asignación Rápida */}
       <Dialog open={showAsignacionPanel} onOpenChange={setShowAsignacionPanel}>
