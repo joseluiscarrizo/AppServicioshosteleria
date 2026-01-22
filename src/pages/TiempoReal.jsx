@@ -112,7 +112,7 @@ export default function TiempoReal() {
       }
       
       return matchBusqueda;
-    });
+    }).sort((a, b) => (a.dia || '').localeCompare(b.dia || ''));
 
     pedidosFiltrados.forEach(pedido => {
       const asignacionesPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
