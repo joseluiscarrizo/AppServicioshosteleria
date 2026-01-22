@@ -370,8 +370,8 @@ Sistema de Gestión de Camareros
   const isLoading = loadingPedidos;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col overflow-hidden">
+      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 overflow-y-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
