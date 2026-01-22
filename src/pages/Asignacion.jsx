@@ -20,6 +20,8 @@ import CalendarioAsignacionRapida from '../components/asignacion/CalendarioAsign
 import CargaCamareros from '../components/asignacion/CargaCamareros';
 import CargaTrabajoCamareros from '../components/asignacion/CargaTrabajoCamareros';
 import AsignacionAutomatica from '../components/asignacion/AsignacionAutomatica';
+import MapaCamareros from '../components/asignacion/MapaCamareros';
+import ReglasAsignacion from '../components/asignacion/ReglasAsignacion';
 
 const estadoColors = {
   pendiente: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -41,6 +43,8 @@ export default function Asignacion() {
   const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
   const [mostrarCarga, setMostrarCarga] = useState(false);
   const [showAsignacionAuto, setShowAsignacionAuto] = useState(false);
+  const [showMapa, setShowMapa] = useState(false);
+  const [showReglas, setShowReglas] = useState(false);
   const [vistaCalendario, setVistaCalendario] = useState('avanzado'); // 'avanzado' o 'clasico'
 
   const queryClient = useQueryClient();
@@ -378,7 +382,7 @@ Sistema de Gestión de Camareros
         </div>
 
         {/* Selector de Vista */}
-        <div className="mb-4 flex items-center gap-3">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <Select value={vistaCalendario} onValueChange={setVistaCalendario}>
             <SelectTrigger className="w-64">
               <SelectValue />
@@ -386,13 +390,28 @@ Sistema de Gestión de Camareros
             <SelectContent>
               <SelectItem value="avanzado">📅 Calendario con Asignación Rápida</SelectItem>
               <SelectItem value="clasico">📋 Vista Clásica con Drag & Drop</SelectItem>
+              <SelectItem value="reglas">⚙️ Configurar Reglas</SelectItem>
             </SelectContent>
           </Select>
+
+          <Button 
+            variant="outline"
+            onClick={() => setShowMapa(true)}
+            className="ml-auto"
+          >
+            <MapPin className="w-4 h-4 mr-2" />
+            Ver Mapa de Camareros
+          </Button>
         </div>
 
         {/* Vista Calendario Avanzado con Asignación Rápida */}
         {vistaCalendario === 'avanzado' && (
           <CalendarioAsignacionRapida />
+        )}
+
+        {/* Vista de Reglas */}
+        {vistaCalendario === 'reglas' && (
+          <ReglasAsignacion />
         )}
 
         {/* Vista Clásica */}
@@ -766,10 +785,25 @@ Sistema de Gestión de Camareros
 
             {/* Modal de Asignación Automática */}
             <AsignacionAutomatica
-            open={showAsignacionAuto}
-            onClose={() => setShowAsignacionAuto(false)}
-            pedido={selectedPedido}
-          />
+              open={showAsignacionAuto}
+              onClose={() => setShowAsignacionAuto(false)}
+              pedido={selectedPedido}
+            />
+
+            {/* Mapa de Camareros */}
+            {showMapa && (
+              <MapaCamareros
+                pedido={selectedPedido}
+                onAsignar={(camarero) => {
+                  if (selectedPedido) {
+                    handleAsignarCamarero(selectedPedido, camarero);
+                    setShowMapa(false);
+                  }
+                }}
+              />
+            )}
+            </>
+            )}
       </div>
     </div>
   );

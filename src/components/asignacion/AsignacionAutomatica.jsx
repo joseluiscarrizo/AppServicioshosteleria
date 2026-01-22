@@ -47,6 +47,11 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
     queryFn: () => base44.entities.Valoracion.list('-created_date', 500)
   });
 
+  const { data: reglas = [] } = useQuery({
+    queryKey: ['reglas-asignacion'],
+    queryFn: () => base44.entities.ReglaAsignacion.list('-prioridad')
+  });
+
   const asignarMutation = useMutation({
     mutationFn: async (data) => {
       const asignacion = await base44.entities.AsignacionCamarero.create(data);
@@ -203,19 +208,61 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
         razones.push({ icon: Award, text: `${experiencia} años experiencia`, color: 'text-slate-600' });
       }
 
+      // 8. Aplicar reglas personalizadas
+      const reglasActivas = reglas.filter(r => r.activa);
+      for (const regla of reglasActivas) {
+        let cumpleRegla = false;
+
+        if (regla.tipo_regla === 'cliente_preferido' && regla.cliente_id === pedido.cliente_id) {
+          if (regla.camareros_preferidos?.includes(camarero.id)) {
+            cumpleRegla = true;
+            razones.push({ icon: Star, text: 'Camarero preferido', color: 'text-purple-600' });
+          }
+        } else if (regla.tipo_regla === 'valoracion_minima') {
+          if (valoracionPromedio >= (regla.valoracion_minima || 4.0)) {
+            cumpleRegla = true;
+          } else if (regla.es_obligatoria) {
+            return null; // Descarta este camarero
+          }
+        } else if (regla.tipo_regla === 'distancia_maxima' && pedido.latitud && pedido.longitud && camarero.latitud && camarero.longitud) {
+          const distancia = calcularDistancia(pedido.latitud, pedido.longitud, camarero.latitud, camarero.longitud);
+          if (distancia && distancia <= (regla.distancia_maxima_km || 20)) {
+            cumpleRegla = true;
+          } else if (regla.es_obligatoria && distancia) {
+            return null;
+          }
+        } else if (regla.tipo_regla === 'especialidad_obligatoria') {
+          if (regla.especialidades_requeridas?.includes(camarero.especialidad)) {
+            cumpleRegla = true;
+          } else if (regla.es_obligatoria) {
+            return null;
+          }
+        } else if (regla.tipo_regla === 'experiencia_minima') {
+          if (experiencia >= (regla.experiencia_minima_anios || 2)) {
+            cumpleRegla = true;
+          } else if (regla.es_obligatoria) {
+            return null;
+          }
+        }
+
+        if (cumpleRegla && regla.bonus_puntos) {
+          score += regla.bonus_puntos;
+        }
+      }
+
       return {
         camarero,
         score: Math.round(score),
         razones,
         asignacionesMes
       };
-    });
+    }).filter(Boolean); // Eliminar nulos (descartados por reglas obligatorias)
 
     // Ordenar por score y tomar top candidatos
     return scored
       .sort((a, b) => b.score - a.score)
       .slice(0, 10);
-  }, [pedido, camareros, asignaciones, disponibilidades]);
+  }, [pedido, camareros, asignaciones, disponibilidades, reglas]);
 
   const handleAsignarTodos = async () => {
     const cantidadNecesaria = pedido.turnos?.length > 0 
