@@ -24,6 +24,10 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
   });
 
   const generarMensajeWhatsApp = async (asignacion) => {
+    const baseUrl = window.location.origin;
+    const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
+    const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
+
     let mensaje = `📅 *Día:* ${pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Por confirmar'}\n`;
     mensaje += `👤 *Cliente:* ${pedido.cliente}\n`;
     mensaje += `📍 *Lugar del Evento:* ${pedido.lugar_evento || 'Por confirmar'}\n`;
@@ -73,7 +77,11 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
     mensaje += `👔 *Uniforme:* Zapatos, pantalón y delantal. Todo de color negro\n`;
     mensaje += `👕 *Camisa:* ${pedido.camisa || 'blanca'}\n`;
     mensaje += `✨ *Uniforme Impoluto.*\n\n`;
-    mensaje += `⏰ *Presentarse 15 minutos antes para estar a la hora exacta en el puesto de trabajo.*`;
+    mensaje += `⏰ *Presentarse 15 minutos antes para estar a la hora exacta en el puesto de trabajo.*\n\n`;
+    mensaje += `━━━━━━━━━━━━━━━━\n`;
+    mensaje += `Por favor, confirma tu asistencia:\n\n`;
+    mensaje += `✅ *CONFIRMO*\n${linkConfirmar}\n\n`;
+    mensaje += `❌ *RECHAZO*\n${linkRechazar}`;
 
     return mensaje;
   };
