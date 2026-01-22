@@ -166,7 +166,7 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
           </Button>
         </div>
 
-        <ScrollArea className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           <div className="p-4">
       <form id="pedido-form" onSubmit={handleSubmit} className="space-y-3">
         {/* Números automáticos */}
@@ -396,7 +396,7 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
 
         </form>
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Botones fijos abajo */}
         <div className="flex justify-end gap-3 px-6 py-3 border-t bg-slate-50 flex-shrink-0">
