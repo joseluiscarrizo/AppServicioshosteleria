@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bell, Check, X, MapPin, Clock, Calendar, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Bell, Check, X, MapPin, Clock, Calendar, AlertCircle, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -264,13 +264,26 @@ Sistema de Gestión de Camareros
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -100 }}
                 >
-                  <Card className="p-5 border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-white shadow-lg">
+                  <Card className={`p-5 border-l-4 ${
+                    notif.prioridad === 'urgente' ? 'border-l-red-500 bg-gradient-to-r from-red-50 to-white' :
+                    notif.prioridad === 'importante' ? 'border-l-orange-500 bg-gradient-to-r from-orange-50 to-white' :
+                    'border-l-blue-500 bg-gradient-to-r from-blue-50 to-white'
+                  } shadow-lg`}>
                     <div className="space-y-4">
                       {/* Título Principal */}
                       <div className="text-center pb-3 border-b border-slate-200">
-                        <h4 className="text-xl font-bold text-slate-800 mb-1">
-                          🔔 Nueva Asignación de Servicio
-                        </h4>
+                        <div className="flex items-center justify-center gap-2 mb-1">
+                          {notif.prioridad === 'urgente' && (
+                            <AlertTriangle className="w-6 h-6 text-red-600" />
+                          )}
+                          {notif.prioridad === 'importante' && (
+                            <AlertTriangle className="w-6 h-6 text-orange-600" />
+                          )}
+                          <h4 className="text-xl font-bold text-slate-800">
+                            {notif.prioridad === 'urgente' ? '⚠️ URGENTE: ' : notif.prioridad === 'importante' ? '⚡ IMPORTANTE: ' : '🔔 '}
+                            {notif.titulo || 'Nueva Asignación de Servicio'}
+                          </h4>
+                        </div>
                         <p className="text-sm text-slate-600">
                           Has sido seleccionado para el siguiente evento
                         </p>
@@ -333,22 +346,35 @@ Sistema de Gestión de Camareros
               <p className="text-sm text-slate-400 text-center py-8">No hay notificaciones</p>
             ) : (
               historial.map(notif => (
-                <Card key={notif.id} className={`p-3 ${notif.leida ? 'bg-slate-50' : 'bg-white border-l-2 border-l-blue-500'}`}>
+                <Card key={notif.id} className={`p-3 ${notif.leida ? 'bg-slate-50' : 'bg-white border-l-2 border-l-blue-500'} ${
+                  notif.prioridad === 'urgente' ? 'border-2 border-red-300' :
+                  notif.prioridad === 'importante' ? 'border-2 border-orange-300' : ''
+                }`}>
                   <div className="flex items-start gap-3">
                     <div className={`p-2 rounded-lg ${
                       notif.respuesta === 'aceptado' ? 'bg-emerald-100' :
-                      notif.respuesta === 'rechazado' ? 'bg-red-100' : 'bg-slate-100'
+                      notif.respuesta === 'rechazado' ? 'bg-red-100' : 
+                      notif.prioridad === 'urgente' ? 'bg-red-100' :
+                      notif.prioridad === 'importante' ? 'bg-orange-100' : 'bg-slate-100'
                     }`}>
                       {notif.respuesta === 'aceptado' ? <CheckCircle className="w-4 h-4 text-emerald-600" /> :
                        notif.respuesta === 'rechazado' ? <XCircle className="w-4 h-4 text-red-600" /> :
+                       (notif.prioridad === 'urgente' || notif.prioridad === 'importante') ? 
+                       <AlertTriangle className={`w-4 h-4 ${notif.prioridad === 'urgente' ? 'text-red-600' : 'text-orange-600'}`} /> :
                        <Bell className="w-4 h-4 text-slate-500" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {!notif.leida && (
                           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
                         )}
                         <span className="font-medium text-sm text-slate-800">{notif.titulo}</span>
+                        {notif.prioridad === 'urgente' && (
+                          <Badge className="bg-red-500 text-white text-xs">URGENTE</Badge>
+                        )}
+                        {notif.prioridad === 'importante' && (
+                          <Badge className="bg-orange-500 text-white text-xs">IMPORTANTE</Badge>
+                        )}
                         {notif.respuesta && notif.respuesta !== 'pendiente' && (
                           <Badge className={
                             notif.respuesta === 'aceptado' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
@@ -364,8 +390,7 @@ Sistema de Gestión de Camareros
                     </div>
                   </div>
                 </Card>
-              );
-              })
+              ))
             )}
           </div>
         </ScrollArea>
