@@ -53,6 +53,7 @@ export default function ConfirmarServicio() {
 
   const aceptarMutation = useMutation({
     mutationFn: async () => {
+      // Actualizar asignación a confirmado
       await base44.entities.AsignacionCamarero.update(asignacionId, {
         estado: 'confirmado'
       });
@@ -71,24 +72,26 @@ export default function ConfirmarServicio() {
       }
 
       // Actualizar estado del camarero
-      await base44.entities.Camarero.update(asignacion.camarero_id, {
-        estado_actual: 'ocupado'
-      });
+      const camareroData = await base44.entities.Camarero.filter({ id: asignacion.camarero_id });
+      if (camareroData[0]) {
+        await base44.entities.Camarero.update(asignacion.camarero_id, {
+          estado_actual: 'ocupado'
+        });
+      }
 
       // Obtener coordinador y notificar
-      const camarero = await base44.entities.Camarero.filter({ id: asignacion.camarero_id });
-      const coordinadorId = camarero[0]?.coordinador_id;
+      const coordinadorId = camareroData[0]?.coordinador_id;
       
       if (coordinadorId) {
         const coords = await base44.entities.Coordinador.filter({ id: coordinadorId });
         const coordinador = coords[0];
         
         if (coordinador) {
-          const mensajeNotif = `${asignacion.camarero_nombre} ha aceptado el servicio de ${pedido.cliente} para el ${pedido.dia ? format(new Date(pedido.dia), 'dd/MM/yyyy', { locale: es }) : 'fecha pendiente'}`;
+          const mensajeNotif = `${asignacion.camarero_nombre} ha CONFIRMADO el servicio de ${pedido.cliente} para el ${pedido.dia ? format(new Date(pedido.dia), 'dd/MM/yyyy', { locale: es }) : 'fecha pendiente'}`;
           
           await base44.entities.Notificacion.create({
             tipo: 'estado_cambio',
-            titulo: '✅ Asignación Aceptada',
+            titulo: '✅ Asignación Confirmada',
             mensaje: mensajeNotif,
             prioridad: 'media',
             pedido_id: pedido.id,
@@ -100,18 +103,18 @@ export default function ConfirmarServicio() {
             try {
               await base44.integrations.Core.SendEmail({
                 to: coordinador.email,
-                subject: `✅ Asignación Aceptada - ${pedido.cliente}`,
+                subject: `✅ Asignación Confirmada - ${pedido.cliente}`,
                 body: `
 Hola ${coordinador.nombre},
 
-El camarero ${asignacion.camarero_nombre} ha ACEPTADO el servicio:
+✅ El camarero ${asignacion.camarero_nombre} ha CONFIRMADO el servicio:
 
 📋 Cliente: ${pedido.cliente}
 📅 Fecha: ${pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Pendiente'}
-🕐 Horario: ${asignacion.hora_entrada || '-'} - ${asignacion.hora_salida || '-'}
+🕐 Horario: ${asignacion.hora_entrada || pedido.entrada || '-'} - ${asignacion.hora_salida || pedido.salida || '-'}
 📍 Ubicación: ${pedido.lugar_evento || 'Por confirmar'}
 
-El camarero ya está confirmado.
+El camarero ya está confirmado y aparecerá en verde en el sistema.
 
 Saludos,
 Sistema de Gestión de Camareros
@@ -123,12 +126,15 @@ Sistema de Gestión de Camareros
           }
         }
       }
+
+      return { success: true };
     },
     onSuccess: () => {
       setEstado('procesado');
-      toast.success('¡Servicio aceptado!');
+      toast.success('¡Servicio confirmado correctamente!');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Error en aceptar:', error);
       toast.error('Error al procesar la confirmación');
       setEstado('error');
     }
@@ -150,28 +156,30 @@ Sistema de Gestión de Camareros
         });
       }
 
-      // Eliminar asignación
+      // PRIMERO: Eliminar asignación
       await base44.entities.AsignacionCamarero.delete(asignacionId);
       
       // Actualizar estado del camarero
-      await base44.entities.Camarero.update(asignacion.camarero_id, {
-        estado_actual: 'disponible'
-      });
+      const camareroData = await base44.entities.Camarero.filter({ id: asignacion.camarero_id });
+      if (camareroData[0]) {
+        await base44.entities.Camarero.update(asignacion.camarero_id, {
+          estado_actual: 'disponible'
+        });
+      }
 
       // Obtener coordinador y notificar
-      const camarero = await base44.entities.Camarero.filter({ id: asignacion.camarero_id });
-      const coordinadorId = camarero[0]?.coordinador_id;
+      const coordinadorId = camareroData[0]?.coordinador_id;
       
       if (coordinadorId) {
         const coords = await base44.entities.Coordinador.filter({ id: coordinadorId });
         const coordinador = coords[0];
         
         if (coordinador) {
-          const mensajeNotif = `${asignacion.camarero_nombre} ha rechazado el servicio de ${pedido.cliente}${motivoRechazo ? `. Motivo: ${motivoRechazo}` : ' (sin motivo especificado)'}`;
+          const mensajeNotif = `❌ ${asignacion.camarero_nombre} ha RECHAZADO el servicio de ${pedido.cliente}${motivoRechazo ? `. Motivo: ${motivoRechazo}` : ' (sin motivo especificado)'}`;
           
           await base44.entities.Notificacion.create({
             tipo: 'alerta',
-            titulo: '❌ Asignación Rechazada',
+            titulo: '❌ Asignación Rechazada - Acción Requerida',
             mensaje: mensajeNotif,
             prioridad: 'alta',
             pedido_id: pedido.id,
@@ -187,16 +195,18 @@ Sistema de Gestión de Camareros
                 body: `
 Hola ${coordinador.nombre},
 
-⚠️ ATENCIÓN: El camarero ${asignacion.camarero_nombre} ha RECHAZADO el servicio:
+⚠️ ATENCIÓN URGENTE: El camarero ${asignacion.camarero_nombre} ha RECHAZADO el servicio:
 
 📋 Cliente: ${pedido.cliente}
 📅 Fecha: ${pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Pendiente'}
-🕐 Horario: ${asignacion.hora_entrada || '-'} - ${asignacion.hora_salida || '-'}
+🕐 Horario: ${asignacion.hora_entrada || pedido.entrada || '-'} - ${asignacion.hora_salida || pedido.salida || '-'}
 📍 Ubicación: ${pedido.lugar_evento || 'Por confirmar'}
 
 ${motivoRechazo ? `💬 Motivo del rechazo: "${motivoRechazo}"` : '💬 No se proporcionó motivo del rechazo'}
 
-El camarero está ahora disponible. Se recomienda buscar un reemplazo lo antes posible.
+La asignación ha sido eliminada automáticamente del sistema. El camarero está ahora disponible.
+
+⚠️ SE REQUIERE BUSCAR UN REEMPLAZO URGENTEMENTE.
 
 Saludos,
 Sistema de Gestión de Camareros
@@ -208,12 +218,15 @@ Sistema de Gestión de Camareros
           }
         }
       }
+
+      return { success: true };
     },
     onSuccess: () => {
       setEstado('procesado');
-      toast.success('Has rechazado el servicio');
+      toast.success('Servicio rechazado. La asignación ha sido eliminada.');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Error en rechazo:', error);
       toast.error('Error al procesar el rechazo');
       setEstado('error');
     }
