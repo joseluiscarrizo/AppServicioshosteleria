@@ -81,7 +81,18 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Calcular totales de turnos
+    const cantidadTotal = (formData.turnos || []).reduce((sum, t) => sum + (t.cantidad_camareros || 0), 0);
+    const primerTurno = (formData.turnos || [])[0] || {};
+    
+    const dataToSubmit = {
+      ...formData,
+      cantidad_camareros: cantidadTotal,
+      entrada: primerTurno.entrada,
+    };
+    
+    onSubmit(dataToSubmit);
   };
 
   const handleChange = (field, value) => {
