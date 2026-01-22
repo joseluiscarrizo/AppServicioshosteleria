@@ -53,6 +53,8 @@ export default function ConfirmarServicio() {
 
   const aceptarMutation = useMutation({
     mutationFn: async () => {
+      if (!asignacion) throw new Error('No hay asignación');
+
       // Actualizar asignación a confirmado
       await base44.entities.AsignacionCamarero.update(asignacionId, {
         estado: 'confirmado'
@@ -72,12 +74,13 @@ export default function ConfirmarServicio() {
       }
 
       // Actualizar estado del camarero
-      const camareroData = await base44.entities.Camarero.filter({ id: asignacion.camarero_id });
-      if (camareroData[0]) {
+      if (asignacion.camarero_id) {
         await base44.entities.Camarero.update(asignacion.camarero_id, {
           estado_actual: 'ocupado'
         });
       }
+
+      const camareroData = await base44.entities.Camarero.filter({ id: asignacion.camarero_id });
 
       // Obtener coordinador y notificar
       const coordinadorId = camareroData[0]?.coordinador_id;
@@ -130,6 +133,10 @@ Sistema de Gestión de Camareros
       return { success: true };
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+      queryClient.invalidateQueries({ queryKey: ['notificaciones-camarero'] });
+      queryClient.invalidateQueries({ queryKey: ['camareros'] });
+      queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
       setEstado('procesado');
       toast.success('¡Servicio confirmado correctamente!');
     },
@@ -142,6 +149,8 @@ Sistema de Gestión de Camareros
 
   const rechazarMutation = useMutation({
     mutationFn: async () => {
+      if (!asignacion) throw new Error('No hay asignación');
+
       // Actualizar notificación si existe
       const notificaciones = await base44.entities.NotificacionCamarero.filter({
         asignacion_id: asignacionId
@@ -156,16 +165,14 @@ Sistema de Gestión de Camareros
         });
       }
 
-      // PRIMERO: Eliminar asignación
-      await base44.entities.AsignacionCamarero.delete(asignacionId);
-      
-      // Actualizar estado del camarero
-      const camareroData = await base44.entities.Camarero.filter({ id: asignacion.camarero_id });
-      if (camareroData[0]) {
+      // Actualizar estado del camarero ANTES de eliminar asignación
+      if (asignacion.camarero_id) {
         await base44.entities.Camarero.update(asignacion.camarero_id, {
           estado_actual: 'disponible'
         });
       }
+
+      const camareroData = await base44.entities.Camarero.filter({ id: asignacion.camarero_id });
 
       // Obtener coordinador y notificar
       const coordinadorId = camareroData[0]?.coordinador_id;
@@ -219,9 +226,16 @@ Sistema de Gestión de Camareros
         }
       }
 
+      // Eliminar asignación al FINAL
+      await base44.entities.AsignacionCamarero.delete(asignacionId);
+
       return { success: true };
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+      queryClient.invalidateQueries({ queryKey: ['notificaciones-camarero'] });
+      queryClient.invalidateQueries({ queryKey: ['camareros'] });
+      queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
       setEstado('procesado');
       toast.success('Servicio rechazado. La asignación ha sido eliminada.');
     },
