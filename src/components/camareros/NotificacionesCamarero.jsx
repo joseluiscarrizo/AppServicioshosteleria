@@ -276,52 +276,10 @@ Sistema de Gestión de Camareros
                         </p>
                       </div>
 
-                      {/* Información del Evento */}
-                      <div className="bg-white rounded-lg p-4 space-y-3 border border-slate-200">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                            <Calendar className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-slate-500">Cliente</p>
-                            <p className="font-semibold text-slate-800">{notif.cliente}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                            <Calendar className="w-4 h-4 text-emerald-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-slate-500">Fecha</p>
-                            <p className="font-semibold text-slate-800">
-                              {notif.fecha ? format(new Date(notif.fecha), "EEEE, dd 'de' MMMM yyyy", { locale: es }) : '-'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                            <Clock className="w-4 h-4 text-amber-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-slate-500">Horario</p>
-                            <p className="font-semibold text-slate-800">
-                              {notif.hora_entrada} - {notif.hora_salida}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                            <MapPin className="w-4 h-4 text-purple-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-slate-500">Ubicación</p>
-                            <p className="font-semibold text-slate-800">
-                              {notif.lugar_evento || 'Por confirmar'}
-                            </p>
-                          </div>
+                      {/* Información del Evento - Mensaje Completo */}
+                      <div className="bg-white rounded-lg p-4 border border-slate-200">
+                        <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
+                          {notif.mensaje}
                         </div>
                       </div>
 
