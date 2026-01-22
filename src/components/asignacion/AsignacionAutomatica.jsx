@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
-import { Sparkles, MapPin, Star, Award, Languages, TrendingUp, CheckCircle, X, AlertCircle } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Sparkles, MapPin, Star, Award, Languages, TrendingUp, CheckCircle, X, AlertCircle, Info, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import TareasService from '../camareros/TareasService';
 
@@ -25,6 +27,8 @@ const calcularDistancia = (lat1, lon1, lat2, lon2) => {
 
 export default function AsignacionAutomatica({ open, onClose, pedido }) {
   const [sugerenciasAceptadas, setSugerenciasAceptadas] = useState(new Set());
+  const [modoRevision, setModoRevision] = useState(true);
+  const [seleccionados, setSeleccionados] = useState(new Set());
   const queryClient = useQueryClient();
 
   const { data: camareros = [] } = useQuery({
@@ -277,10 +281,20 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
       return;
     }
 
-    const candidatos = sugerencias.slice(0, faltantes);
+    const candidatos = modoRevision && seleccionados.size > 0
+      ? sugerencias.filter(s => seleccionados.has(s.camarero.id))
+      : sugerencias.slice(0, faltantes);
     
+    if (candidatos.length === 0) {
+      toast.error('No hay camareros seleccionados');
+      return;
+    }
+
     try {
+      let asignados = 0;
       for (const { camarero } of candidatos) {
+        if (asignados >= faltantes) break;
+        
         await asignarMutation.mutateAsync({
           pedido_id: pedido.id,
           camarero_id: camarero.id,
@@ -292,11 +306,38 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
           hora_salida: pedido.salida
         });
         setSugerenciasAceptadas(prev => new Set([...prev, camarero.id]));
+        asignados++;
       }
-      toast.success(`${candidatos.length} camareros asignados automáticamente`);
+      toast.success(`${asignados} camareros asignados automáticamente`);
+      setSeleccionados(new Set());
     } catch (error) {
       toast.error('Error en asignación automática');
     }
+  };
+
+  const toggleSeleccion = (camareroId) => {
+    setSeleccionados(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(camareroId)) {
+        newSet.delete(camareroId);
+      } else {
+        newSet.add(camareroId);
+      }
+      return newSet;
+    });
+  };
+
+  const seleccionarMejores = () => {
+    const cantidadNecesaria = pedido.turnos?.length > 0 
+      ? pedido.turnos.reduce((sum, t) => sum + (t.cantidad_camareros || 0), 0)
+      : (pedido.cantidad_camareros || 0);
+    
+    const asignacionesActuales = asignaciones.filter(a => a.pedido_id === pedido.id).length;
+    const faltantes = cantidadNecesaria - asignacionesActuales;
+    
+    const mejores = sugerencias.slice(0, faltantes).map(s => s.camarero.id);
+    setSeleccionados(new Set(mejores));
+    toast.info(`${mejores.length} mejores candidatos seleccionados`);
   };
 
   const handleAsignarUno = async (camarero) => {
@@ -352,17 +393,82 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
           <div className="text-center py-12">
             <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500">No hay camareros disponibles para este evento</p>
+            <p className="text-xs text-slate-400 mt-2">Verifica disponibilidad y restricciones</p>
           </div>
         ) : (
           <>
-            <div className="flex justify-end mb-4">
+            {/* Controles de modo */}
+            <div className="bg-slate-50 p-4 rounded-lg mb-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Switch 
+                    checked={modoRevision} 
+                    onCheckedChange={setModoRevision}
+                    id="modo-revision"
+                  />
+                  <Label htmlFor="modo-revision" className="cursor-pointer">
+                    <span className="font-medium">Modo Revisión</span>
+                    <p className="text-xs text-slate-500">
+                      {modoRevision ? 'Selecciona manualmente antes de asignar' : 'Asigna automáticamente los mejores'}
+                    </p>
+                  </Label>
+                </div>
+                <Badge className="bg-slate-200 text-slate-700">
+                  <Info className="w-3 h-3 mr-1" />
+                  {sugerencias.length} candidatos
+                </Badge>
+              </div>
+
+              {modoRevision && (
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={seleccionarMejores}
+                    disabled={faltantes <= 0}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Seleccionar Top {Math.min(faltantes, sugerencias.length)}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSeleccionados(new Set())}
+                    disabled={seleccionados.size === 0}
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Limpiar selección
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-sm text-slate-600">
+                {modoRevision && seleccionados.size > 0 && (
+                  <span className="font-medium text-purple-600">
+                    {seleccionados.size} seleccionado(s)
+                  </span>
+                )}
+              </div>
               <Button 
                 onClick={handleAsignarTodos}
-                disabled={faltantes <= 0 || asignarMutation.isPending}
+                disabled={
+                  faltantes <= 0 || 
+                  asignarMutation.isPending || 
+                  (modoRevision && seleccionados.size === 0)
+                }
                 className="bg-purple-600 hover:bg-purple-700 text-white"
               >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Asignar Mejores {Math.min(faltantes, sugerencias.length)}
+                {asignarMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 mr-2" />
+                )}
+                {modoRevision 
+                  ? `Confirmar y Asignar (${seleccionados.size})`
+                  : `Asignar Mejores ${Math.min(faltantes, sugerencias.length)}`
+                }
               </Button>
             </div>
 
@@ -373,12 +479,17 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
                   const maxScore = 100;
                   const porcentaje = Math.round((score / maxScore) * 100);
 
+                  const estaSeleccionado = seleccionados.has(camarero.id);
+
                   return (
                     <Card 
                       key={camarero.id}
-                      className={`p-4 transition-all ${
-                        yaAsignado ? 'bg-emerald-50 border-emerald-300' : 'hover:shadow-md'
+                      className={`p-4 transition-all cursor-pointer ${
+                        yaAsignado ? 'bg-emerald-50 border-emerald-300' : 
+                        estaSeleccionado ? 'bg-purple-50 border-purple-300 border-2' : 
+                        'hover:shadow-md hover:border-slate-300'
                       }`}
+                      onClick={() => modoRevision && !yaAsignado && toggleSeleccion(camarero.id)}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -428,16 +539,36 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
                           </div>
                         </div>
 
-                        <div className="ml-4">
+                        <div className="ml-4 flex items-center gap-2">
+                          {modoRevision && !yaAsignado && (
+                            <div 
+                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                                estaSeleccionado 
+                                  ? 'bg-purple-600 border-purple-600' 
+                                  : 'border-slate-300'
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSeleccion(camarero.id);
+                              }}
+                            >
+                              {estaSeleccionado && (
+                                <CheckCircle className="w-4 h-4 text-white" />
+                              )}
+                            </div>
+                          )}
                           {yaAsignado ? (
                             <Badge className="bg-emerald-600 text-white">
                               <CheckCircle className="w-3 h-3 mr-1" />
                               Asignado
                             </Badge>
-                          ) : (
+                          ) : !modoRevision && (
                             <Button
                               size="sm"
-                              onClick={() => handleAsignarUno(camarero)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAsignarUno(camarero);
+                              }}
                               disabled={asignarMutation.isPending || faltantes <= 0}
                             >
                               Asignar
