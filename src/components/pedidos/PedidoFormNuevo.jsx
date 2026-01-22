@@ -85,14 +85,17 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
   };
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Auto-generar link de Google Maps cuando se escribe una dirección
-    if (field === 'lugar_evento' && value && value.length > 5) {
-      const encodedAddress = encodeURIComponent(value);
-      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-      setFormData(prev => ({ ...prev, link_ubicacion: mapsUrl }));
-    }
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Auto-generar link de Google Maps cuando se escribe una dirección
+      if (field === 'lugar_evento' && value && value.length > 5) {
+        const encodedAddress = encodeURIComponent(value);
+        newData.link_ubicacion = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+      }
+      
+      return newData;
+    });
   };
 
   const handleTurnoChange = (index, field, value) => {
