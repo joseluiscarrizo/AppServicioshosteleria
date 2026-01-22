@@ -146,18 +146,27 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-md"
       onClick={(e) => e.target === e.currentTarget && onCancel()}
     >
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-7xl max-h-[95vh] flex flex-col">
-        <div className="flex justify-between items-center px-6 py-4 border-b bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] flex-shrink-0">
-          <h2 className="text-2xl font-bold text-white">
-            {pedido ? '✏️ Editar Pedido' : '✨ Nuevo Pedido'}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={onCancel} className="text-white hover:bg-white/20">
+      <div className="bg-white rounded-3xl shadow-2xl border-2 border-slate-200/50 w-full max-w-7xl max-h-[95vh] flex flex-col overflow-hidden">
+        <div className="flex justify-between items-center px-8 py-5 border-b-2 border-slate-100 bg-gradient-to-r from-[#1e3a5f] via-[#2d5a8f] to-[#1e3a5f] flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              {pedido ? '✏️' : '✨'}
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white">
+                {pedido ? 'Editar Pedido' : 'Nuevo Pedido'}
+              </h2>
+              <p className="text-white/70 text-sm">Complete la información del evento</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onCancel} className="text-white hover:bg-white/20 rounded-xl">
             <X className="w-5 h-5" />
           </Button>
         </div>
@@ -166,26 +175,28 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
           <div className="px-6 py-5 pr-4">
       <form id="pedido-form" onSubmit={handleSubmit} className="space-y-5">
         {/* Números automáticos */}
-        <Card className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-            <span className="text-sm font-semibold text-indigo-900">Identificadores</span>
+        <Card className="p-5 bg-gradient-to-br from-indigo-50 via-blue-50 to-indigo-50 border-2 border-indigo-200 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
+              <span className="text-white text-lg">🔢</span>
+            </div>
+            <span className="text-base font-bold text-indigo-900">Identificadores del Sistema</span>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-indigo-700">Número Cliente</Label>
+              <Label className="text-indigo-800 font-semibold text-sm">Número Cliente</Label>
               <Input
                 value={formData.numero_cliente}
                 readOnly
-                className="bg-white font-mono font-bold text-indigo-900 border-indigo-200"
+                className="bg-white/80 font-mono font-bold text-indigo-900 border-2 border-indigo-200 h-11 text-lg shadow-sm"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-indigo-700">Número Pedido</Label>
+              <Label className="text-indigo-800 font-semibold text-sm">Número Pedido</Label>
               <Input
                 value={formData.numero_pedido_cliente}
                 readOnly
-                className="bg-white font-mono font-bold text-indigo-900 border-indigo-200"
+                className="bg-white/80 font-mono font-bold text-indigo-900 border-2 border-indigo-200 h-11 text-lg shadow-sm"
               />
             </div>
           </div>
@@ -194,7 +205,13 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         {/* CRM - Selector de Cliente */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 space-y-5">
-            <Card className="p-5 bg-white border-slate-200">
+            <Card className="p-6 bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-[#1e3a5f] flex items-center justify-center shadow-sm">
+                  <span className="text-white text-lg">👤</span>
+                </div>
+                <span className="text-base font-bold text-slate-800">Selección de Cliente</span>
+              </div>
               <SelectorCliente 
                 onSelectCliente={handleSelectCliente}
                 clienteActual={clienteSeleccionado}
@@ -202,51 +219,61 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
             </Card>
 
             {/* Información básica */}
-            <Card className="p-5 bg-white border-slate-200">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 rounded-full bg-[#1e3a5f]"></div>
-                <span className="text-sm font-semibold text-slate-800">Información del Evento</span>
+            <Card className="p-6 bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center shadow-sm">
+                  <span className="text-white text-lg">📋</span>
+                </div>
+                <span className="text-base font-bold text-slate-800">Información del Evento</span>
               </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
           <div className="space-y-2">
-            <Label htmlFor="lugar_evento" className="text-slate-700 font-medium">Lugar del Evento</Label>
+            <Label htmlFor="lugar_evento" className="text-slate-700 font-semibold text-sm flex items-center gap-2">
+              📍 Lugar del Evento
+            </Label>
             <Input
               id="lugar_evento"
               value={formData.lugar_evento}
               onChange={(e) => handleChange('lugar_evento', e.target.value)}
-              placeholder="Ubicación del evento"
-              className="border-slate-300 focus:border-[#1e3a5f] focus:ring-[#1e3a5f]"
+              placeholder="Ej: Hotel Marriott, Salón de Eventos..."
+              className="border-2 border-slate-300 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 h-11"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="dia" className="text-slate-700 font-medium">Día *</Label>
+            <Label htmlFor="dia" className="text-slate-700 font-semibold text-sm flex items-center gap-2">
+              📅 Fecha del Evento *
+            </Label>
             <Input
               id="dia"
               type="date"
               value={formData.dia}
               onChange={(e) => handleChange('dia', e.target.value)}
               required
-              className="border-slate-300 focus:border-[#1e3a5f] focus:ring-[#1e3a5f]"
+              className="border-2 border-slate-300 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 h-11"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="link_ubicacion" className="text-slate-700 font-medium">Link Google Maps</Label>
+            <Label htmlFor="link_ubicacion" className="text-slate-700 font-semibold text-sm flex items-center gap-2">
+              🗺️ Link Google Maps
+            </Label>
             <Input
               id="link_ubicacion"
               value={formData.link_ubicacion}
               onChange={(e) => handleChange('link_ubicacion', e.target.value)}
               placeholder="https://maps.google.com/..."
-              className="border-slate-300 focus:border-[#1e3a5f] focus:ring-[#1e3a5f]"
+              className="border-2 border-slate-300 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 h-11"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="camisa" className="text-slate-700 font-medium">Camisa</Label>
+            <Label htmlFor="camisa" className="text-slate-700 font-semibold text-sm flex items-center gap-2">
+              👔 Tipo de Camisa
+            </Label>
             <Select value={formData.camisa} onValueChange={(v) => handleChange('camisa', v)}>
-              <SelectTrigger className="border-slate-300">
+              <SelectTrigger className="border-2 border-slate-300 h-11">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -257,14 +284,14 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
           </div>
 
           <div className="space-y-2 flex items-end">
-            <div className="flex items-center gap-3 pb-2 p-3 bg-blue-50 rounded-lg border border-blue-200 w-full">
+            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200 w-full shadow-sm hover:shadow-md transition-shadow">
               <Switch
                 id="extra_transporte"
                 checked={formData.extra_transporte}
                 onCheckedChange={(v) => handleChange('extra_transporte', v)}
               />
-              <Label htmlFor="extra_transporte" className="cursor-pointer text-blue-900 font-medium">
-                🚗 Extra Transporte
+              <Label htmlFor="extra_transporte" className="cursor-pointer text-blue-900 font-semibold text-sm flex items-center gap-2">
+                🚗 Incluir Extra de Transporte
               </Label>
             </div>
           </div>
@@ -272,13 +299,15 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </Card>
 
         {/* Turnos y Horarios */}
-        <Card className="p-5 bg-white border-slate-200">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#1e3a5f]"></div>
-              <Label className="text-lg font-semibold text-slate-800">⏰ Turnos y Horarios</Label>
+        <Card className="p-6 bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center shadow-sm">
+                <span className="text-white text-lg">⏰</span>
+              </div>
+              <Label className="text-base font-bold text-slate-800">Turnos y Horarios</Label>
             </div>
-            <Button type="button" onClick={agregarTurno} size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="button" onClick={agregarTurno} size="sm" className="bg-emerald-600 hover:bg-emerald-700 shadow-sm">
               <Plus className="w-4 h-4 mr-2" />
               Añadir Turno
             </Button>
@@ -286,13 +315,13 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
 
           <div className="space-y-3">
             {formData.turnos.map((turno, index) => (
-              <Card key={index} className="p-4 bg-gradient-to-br from-slate-50 to-white border-slate-300 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-slate-800 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#1e3a5f] text-white text-xs">
+              <Card key={index} className="p-5 bg-gradient-to-br from-slate-50 via-white to-slate-50 border-2 border-slate-300 hover:shadow-lg hover:border-[#1e3a5f]/30 transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                    <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-[#2d5a8f] text-white text-sm font-bold shadow-md">
                       {index + 1}
                     </span>
-                    Turno {index + 1}
+                    <span className="text-base">Turno {index + 1}</span>
                   </h4>
                   {formData.turnos.length > 1 && (
                     <Button
@@ -309,44 +338,52 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-slate-700 font-medium">👥 Camareros</Label>
+                    <Label className="text-slate-700 font-semibold text-sm flex items-center gap-1.5">
+                      👥 Camareros
+                    </Label>
                     <Input
                       type="number"
                       min="1"
                       value={turno.cantidad_camareros}
                       onChange={(e) => handleTurnoChange(index, 'cantidad_camareros', parseInt(e.target.value) || 1)}
-                      className="border-slate-300 focus:border-[#1e3a5f] focus:ring-[#1e3a5f] font-semibold"
+                      className="border-2 border-slate-300 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 font-bold text-lg h-11"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <Label className="text-slate-700 font-medium">🕐 Entrada</Label>
+                    <Label className="text-slate-700 font-semibold text-sm flex items-center gap-1.5">
+                      🕐 Entrada
+                    </Label>
                     <Input
                       type="time"
                       value={turno.entrada}
                       onChange={(e) => handleTurnoChange(index, 'entrada', e.target.value)}
-                      className="border-slate-300 focus:border-[#1e3a5f] focus:ring-[#1e3a5f]"
+                      className="border-2 border-slate-300 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 h-11"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <Label className="text-slate-700 font-medium">🕐 Salida</Label>
+                    <Label className="text-slate-700 font-semibold text-sm flex items-center gap-1.5">
+                      🕐 Salida
+                    </Label>
                     <Input
                       type="time"
                       value={turno.salida}
                       onChange={(e) => handleTurnoChange(index, 'salida', e.target.value)}
-                      className="border-slate-300 focus:border-[#1e3a5f] focus:ring-[#1e3a5f]"
+                      className="border-2 border-slate-300 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 h-11"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <Label className="text-slate-700 font-medium">⏱️ Horas</Label>
+                    <Label className="text-slate-700 font-semibold text-sm flex items-center gap-1.5">
+                      ⏱️ Total Horas
+                    </Label>
                     <Input
                       type="number"
                       step="0.5"
                       value={turno.t_horas}
                       readOnly
-                      className="bg-blue-50 border-blue-200 font-bold text-blue-900"
+                      className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 font-bold text-blue-900 text-lg h-11 shadow-sm"
                     />
                   </div>
                 </div>
@@ -363,18 +400,20 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </div>
 
         {/* Notas */}
-        <Card className="p-5 bg-white border-slate-200 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-[#1e3a5f]"></div>
-            <Label htmlFor="notas" className="text-lg font-semibold text-slate-800">📝 Notas Adicionales</Label>
+        <Card className="p-6 bg-white border-2 border-slate-200 shadow-sm hover:shadow-md transition-shadow mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center shadow-sm">
+              <span className="text-white text-lg">📝</span>
+            </div>
+            <Label htmlFor="notas" className="text-base font-bold text-slate-800">Notas Adicionales</Label>
           </div>
           <Textarea
             id="notas"
             value={formData.notas}
             onChange={(e) => handleChange('notas', e.target.value)}
-            placeholder="Añade cualquier información relevante sobre el pedido..."
+            placeholder="Añade cualquier información relevante sobre el pedido: requisitos especiales, observaciones, instrucciones particulares..."
             rows={4}
-            className="border-slate-300 focus:border-[#1e3a5f] focus:ring-[#1e3a5f] resize-none"
+            className="border-2 border-slate-300 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 resize-none"
           />
         </Card>
 
@@ -383,11 +422,11 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
         </ScrollArea>
 
         {/* Botones fijos abajo */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gradient-to-r from-slate-50 to-white shadow-lg flex-shrink-0">
-        <Button type="button" variant="outline" onClick={onCancel} className="px-6">
+        <div className="flex justify-end gap-4 px-8 py-5 border-t-2 border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 shadow-xl flex-shrink-0">
+        <Button type="button" variant="outline" onClick={onCancel} className="px-8 h-11 text-base font-semibold border-2 hover:bg-slate-50">
           Cancelar
         </Button>
-        <Button type="submit" form="pedido-form" className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f] hover:from-[#152a45] hover:to-[#1e3a5f] text-white px-8 shadow-md">
+        <Button type="submit" form="pedido-form" className="bg-gradient-to-r from-[#1e3a5f] via-[#2d5a8f] to-[#1e3a5f] hover:from-[#152a45] hover:via-[#1e3a5f] hover:to-[#152a45] text-white px-10 h-11 text-base font-bold shadow-lg hover:shadow-xl transition-all">
           {pedido ? '💾 Guardar Cambios' : '✨ Crear Pedido'}
         </Button>
         </div>
