@@ -17,8 +17,12 @@ const StarRating = ({ value, onChange, label }) => (
         <button
           key={star}
           type="button"
-          onClick={() => onChange(star)}
-          className="focus:outline-none"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onChange(star);
+          }}
+          className="focus:outline-none hover:scale-110 transition-transform"
         >
           <Star
             className={`w-6 h-6 transition-colors ${
