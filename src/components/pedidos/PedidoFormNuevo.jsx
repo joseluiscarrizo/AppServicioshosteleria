@@ -153,7 +153,7 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-md"
       onClick={(e) => e.target === e.currentTarget && onCancel()}
     >
-      <div className="bg-white rounded-3xl shadow-2xl border-2 border-slate-200/50 w-full max-w-7xl max-h-[95vh] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-2xl border-2 border-slate-200/50 w-full max-w-7xl h-[95vh] flex flex-col overflow-hidden">
         <div className="flex justify-between items-center px-8 py-5 border-b-2 border-slate-100 bg-gradient-to-r from-[#1e3a5f] via-[#2d5a8f] to-[#1e3a5f] flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
@@ -171,7 +171,7 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
           </Button>
         </div>
 
-        <ScrollArea className="flex-1 bg-slate-50" type="always" style={{ height: 'calc(95vh - 200px)' }}>
+        <ScrollArea className="flex-1 bg-slate-50 overflow-y-auto" type="always">
           <div className="px-6 py-5 pr-4">
       <form id="pedido-form" onSubmit={handleSubmit} className="space-y-5">
         {/* Números automáticos */}
