@@ -46,7 +46,7 @@ function MapCenter({ center }) {
   return null;
 }
 
-export default function MapaCamareros({ pedido, onAsignar }) {
+export default function MapaCamareros({ pedido, onAsignar, onClose }) {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
   const [camareroSeleccionado, setCamareroSeleccionado] = useState(null);
@@ -128,7 +128,7 @@ export default function MapaCamareros({ pedido, onAsignar }) {
   };
 
   return (
-    <Dialog open={true} onOpenChange={() => {}} >
+    <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] max-h-[95vh] p-0">
         <DialogHeader className="p-6 pb-4">
           <DialogTitle className="flex items-center gap-2">
