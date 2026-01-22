@@ -31,6 +31,7 @@ export default function Pedidos() {
   const [edicionRapida, setEdicionRapida] = useState({ open: false, pedido: null, campo: null });
   const [duplicarDialog, setDuplicarDialog] = useState({ open: false, pedido: null });
   const [recurrenteDialog, setRecurrenteDialog] = useState({ open: false, pedido: null });
+  const [editingSalida, setEditingSalida] = useState({ pedidoId: null, turnoIndex: null, camareroIndex: null });
   const [formData, setFormData] = useState({
     codigo_pedido: '',
     cliente_id: '',
@@ -55,7 +56,8 @@ export default function Pedidos() {
     queryKey: ['pedidos'],
     queryFn: async () => {
       try {
-        return await base44.entities.Pedido.list('-created_date', 200);
+        const data = await base44.entities.Pedido.list('-dia', 200);
+        return data.sort((a, b) => (a.dia || '').localeCompare(b.dia || ''));
       } catch (error) {
         console.error('Error cargando pedidos:', error);
         return [];
@@ -86,9 +88,40 @@ export default function Pedidos() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       resetForm();
+      setEditingSalida({ pedidoId: null, turnoIndex: null, camareroIndex: null });
       toast.success('Pedido actualizado');
     }
   });
+
+  const handleSalidaChange = (pedido, turnoIndex, camareroIndex, nuevaSalida) => {
+    const turnosActualizados = [...(pedido.turnos || [])];
+    if (turnosActualizados[turnoIndex]) {
+      turnosActualizados[turnoIndex] = {
+        ...turnosActualizados[turnoIndex],
+        salida: nuevaSalida
+      };
+      
+      // Calcular horas
+      const entrada = turnosActualizados[turnoIndex].entrada;
+      if (entrada && nuevaSalida) {
+        const [hE, mE] = entrada.split(':').map(Number);
+        const [hS, mS] = nuevaSalida.split(':').map(Number);
+        let horas = hS - hE;
+        let minutos = mS - mE;
+        if (minutos < 0) {
+          horas -= 1;
+          minutos += 60;
+        }
+        if (horas < 0) horas += 24;
+        turnosActualizados[turnoIndex].t_horas = horas + minutos / 60;
+      }
+      
+      updateMutation.mutate({
+        id: pedido.id,
+        data: { turnos: turnosActualizados }
+      });
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Pedido.delete(id),
@@ -278,136 +311,168 @@ export default function Pedidos() {
                       ? pedido.turnos 
                       : [{ cantidad_camareros: pedido.cantidad_camareros || 0, entrada: pedido.entrada || '-', salida: pedido.salida || '-', t_horas: pedido.t_horas || 0 }];
                     
-                    return turnos.map((turno, index) => (
-                      <motion.tr
-                        key={`${pedido.id}-${index}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="border-b hover:bg-slate-50/50"
-                      >
-                        {index === 0 ? (
-                          <>
-                            <TableCell className="font-mono text-sm font-semibold text-[#1e3a5f]" rowSpan={turnos.length}>
-                              {pedido.codigo_pedido || '-'}
+                    return turnos.flatMap((turno, turnoIndex) => {
+                      const cantidadCamareros = turno.cantidad_camareros || 0;
+                      const filasCamareros = Math.max(1, cantidadCamareros);
+                      
+                      return Array.from({ length: filasCamareros }, (_, camareroIndex) => {
+                        const esPrimeraFila = turnoIndex === 0 && camareroIndex === 0;
+                        const totalFilas = turnos.reduce((sum, t) => sum + Math.max(1, t.cantidad_camareros || 0), 0);
+                        
+                        return (
+                          <motion.tr
+                            key={`${pedido.id}-${turnoIndex}-${camareroIndex}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="border-b hover:bg-slate-50/50"
+                          >
+                            {esPrimeraFila ? (
+                              <>
+                                <TableCell className="font-mono text-sm font-semibold text-[#1e3a5f]" rowSpan={totalFilas}>
+                                  {pedido.codigo_pedido || '-'}
+                                </TableCell>
+                                <TableCell rowSpan={totalFilas}>
+                                  <Badge
+                                    className={`cursor-pointer ${
+                                      pedido.estado_evento === 'cancelado' ? 'bg-red-100 text-red-700 hover:bg-red-200' :
+                                      pedido.estado_evento === 'finalizado' ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' :
+                                      pedido.estado_evento === 'en_curso' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
+                                      'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                    }`}
+                                    onClick={() => setEdicionRapida({ open: true, pedido, campo: 'estado' })}
+                                  >
+                                    {pedido.estado_evento === 'cancelado' && <Ban className="w-3 h-3 mr-1" />}
+                                    {pedido.estado_evento === 'cancelado' ? 'Cancelado' :
+                                     pedido.estado_evento === 'finalizado' ? 'Finalizado' :
+                                     pedido.estado_evento === 'en_curso' ? 'En Curso' : 'Planificado'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell 
+                                  className="font-medium cursor-pointer hover:text-[#1e3a5f] hover:underline"
+                                  onClick={() => setEdicionRapida({ open: true, pedido, campo: 'cliente' })}
+                                  rowSpan={totalFilas}
+                                >
+                                  {pedido.cliente}
+                                </TableCell>
+                                <TableCell 
+                                  className="text-slate-600 cursor-pointer hover:text-[#1e3a5f] hover:underline"
+                                  onClick={() => setEdicionRapida({ open: true, pedido, campo: 'lugar' })}
+                                  rowSpan={totalFilas}
+                                >
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />
+                                    {pedido.lugar_evento || 'Añadir lugar'}
+                                  </div>
+                                </TableCell>
+                              </>
+                            ) : null}
+                            <TableCell className="text-center">
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#1e3a5f]/10 text-[#1e3a5f] font-semibold">
+                                1
+                              </span>
                             </TableCell>
-                            <TableCell rowSpan={turnos.length}>
-                              <Badge
-                                className={`cursor-pointer ${
-                                  pedido.estado_evento === 'cancelado' ? 'bg-red-100 text-red-700 hover:bg-red-200' :
-                                  pedido.estado_evento === 'finalizado' ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' :
-                                  pedido.estado_evento === 'en_curso' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
-                                  'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                                }`}
-                                onClick={() => setEdicionRapida({ open: true, pedido, campo: 'estado' })}
+                            {esPrimeraFila ? (
+                              <TableCell
+                                className="cursor-pointer hover:text-[#1e3a5f] hover:underline"
+                                onClick={() => setEdicionRapida({ open: true, pedido, campo: 'fecha' })}
+                                rowSpan={totalFilas}
                               >
-                                {pedido.estado_evento === 'cancelado' && <Ban className="w-3 h-3 mr-1" />}
-                                {pedido.estado_evento === 'cancelado' ? 'Cancelado' :
-                                 pedido.estado_evento === 'finalizado' ? 'Finalizado' :
-                                 pedido.estado_evento === 'en_curso' ? 'En Curso' : 'Planificado'}
-                              </Badge>
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {pedido.dia ? format(new Date(pedido.dia), 'dd MMM yyyy', { locale: es }) : '-'}
+                                </div>
+                              </TableCell>
+                            ) : null}
+                            <TableCell className="font-mono text-sm">
+                              {turno.entrada || '-'}
                             </TableCell>
                             <TableCell 
-                              className="font-medium cursor-pointer hover:text-[#1e3a5f] hover:underline"
-                              onClick={() => setEdicionRapida({ open: true, pedido, campo: 'cliente' })}
-                              rowSpan={turnos.length}
+                              className="font-mono text-sm cursor-pointer hover:bg-blue-50 transition-colors"
+                              onClick={() => setEditingSalida({ pedidoId: pedido.id, turnoIndex, camareroIndex })}
                             >
-                              {pedido.cliente}
-                            </TableCell>
-                            <TableCell 
-                              className="text-slate-600 cursor-pointer hover:text-[#1e3a5f] hover:underline"
-                              onClick={() => setEdicionRapida({ open: true, pedido, campo: 'lugar' })}
-                              rowSpan={turnos.length}
-                            >
-                              <div className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                {pedido.lugar_evento || 'Añadir lugar'}
-                              </div>
-                            </TableCell>
-                          </>
-                        ) : null}
-                        <TableCell className="text-center">
-                          <span 
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#1e3a5f]/10 text-[#1e3a5f] font-semibold"
-                          >
-                            {turno.cantidad_camareros || 0}
-                          </span>
-                        </TableCell>
-                        {index === 0 ? (
-                          <TableCell
-                            className="cursor-pointer hover:text-[#1e3a5f] hover:underline"
-                            onClick={() => setEdicionRapida({ open: true, pedido, campo: 'fecha' })}
-                            rowSpan={turnos.length}
-                          >
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {pedido.dia ? format(new Date(pedido.dia), 'dd MMM yyyy', { locale: es }) : '-'}
-                            </div>
-                          </TableCell>
-                        ) : null}
-                        <TableCell className="font-mono text-sm">
-                          {turno.entrada || '-'}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {turno.salida || '-'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className="px-2 py-1 rounded-full bg-slate-100 text-sm font-medium">
-                            {turno.t_horas || 0}h
-                          </span>
-                        </TableCell>
-                        {index === 0 ? (
-                          <>
-                            <TableCell rowSpan={turnos.length}>{pedido.camisa || '-'}</TableCell>
-                            <TableCell className="text-center" rowSpan={turnos.length}>
-                              {pedido.extra_transporte ? (
-                                <span className="text-emerald-600">✓</span>
+                              {editingSalida.pedidoId === pedido.id && 
+                               editingSalida.turnoIndex === turnoIndex && 
+                               editingSalida.camareroIndex === camareroIndex ? (
+                                <Input
+                                  type="time"
+                                  defaultValue={turno.salida || ''}
+                                  autoFocus
+                                  className="h-8 w-24 text-xs"
+                                  onBlur={(e) => {
+                                    handleSalidaChange(pedido, turnoIndex, camareroIndex, e.target.value);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleSalidaChange(pedido, turnoIndex, camareroIndex, e.target.value);
+                                    }
+                                  }}
+                                />
                               ) : (
-                                <span className="text-slate-300">-</span>
+                                <span className="hover:text-blue-600">
+                                  {turno.salida || '-'}
+                                </span>
                               )}
                             </TableCell>
-                            <TableCell className="text-right" rowSpan={turnos.length}>
-                              <div className="flex justify-end gap-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={() => setDuplicarDialog({ open: true, pedido })}
-                                  className="h-8 w-8"
-                                  title="Duplicar evento"
-                                >
-                                  <Copy className="w-4 h-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={() => setRecurrenteDialog({ open: true, pedido })}
-                                  className="h-8 w-8"
-                                  title="Crear eventos recurrentes"
-                                >
-                                  <Repeat className="w-4 h-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={() => handleEdit(pedido)}
-                                  className="h-8 w-8"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={() => deleteMutation.mutate(pedido.id)}
-                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
+                            <TableCell className="text-center">
+                              <span className="px-2 py-1 rounded-full bg-slate-100 text-sm font-medium">
+                                {turno.t_horas ? turno.t_horas.toFixed(1) : 0}h
+                              </span>
                             </TableCell>
-                          </>
-                        ) : null}
-                      </motion.tr>
-                    ));
+                            {esPrimeraFila ? (
+                              <>
+                                <TableCell rowSpan={totalFilas}>{pedido.camisa || '-'}</TableCell>
+                                <TableCell className="text-center" rowSpan={totalFilas}>
+                                  {pedido.extra_transporte ? (
+                                    <span className="text-emerald-600">✓</span>
+                                  ) : (
+                                    <span className="text-slate-300">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right" rowSpan={totalFilas}>
+                                  <div className="flex justify-end gap-1">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => setDuplicarDialog({ open: true, pedido })}
+                                      className="h-8 w-8"
+                                      title="Duplicar evento"
+                                    >
+                                      <Copy className="w-4 h-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => setRecurrenteDialog({ open: true, pedido })}
+                                      className="h-8 w-8"
+                                      title="Crear eventos recurrentes"
+                                    >
+                                      <Repeat className="w-4 h-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleEdit(pedido)}
+                                      className="h-8 w-8"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => deleteMutation.mutate(pedido.id)}
+                                      className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </>
+                            ) : null}
+                          </motion.tr>
+                        );
+                      });
+                    });
                   })}
                 </AnimatePresence>
                 {pedidos.length === 0 && (
