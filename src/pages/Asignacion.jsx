@@ -789,21 +789,21 @@ Sistema de Gestión de Camareros
               onClose={() => setShowAsignacionAuto(false)}
               pedido={selectedPedido}
             />
+          </>
+        )}
 
-            {/* Mapa de Camareros */}
-            {showMapa && (
-              <MapaCamareros
-                pedido={selectedPedido}
-                onAsignar={(camarero) => {
-                  if (selectedPedido) {
-                    handleAsignarCamarero(selectedPedido, camarero);
-                    setShowMapa(false);
-                  }
-                }}
-              />
-            )}
-            </>
-            )}
+        {/* Mapa de Camareros */}
+        {showMapa && (
+          <MapaCamareros
+            pedido={selectedPedido}
+            onAsignar={(camarero) => {
+              if (selectedPedido) {
+                handleAsignarCamarero(selectedPedido, camarero);
+                setShowMapa(false);
+              }
+            }}
+          />
+        )}
       </div>
     </div>
   );
