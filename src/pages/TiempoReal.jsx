@@ -12,7 +12,7 @@ import { Clock, Search, Calendar, RefreshCw, Star, Users, Mail, MessageCircle } 
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import HojaAsistencia from '../components/tiemporeal/HojaAsistencia';
 import EnviarWhatsApp from '../components/whatsapp/EnviarWhatsApp';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const estadoColors = {
@@ -24,6 +24,8 @@ const estadoColors = {
 
 export default function TiempoReal() {
   const [busqueda, setBusqueda] = useState('');
+  const [vistaCalendario, setVistaCalendario] = useState('dia'); // 'dia', 'semana', 'mes'
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
   const [filtroFecha, setFiltroFecha] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [valoracionModal, setValoracionModal] = useState({ open: false, camarero: null, pedido: null });
   const [detalleEventoModal, setDetalleEventoModal] = useState({ open: false, pedido: null });
@@ -61,6 +63,38 @@ export default function TiempoReal() {
     }
   });
 
+  // Calcular rango de fechas según vista
+  const rangoFechas = useMemo(() => {
+    if (vistaCalendario === 'dia') {
+      return { inicio: fechaSeleccionada, fin: fechaSeleccionada };
+    } else if (vistaCalendario === 'semana') {
+      return {
+        inicio: startOfWeek(fechaSeleccionada, { weekStartsOn: 1 }),
+        fin: endOfWeek(fechaSeleccionada, { weekStartsOn: 1 })
+      };
+    } else {
+      return {
+        inicio: startOfMonth(fechaSeleccionada),
+        fin: endOfMonth(fechaSeleccionada)
+      };
+    }
+  }, [vistaCalendario, fechaSeleccionada]);
+
+  // Días a mostrar en el calendario
+  const diasCalendario = useMemo(() => {
+    return eachDayOfInterval({ start: rangoFechas.inicio, end: rangoFechas.fin });
+  }, [rangoFechas]);
+
+  // Eventos agrupados por día
+  const eventosPorDia = useMemo(() => {
+    const grupos = {};
+    diasCalendario.forEach(dia => {
+      const diaStr = format(dia, 'yyyy-MM-dd');
+      grupos[diaStr] = pedidos.filter(p => p.dia === diaStr);
+    });
+    return grupos;
+  }, [pedidos, diasCalendario]);
+
   // Generar filas: una por cada slot de camarero de cada pedido
   const filas = useMemo(() => {
     const result = [];
@@ -69,8 +103,15 @@ export default function TiempoReal() {
       const matchBusqueda = !busqueda || 
         p.cliente?.toLowerCase().includes(busqueda.toLowerCase()) ||
         p.lugar_evento?.toLowerCase().includes(busqueda.toLowerCase());
-      const matchFecha = !filtroFecha || p.dia === filtroFecha;
-      return matchBusqueda && matchFecha;
+      
+      // Filtrar por rango de fechas del calendario
+      if (p.dia) {
+        const fechaPedido = new Date(p.dia);
+        const enRango = fechaPedido >= rangoFechas.inicio && fechaPedido <= rangoFechas.fin;
+        if (!enRango) return false;
+      }
+      
+      return matchBusqueda;
     });
 
     pedidosFiltrados.forEach(pedido => {
@@ -88,7 +129,7 @@ export default function TiempoReal() {
     });
 
     return result;
-  }, [pedidos, asignaciones, busqueda, filtroFecha]);
+  }, [pedidos, asignaciones, busqueda, rangoFechas]);
 
   // Obtener camareros disponibles para un pedido
   const getCamarerosDisponibles = (pedido, asignacionActual) => {
@@ -283,26 +324,120 @@ export default function TiempoReal() {
           </div>
         </div>
 
-        {/* Filtros */}
+        {/* Calendario de Navegación */}
         <Card className="p-4 mb-6">
-          <div className="flex flex-wrap gap-4">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Buscar cliente o lugar..."
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                className="pl-9"
-              />
+          <div className="flex flex-col gap-4">
+            {/* Controles de navegación */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <Select value={vistaCalendario} onValueChange={setVistaCalendario}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dia">📅 Día</SelectItem>
+                    <SelectItem value="semana">📆 Semana</SelectItem>
+                    <SelectItem value="mes">🗓️ Mes</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <div className="flex gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      if (vistaCalendario === 'dia') {
+                        setFechaSeleccionada(new Date(fechaSeleccionada.setDate(fechaSeleccionada.getDate() - 1)));
+                      } else if (vistaCalendario === 'semana') {
+                        setFechaSeleccionada(new Date(fechaSeleccionada.setDate(fechaSeleccionada.getDate() - 7)));
+                      } else {
+                        setFechaSeleccionada(new Date(fechaSeleccionada.setMonth(fechaSeleccionada.getMonth() - 1)));
+                      }
+                    }}
+                  >
+                    ‹
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setFechaSeleccionada(new Date())}
+                  >
+                    Hoy
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      if (vistaCalendario === 'dia') {
+                        setFechaSeleccionada(new Date(fechaSeleccionada.setDate(fechaSeleccionada.getDate() + 1)));
+                      } else if (vistaCalendario === 'semana') {
+                        setFechaSeleccionada(new Date(fechaSeleccionada.setDate(fechaSeleccionada.getDate() + 7)));
+                      } else {
+                        setFechaSeleccionada(new Date(fechaSeleccionada.setMonth(fechaSeleccionada.getMonth() + 1)));
+                      }
+                    }}
+                  >
+                    ›
+                  </Button>
+                </div>
+
+                <span className="text-sm font-medium text-slate-700">
+                  {vistaCalendario === 'dia' && format(fechaSeleccionada, 'dd MMMM yyyy', { locale: es })}
+                  {vistaCalendario === 'semana' && `${format(rangoFechas.inicio, 'dd MMM', { locale: es })} - ${format(rangoFechas.fin, 'dd MMM yyyy', { locale: es })}`}
+                  {vistaCalendario === 'mes' && format(fechaSeleccionada, 'MMMM yyyy', { locale: es })}
+                </span>
+              </div>
+
+              <div className="relative flex-1 min-w-[200px] max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Buscar cliente o lugar..."
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-slate-400" />
-              <Input
-                type="date"
-                value={filtroFecha}
-                onChange={(e) => setFiltroFecha(e.target.value)}
-                className="w-44"
-              />
+
+            {/* Calendario visual */}
+            <div className="grid gap-2" style={{ 
+              gridTemplateColumns: vistaCalendario === 'mes' 
+                ? 'repeat(7, minmax(0, 1fr))' 
+                : `repeat(${diasCalendario.length}, minmax(0, 1fr))`
+            }}>
+              {diasCalendario.map(dia => {
+                const diaStr = format(dia, 'yyyy-MM-dd');
+                const eventos = eventosPorDia[diaStr] || [];
+                const esHoy = isSameDay(dia, new Date());
+                const estaSeleccionado = isSameDay(dia, fechaSeleccionada);
+
+                return (
+                  <button
+                    key={diaStr}
+                    onClick={() => setFechaSeleccionada(dia)}
+                    className={`p-2 rounded-lg border-2 transition-all hover:shadow-md ${
+                      estaSeleccionado 
+                        ? 'border-[#1e3a5f] bg-[#1e3a5f]/10' 
+                        : esHoy 
+                        ? 'border-blue-400 bg-blue-50'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="text-xs font-medium text-slate-600">
+                      {vistaCalendario === 'mes' ? format(dia, 'EEE', { locale: es }) : format(dia, 'EEE dd', { locale: es })}
+                    </div>
+                    <div className={`text-lg font-bold ${estaSeleccionado ? 'text-[#1e3a5f]' : 'text-slate-800'}`}>
+                      {format(dia, 'd')}
+                    </div>
+                    {eventos.length > 0 && (
+                      <div className="flex items-center justify-center gap-1 mt-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                        <span className="text-xs font-semibold text-slate-600">{eventos.length}</span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </Card>
