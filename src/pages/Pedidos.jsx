@@ -21,6 +21,7 @@ import EntradaAutomatica from '../components/pedidos/EntradaAutomatica';
 import EdicionRapida from '../components/pedidos/EdicionRapida';
 import DuplicarEvento from '../components/pedidos/DuplicarEvento';
 import EventoRecurrente from '../components/pedidos/EventoRecurrente';
+import PedidoFormNuevo from '../components/pedidos/PedidoFormNuevo';
 
 export default function Pedidos() {
   const [showForm, setShowForm] = useState(false);
@@ -147,42 +148,11 @@ export default function Pedidos() {
     setShowForm(true);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // Generar números automáticos si es nuevo
-    let dataToSubmit = { ...formData };
-    if (!editingPedido) {
-      // Generar código P001, P002, etc.
-      const maxCodigo = pedidos.reduce((max, p) => {
-        if (p.codigo_pedido && p.codigo_pedido.startsWith('P')) {
-          const num = parseInt(p.codigo_pedido.substring(1));
-          return Math.max(max, num);
-        }
-        return max;
-      }, 0);
-      dataToSubmit.codigo_pedido = `P${String(maxCodigo + 1).padStart(3, '0')}`;
-      
-      const maxNumeroCliente = pedidos.reduce((max, p) => Math.max(max, p.numero_cliente || 0), 0);
-      const maxNumeroPedido = pedidos.reduce((max, p) => Math.max(max, p.numero_pedido_cliente || 0), 0);
-      dataToSubmit.numero_cliente = maxNumeroCliente + 1;
-      dataToSubmit.numero_pedido_cliente = maxNumeroPedido + 1;
-    }
-    
-    // Calcular totales de turnos
-    const cantidadTotal = (formData.turnos || []).reduce((sum, t) => sum + (t.cantidad_camareros || 0), 0);
-    const horasTotal = (formData.turnos || []).reduce((sum, t) => sum + (t.t_horas || 0), 0);
-    const primerTurno = (formData.turnos || [])[0] || {};
-    
-    dataToSubmit.cantidad_camareros = cantidadTotal;
-    dataToSubmit.entrada = primerTurno.entrada;
-    dataToSubmit.salida = primerTurno.salida;
-    dataToSubmit.t_horas = horasTotal;
-    
+  const handleSubmit = (dataFromForm) => {
     if (editingPedido) {
-      updateMutation.mutate({ id: editingPedido.id, data: dataToSubmit });
+      updateMutation.mutate({ id: editingPedido.id, data: dataFromForm });
     } else {
-      createMutation.mutate(dataToSubmit);
+      createMutation.mutate(dataFromForm);
     }
   };
 
@@ -432,146 +402,15 @@ export default function Pedidos() {
         </Card>
 
         {/* Modal Form */}
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{editingPedido ? 'Editar Pedido' : 'Nuevo Pedido'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Código automático de pedido */}
-              {!editingPedido && (
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <Label className="text-xs text-slate-500">Número Automático de Pedido</Label>
-                  <p className="font-mono font-semibold text-lg text-[#1e3a5f]">
-                    {(() => {
-                      const maxCodigo = pedidos.reduce((max, p) => {
-                        if (p.codigo_pedido && p.codigo_pedido.startsWith('P')) {
-                          const num = parseInt(p.codigo_pedido.substring(1));
-                          return Math.max(max, num);
-                        }
-                        return max;
-                      }, 0);
-                      return `P${String(maxCodigo + 1).padStart(3, '0')}`;
-                    })()}
-                  </p>
-                </div>
-              )}
-
-              {editingPedido && formData.codigo_pedido && (
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <Label className="text-xs text-slate-500">Número de Pedido</Label>
-                  <p className="font-mono font-semibold text-lg text-[#1e3a5f]">
-                    {formData.codigo_pedido}
-                  </p>
-                </div>
-              )}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-              <Label>Cliente *</Label>
-              <select
-              value={formData.cliente_id}
-              onChange={(e) => {
-                const selectedCliente = clientes.find(c => c.id === e.target.value);
-                setFormData({ 
-                  ...formData, 
-                  cliente_id: e.target.value,
-                  cliente: selectedCliente?.nombre || '',
-                  cliente_email_1: selectedCliente?.email_1 || '',
-                  cliente_email_2: selectedCliente?.email_2 || '',
-                  cliente_telefono_1: selectedCliente?.telefono_1 || '',
-                  cliente_telefono_2: selectedCliente?.telefono_2 || '',
-                  cliente_persona_contacto_1: selectedCliente?.persona_contacto_1 || '',
-                  cliente_persona_contacto_2: selectedCliente?.persona_contacto_2 || ''
-                });
-              }}
-              className="w-full h-10 px-3 rounded-md border border-slate-200 focus:border-[#1e3a5f] focus:ring-[#1e3a5f] focus:outline-none"
-              required
-              >
-              <option value="">Seleccionar cliente...</option>
-              {clientes.map(cliente => (
-                <option key={cliente.id} value={cliente.id}>
-                  {cliente.codigo} - {cliente.nombre}
-                </option>
-              ))}
-              </select>
-              </div>
-              <div className="space-y-2">
-              <Label>Camisa *</Label>
-              <select
-              value={formData.camisa}
-              onChange={(e) => setFormData({ ...formData, camisa: e.target.value })}
-              className="w-full h-10 px-3 rounded-md border border-slate-200 focus:border-[#1e3a5f] focus:ring-[#1e3a5f] focus:outline-none"
-              required
-              >
-              <option value="blanca">Blanca</option>
-              <option value="negra">Negra</option>
-              </select>
-              </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Día *</Label>
-                  <Input
-                    type="date"
-                    value={formData.dia}
-                    onChange={(e) => setFormData({ ...formData, dia: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Lugar del Evento</Label>
-                  <Input
-                    value={formData.lugar_evento}
-                    onChange={(e) => setFormData({ ...formData, lugar_evento: e.target.value })}
-                    placeholder="Ubicación"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Link Google Maps</Label>
-                  <Input
-                    value={formData.link_ubicacion}
-                    onChange={(e) => setFormData({ ...formData, link_ubicacion: e.target.value })}
-                    placeholder="https://maps.google.com/..."
-                  />
-                </div>
-              </div>
-
-              <TurnosEditor 
-                turnos={formData.turnos} 
-                onChange={(turnos) => setFormData({ ...formData, turnos })} 
-              />
-              
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                <Switch
-                  id="extra_transporte"
-                  checked={formData.extra_transporte}
-                  onCheckedChange={(v) => setFormData({ ...formData, extra_transporte: v })}
-                />
-                <Label htmlFor="extra_transporte" className="cursor-pointer">
-                  Extra Transporte
-                </Label>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Notas</Label>
-                <Textarea
-                  value={formData.notas}
-                  onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
-                  placeholder="Notas adicionales..."
-                  rows={2}
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={resetForm}>
-                  Cancelar
-                </Button>
-                <Button type="submit" className="bg-[#1e3a5f] hover:bg-[#152a45] text-white">
-                  {editingPedido ? 'Guardar Cambios' : 'Crear Pedido'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <AnimatePresence>
+          {showForm && (
+            <PedidoFormNuevo
+              pedido={editingPedido}
+              onSubmit={handleSubmit}
+              onCancel={resetForm}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Entrada Automatizada */}
         <Dialog open={showEntradaAuto} onOpenChange={setShowEntradaAuto}>
