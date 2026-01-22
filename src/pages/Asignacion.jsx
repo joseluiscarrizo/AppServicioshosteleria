@@ -779,16 +779,14 @@ Sistema de Gestión de Camareros
                 </Card>
               </div>
             </div>
-            </DragDropContext>
-            </>
-            )}
+          </DragDropContext>
 
-            {/* Modal de Asignación Automática */}
-            <AsignacionAutomatica
-              open={showAsignacionAuto}
-              onClose={() => setShowAsignacionAuto(false)}
-              pedido={selectedPedido}
-            />
+          {/* Modal de Asignación Automática */}
+          <AsignacionAutomatica
+            open={showAsignacionAuto}
+            onClose={() => setShowAsignacionAuto(false)}
+            pedido={selectedPedido}
+          />
           </>
         )}
 
