@@ -76,6 +76,58 @@ export default function Asignacion() {
       
       if (pedido && camarero) {
         try {
+          // Construir mensaje según si tiene transporte o no
+          let mensaje = `📅 Día: ${pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Por confirmar'}\n`;
+          mensaje += `👤 Cliente: ${pedido.cliente}\n`;
+          mensaje += `📍 Lugar del Evento: ${pedido.lugar_evento || 'Por confirmar'}\n`;
+          mensaje += `🕐 Hora de entrada: ${data.hora_entrada || pedido.entrada || '-'}\n\n`;
+
+          if (pedido.extra_transporte) {
+            // Con transporte - calcular hora de encuentro
+            const puntoEncuentro = 'https://maps.app.goo.gl/hrR4eHSq4Q7dLcaV7';
+            
+            if (pedido.link_ubicacion) {
+              try {
+                const resultadoDistancia = await base44.integrations.Core.InvokeLLM({
+                  prompt: `Calcula el tiempo de viaje en transporte desde ${puntoEncuentro} hasta ${pedido.link_ubicacion}. Devuelve solo el tiempo estimado en minutos como número.`,
+                  add_context_from_internet: true,
+                  response_json_schema: {
+                    type: "object",
+                    properties: {
+                      minutos: { type: "number" }
+                    }
+                  }
+                });
+                
+                const minutosViaje = resultadoDistancia?.minutos || 30;
+                const horaEntrada = data.hora_entrada || pedido.entrada;
+                if (horaEntrada) {
+                  const [horas, minutos] = horaEntrada.split(':').map(Number);
+                  const horaEntradaDate = new Date();
+                  horaEntradaDate.setHours(horas, minutos, 0);
+                  horaEntradaDate.setMinutes(horaEntradaDate.getMinutes() - minutosViaje - 15);
+                  
+                  mensaje += `🚗 Hora de encuentro: ${horaEntradaDate.getHours().toString().padStart(2, '0')}:${horaEntradaDate.getMinutes().toString().padStart(2, '0')}\n`;
+                }
+              } catch (e) {
+                console.error('Error calculando distancia:', e);
+                mensaje += `🚗 Hora de encuentro: Por confirmar\n`;
+              }
+            }
+            
+            mensaje += `📌 Punto de encuentro: ${puntoEncuentro}\n\n`;
+          } else {
+            // Sin transporte - mostrar link de Google Maps
+            if (pedido.link_ubicacion) {
+              mensaje += `🗺️ Ubicación: ${pedido.link_ubicacion}\n\n`;
+            }
+          }
+
+          mensaje += `👔 Uniforme: Zapatos, pantalón y delantal. Todo de color negro\n`;
+          mensaje += `👕 Camisa: ${pedido.camisa || 'blanca'}\n`;
+          mensaje += `✨ Uniforme Impoluto.\n\n`;
+          mensaje += `⏰ Presentarse 15 minutos antes para estar a la hora exacta en el puesto de trabajo.`;
+
           // Crear notificación al camarero
           await base44.entities.NotificacionCamarero.create({
             camarero_id: camarero.id,
@@ -84,12 +136,12 @@ export default function Asignacion() {
             pedido_id: pedido.id,
             tipo: 'nueva_asignacion',
             titulo: `Nueva Asignación: ${pedido.cliente}`,
-            mensaje: `Has sido asignado a un evento en ${pedido.lugar_evento || 'ubicación por confirmar'}`,
+            mensaje: mensaje,
             cliente: pedido.cliente,
             lugar_evento: pedido.lugar_evento,
             fecha: pedido.dia,
-            hora_entrada: pedido.entrada,
-            hora_salida: pedido.salida,
+            hora_entrada: data.hora_entrada,
+            hora_salida: data.hora_salida,
             leida: false,
             respondida: false,
             respuesta: 'pendiente'
