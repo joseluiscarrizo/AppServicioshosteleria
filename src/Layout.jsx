@@ -7,6 +7,7 @@ import { useState } from 'react';
 import NotificationBell from './components/notificaciones/NotificationBell';
 import NotificacionesAutomaticas from './components/notificaciones/NotificacionesAutomaticas';
 import { useWebPushNotifications } from './components/notificaciones/WebPushService';
+import ServicioRecordatorios from './components/recordatorios/ServicioRecordatorios';
 
 const navItems = [
   { name: 'Dashboard', page: 'DashboardCoordinador', icon: LayoutDashboard },
@@ -33,9 +34,12 @@ export default function Layout({ children, currentPageName }) {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Sistema de Notificaciones Automáticas Global */}
-      <NotificacionesAutomaticas 
-        showPushNotifications={isAllowed ? showNotification : null}
-      />
+          <NotificacionesAutomaticas 
+            showPushNotifications={isAllowed ? showNotification : null}
+          />
+
+          {/* Sistema de Recordatorios Automáticos */}
+          <ServicioRecordatorios />
       
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">

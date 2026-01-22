@@ -7,13 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Mail, Bell, Phone, X, UserCog } from 'lucide-react';
+import { Plus, Pencil, Trash2, Mail, Bell, Phone, X, UserCog, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import ConfiguracionRecordatorios from '../components/recordatorios/ConfiguracionRecordatorios';
 
 export default function Coordinadores() {
   const [showForm, setShowForm] = useState(false);
   const [editingCoord, setEditingCoord] = useState(null);
+  const [mostrarRecordatorios, setMostrarRecordatorios] = useState(false);
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',
@@ -103,15 +105,32 @@ export default function Coordinadores() {
                 Gestiona los coordinadores y sus preferencias de notificación
               </p>
             </div>
-            <Button 
-              onClick={() => setShowForm(true)}
-              className="bg-[#1e3a5f] hover:bg-[#152a45] text-white shadow-lg shadow-[#1e3a5f]/20"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Añadir Coordinador
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setMostrarRecordatorios(!mostrarRecordatorios)}
+                variant={mostrarRecordatorios ? "default" : "outline"}
+                className={mostrarRecordatorios ? "bg-[#1e3a5f] hover:bg-[#152a45] text-white" : ""}
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                Recordatorios Automáticos
+              </Button>
+              <Button 
+                onClick={() => setShowForm(true)}
+                className="bg-[#1e3a5f] hover:bg-[#152a45] text-white shadow-lg shadow-[#1e3a5f]/20"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Añadir Coordinador
+              </Button>
+            </div>
           </div>
         </div>
+
+        {/* Configuración de Recordatorios */}
+        {mostrarRecordatorios && (
+          <div className="mb-8">
+            <ConfiguracionRecordatorios />
+          </div>
+        )}
 
         {/* Form */}
         <AnimatePresence>
