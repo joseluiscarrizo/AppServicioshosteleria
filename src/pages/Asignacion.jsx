@@ -329,11 +329,20 @@ Sistema de Gestión de Camareros
   };
 
   const handleDragEnd = (result) => {
-    if (!result.destination) return;
+    const { source, destination, draggableId } = result;
     
-    const camareroId = result.draggableId;
+    // Si no hay destino o se suelta en el mismo lugar, no hacer nada
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+    
+    // Solo procesar si el destino es un slot (no la lista de camareros)
+    if (destination.droppableId === 'camareros-disponibles') return;
+    
+    const camareroId = draggableId;
     const camarero = camareros.find(c => c.id === camareroId);
-    const destinationId = result.destination.droppableId;
+    if (!camarero || !selectedPedido) return;
+    
+    const destinationId = destination.droppableId;
     
     // Extraer información del droppable: "slot-turno-0-posicion-2" o "slot-general-3"
     const turnoMatch = destinationId.match(/slot-turno-(\d+)-posicion-(\d+)/);
@@ -349,7 +358,7 @@ Sistema de Gestión de Camareros
       posicionSlot = parseInt(generalMatch[1]);
     }
     
-    if (camarero && selectedPedido && posicionSlot !== null) {
+    if (posicionSlot !== null) {
       handleAsignarCamarero(selectedPedido, camarero, turnoIdx, posicionSlot);
     }
   };
@@ -475,8 +484,8 @@ Sistema de Gestión de Camareros
 
                   <Droppable droppableId="camareros-disponibles" isDropDisabled={true}>
                     {(provided) => (
-                      <ScrollArea className="flex-1 p-3" type="always" ref={provided.innerRef} {...provided.droppableProps}>
-                        <div className="space-y-2">
+                      <ScrollArea className="flex-1 p-3" type="always">
+                        <div className="space-y-2" ref={provided.innerRef} {...provided.droppableProps}>
                           {selectedPedido && getCamarerosDisponibles(selectedPedido).map((camarero, index) => (
                             <Draggable key={camarero.id} draggableId={camarero.id} index={index}>
                               {(provided, snapshot) => (
@@ -484,11 +493,15 @@ Sistema de Gestión de Camareros
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`p-3 rounded-lg border-2 bg-white transition-all ${
+                                  className={`p-3 rounded-lg border-2 bg-white transition-all cursor-grab active:cursor-grabbing ${
                                     snapshot.isDragging 
-                                      ? 'border-[#1e3a5f] shadow-lg rotate-2' 
-                                      : 'border-slate-200 hover:border-[#1e3a5f]/50 hover:shadow'
+                                      ? 'border-[#1e3a5f] shadow-lg rotate-2 scale-105' 
+                                      : 'border-slate-200 hover:border-[#1e3a5f]/50 hover:shadow-md'
                                   }`}
+                                  style={{
+                                    ...provided.draggableProps.style,
+                                    userSelect: 'none'
+                                  }}
                                 >
                                   <div className="flex items-center gap-3">
                                     <GripVertical className="w-4 h-4 text-slate-400" />
