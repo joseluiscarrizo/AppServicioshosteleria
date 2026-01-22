@@ -1,69 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { MessageCircle, Loader2, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
   const [open, setOpen] = useState(false);
   const [selectedCamareros, setSelectedCamareros] = useState([]);
+  const [coordinadorId, setCoordinadorId] = useState(null);
   const queryClient = useQueryClient();
 
-  const calcularTiempoTransporte = (puntoEncuentro, destino) => {
-    // Estimación simple: 30 minutos por defecto + 15 minutos
-    return 45;
-  };
+  const { data: coordinadores = [] } = useQuery({
+    queryKey: ['coordinadores'],
+    queryFn: () => base44.entities.Coordinador.list('nombre')
+  });
 
-  const generarMensajeWhatsApp = (camarero, incluirTransporte, asignacionId) => {
-    const baseUrl = window.location.origin;
-    const linkAceptar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacionId}`;
-    
-    let mensaje = `Hola ${camarero.nombre}! 👋\n\n`;
-    mensaje += `📅 *Día:* ${pedido.dia}\n`;
-    mensaje += `🏢 *Cliente:* ${pedido.cliente}\n`;
-    mensaje += `📍 *Lugar:* ${pedido.lugar_evento || 'Por confirmar'}\n`;
-    mensaje += `🕐 *Hora Entrada:* ${pedido.entrada}\n\n`;
+  const generarMensajeWhatsApp = async (asignacion) => {
+    let mensaje = `📅 *Día:* ${pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Por confirmar'}\n`;
+    mensaje += `👤 *Cliente:* ${pedido.cliente}\n`;
+    mensaje += `📍 *Lugar del Evento:* ${pedido.lugar_evento || 'Por confirmar'}\n`;
+    mensaje += `🕐 *Hora de entrada:* ${asignacion.hora_entrada || pedido.entrada || '-'}\n\n`;
 
-    // Link de Google Maps si hay coordenadas
-    if (pedido.latitud && pedido.longitud) {
-      mensaje += `📍 *Ubicación:*\nhttps://www.google.com/maps?q=${pedido.latitud},${pedido.longitud}\n\n`;
-    } else if (pedido.direccion_completa) {
-      const direccionEncoded = encodeURIComponent(pedido.direccion_completa);
-      mensaje += `📍 *Ubicación:*\nhttps://www.google.com/maps/search/?api=1&query=${direccionEncoded}\n\n`;
-    }
-
-    // Transporte si aplica
-    if (incluirTransporte) {
-      const tiempoAntes = calcularTiempoTransporte('', '');
-      const horaEntrada = pedido.entrada || '00:00';
-      const [horas, minutos] = horaEntrada.split(':').map(Number);
-      const minutosAntes = tiempoAntes;
-      const horaEncuentro = new Date(2000, 0, 1, horas, minutos - minutosAntes);
-      const horaEncuentroStr = `${String(horaEncuentro.getHours()).padStart(2, '0')}:${String(horaEncuentro.getMinutes()).padStart(2, '0')}`;
+    if (pedido.extra_transporte) {
+      // Con transporte - calcular hora de encuentro
+      const puntoEncuentro = 'https://maps.app.goo.gl/hrR4eHSq4Q7dLcaV7';
       
-      mensaje += `🚗 *TRANSPORTE*\n`;
-      mensaje += `*HORA DE ENCUENTRO:* ${horaEncuentroStr}\n`;
-      mensaje += `*PUNTO DE ENCUENTRO:* https://maps.app.goo.gl/Fi1WRtTHdF7iNXdR8\n\n`;
+      if (pedido.link_ubicacion) {
+        try {
+          const resultadoDistancia = await base44.integrations.Core.InvokeLLM({
+            prompt: `Calcula el tiempo de viaje en transporte desde ${puntoEncuentro} hasta ${pedido.link_ubicacion}. Devuelve solo el tiempo estimado en minutos como número.`,
+            add_context_from_internet: true,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                minutos: { type: "number" }
+              }
+            }
+          });
+          
+          const minutosViaje = resultadoDistancia?.minutos || 30;
+          const horaEntrada = asignacion.hora_entrada || pedido.entrada;
+          if (horaEntrada) {
+            const [horas, minutos] = horaEntrada.split(':').map(Number);
+            const horaEntradaDate = new Date();
+            horaEntradaDate.setHours(horas, minutos, 0);
+            horaEntradaDate.setMinutes(horaEntradaDate.getMinutes() - minutosViaje - 15);
+            
+            mensaje += `🚗 *Hora de encuentro:* ${horaEntradaDate.getHours().toString().padStart(2, '0')}:${horaEntradaDate.getMinutes().toString().padStart(2, '0')}\n`;
+          }
+        } catch (e) {
+          console.error('Error calculando distancia:', e);
+          mensaje += `🚗 *Hora de encuentro:* Por confirmar\n`;
+        }
+      }
+      
+      mensaje += `📌 *Punto de encuentro:* ${puntoEncuentro}\n\n`;
+    } else {
+      // Sin transporte - mostrar link de Google Maps
+      if (pedido.link_ubicacion) {
+        mensaje += `🗺️ *Ubicación:* ${pedido.link_ubicacion}\n\n`;
+      }
     }
 
-    // Uniforme
-    mensaje += `👔 *Uniforme:* Zapatos, pantalón y delantal. *TODO DE COLOR NEGRO*\n\n`;
-    mensaje += `👕 *CAMISA:* ${pedido.camisa || 'Blanca'}\n\n`;
-    mensaje += `✨ *UNIFORME IMPECABLE*\n\n`;
-    mensaje += `⬇️ *CONFIRMA TU ASISTENCIA* ⬇️\n`;
-    mensaje += `${linkAceptar}\n\n`;
-    mensaje += `✅ Acepto Servicio\n`;
-    mensaje += `❌ Rechazo Servicio`;
+    mensaje += `👔 *Uniforme:* Zapatos, pantalón y delantal. Todo de color negro\n`;
+    mensaje += `👕 *Camisa:* ${pedido.camisa || 'blanca'}\n`;
+    mensaje += `✨ *Uniforme Impoluto.*\n\n`;
+    mensaje += `⏰ *Presentarse 15 minutos antes para estar a la hora exacta en el puesto de trabajo.*`;
 
     return mensaje;
   };
 
   const enviarMutation = useMutation({
     mutationFn: async () => {
+      if (!coordinadorId) {
+        throw new Error('Selecciona un coordinador');
+      }
+
+      const coordinador = coordinadores.find(c => c.id === coordinadorId);
+      if (!coordinador?.telefono) {
+        throw new Error('El coordinador seleccionado no tiene teléfono configurado');
+      }
+
+      const telefonoCoordinador = coordinador.telefono.replace(/\D/g, '');
       const camarerosSeleccionados = camareros.filter(c => 
         selectedCamareros.includes(c.id)
       );
@@ -77,30 +103,54 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
         const asignacion = asignaciones.find(a => a.camarero_id === camarero.id);
         if (!asignacion) continue;
 
-        const mensaje = generarMensajeWhatsApp(camarero, pedido.extra_transporte, asignacion.id);
+        const mensaje = await generarMensajeWhatsApp(asignacion);
         
-        // Crear URL de WhatsApp
-        const telefono = camarero.telefono.replace(/\D/g, '');
+        // Crear URL de WhatsApp con el número del coordinador
+        const telefonoCamarero = camarero.telefono.replace(/\D/g, '');
         const mensajeEncoded = encodeURIComponent(mensaje);
-        const whatsappURL = `https://wa.me/${telefono}?text=${mensajeEncoded}`;
+        const whatsappURL = `https://wa.me/${telefonoCamarero}?text=${mensajeEncoded}`;
         
         // Abrir en nueva pestaña
         window.open(whatsappURL, '_blank');
         
-        // Actualizar estado a "enviado"
+        // Actualizar estado a "enviado" y crear notificación
         await base44.entities.AsignacionCamarero.update(asignacion.id, { estado: 'enviado' });
+        
+        await base44.entities.NotificacionCamarero.create({
+          camarero_id: camarero.id,
+          camarero_nombre: camarero.nombre,
+          asignacion_id: asignacion.id,
+          pedido_id: pedido.id,
+          tipo: 'nueva_asignacion',
+          titulo: `Nueva Asignación: ${pedido.cliente}`,
+          mensaje: mensaje,
+          cliente: pedido.cliente,
+          lugar_evento: pedido.lugar_evento,
+          fecha: pedido.dia,
+          hora_entrada: asignacion.hora_entrada,
+          hora_salida: asignacion.hora_salida,
+          leida: false,
+          respondida: false,
+          respuesta: 'pendiente'
+        });
+
         asignacionesActualizadas.push(asignacion.id);
         
         // Pequeña pausa entre mensajes
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1500));
       }
 
       return asignacionesActualizadas;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
-      toast.success('Mensajes enviados y estados actualizados');
+      queryClient.invalidateQueries({ queryKey: ['notificaciones-camarero'] });
+      toast.success('Mensajes enviados correctamente');
       setOpen(false);
+      setSelectedCamareros([]);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Error al enviar mensajes');
     }
   });
 
@@ -145,6 +195,25 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
               )}
             </div>
 
+            <div className="space-y-2">
+              <Label>Enviar desde el número de:</Label>
+              <Select value={coordinadorId || ''} onValueChange={setCoordinadorId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un coordinador" />
+                </SelectTrigger>
+                <SelectContent>
+                  {coordinadores.map(coord => (
+                    <SelectItem key={coord.id} value={coord.id}>
+                      {coord.nombre} {coord.telefono ? `(${coord.telefono})` : '(Sin teléfono)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {coordinadorId && !coordinadores.find(c => c.id === coordinadorId)?.telefono && (
+                <p className="text-xs text-red-500">⚠️ Este coordinador no tiene teléfono configurado</p>
+              )}
+            </div>
+
             <div>
               <div className="flex justify-between items-center mb-3">
                 <h4 className="font-medium">Seleccionar Camareros ({camarerosAsignados.length})</h4>
@@ -183,7 +252,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
           </Button>
           <Button
             onClick={() => enviarMutation.mutate()}
-            disabled={selectedCamareros.length === 0 || enviarMutation.isPending}
+            disabled={selectedCamareros.length === 0 || !coordinadorId || enviarMutation.isPending}
             className="bg-green-600 hover:bg-green-700"
           >
             {enviarMutation.isPending ? (
