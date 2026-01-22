@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Download, Search, TrendingUp, Clock, CheckCircle, Send, Star } from 'lucide-react';
+import { Download, Search, TrendingUp, Clock, CheckCircle, Send, Star, FileText } from 'lucide-react';
 import { format, parseISO, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { ExportadorPDF } from './ExportadorPDF';
 
 const COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'];
 
@@ -135,6 +136,18 @@ export default function RendimientoCamareros() {
     link.click();
   };
 
+  const exportarPDF = () => {
+    ExportadorPDF.generarInformeRendimiento({
+      fechaInicio,
+      fechaFin,
+      totalHoras: statsGlobales.totalHoras.toFixed(1),
+      promedioHoras: statsGlobales.promedioHoras.toFixed(1),
+      totalAsignaciones: statsGlobales.totalPedidos,
+      tasaGlobal: statsGlobales.tasaGlobal,
+      camareros: rendimientoFiltrado
+    }, `rendimiento_camareros_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Filtros */}
@@ -157,10 +170,16 @@ export default function RendimientoCamareros() {
             <label className="text-sm text-slate-600 mb-1 block">Hasta</label>
             <Input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="w-40" />
           </div>
-          <Button variant="outline" onClick={exportarCSV}>
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={exportarCSV}>
+              <Download className="w-4 h-4 mr-2" />
+              CSV
+            </Button>
+            <Button variant="outline" onClick={exportarPDF}>
+              <FileText className="w-4 h-4 mr-2" />
+              PDF
+            </Button>
+          </div>
         </div>
       </Card>
 

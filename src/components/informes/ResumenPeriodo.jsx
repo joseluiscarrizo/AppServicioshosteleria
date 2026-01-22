@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, ClipboardList, Clock, Users, Download, TrendingUp, TrendingDown } from 'lucide-react';
+import { Calendar, ClipboardList, Clock, Users, Download, TrendingUp, TrendingDown, FileText } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isWithinInterval, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { ExportadorPDF } from './ExportadorPDF';
 
 export default function ResumenPeriodo() {
   const [periodo, setPeriodo] = useState('semana');
@@ -122,6 +123,21 @@ export default function ResumenPeriodo() {
     link.click();
   };
 
+  const exportarPDF = () => {
+    ExportadorPDF.generarInformePeriodo({
+      periodo: periodo === 'dia' ? 'Hoy' : periodo === 'semana' ? 'Esta Semana' : periodo === 'mes' ? 'Este Mes' : 'Personalizado',
+      fechaInicio,
+      fechaFin,
+      totalPedidos: stats.totalPedidos,
+      totalCamareros: stats.totalCamareros,
+      totalHoras: stats.totalHoras.toFixed(1),
+      confirmados: stats.confirmados,
+      enviados: stats.enviados,
+      pendientes: stats.pendientes,
+      porCliente: datosPorCliente
+    }, `resumen_periodo_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Filtros */}
@@ -155,10 +171,16 @@ export default function ResumenPeriodo() {
             </>
           )}
           
-          <Button variant="outline" onClick={exportarCSV} className="ml-auto">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar CSV
-          </Button>
+          <div className="flex gap-2 ml-auto">
+            <Button variant="outline" onClick={exportarCSV} size="sm">
+              <Download className="w-4 h-4 mr-2" />
+              CSV
+            </Button>
+            <Button variant="outline" onClick={exportarPDF} size="sm">
+              <FileText className="w-4 h-4 mr-2" />
+              PDF
+            </Button>
+          </div>
         </div>
       </Card>
 

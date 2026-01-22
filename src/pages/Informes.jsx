@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Calendar, Users, TrendingUp, Building2, UserCheck, BarChart3 } from 'lucide-react';
+import { FileText, Calendar, Users, TrendingUp, Building2, UserCheck, BarChart3, Activity } from 'lucide-react';
 import ResumenPeriodo from '../components/informes/ResumenPeriodo';
 import RendimientoCamareros from '../components/informes/RendimientoCamareros';
 import ReporteDisponibilidad from '../components/informes/ReporteDisponibilidad';
 import InformeCliente from '../components/informes/InformeCliente';
 import InformeCamarero from '../components/informes/InformeCamarero';
 import AnalisisTendencias from '../components/informes/AnalisisTendencias';
+import AnalisisDemanda from '../components/informes/AnalisisDemanda';
 
 export default function Informes() {
   const [activeTab, setActiveTab] = useState('resumen');
@@ -24,7 +25,7 @@ export default function Informes() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 mb-6">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 mb-6">
             <TabsTrigger value="resumen" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">Resumen</span>
@@ -32,6 +33,10 @@ export default function Informes() {
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="demanda" className="flex items-center gap-2">
+              <Activity className="w-4 h-4" />
+              <span className="hidden sm:inline">Demanda</span>
             </TabsTrigger>
             <TabsTrigger value="rendimiento" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
@@ -56,6 +61,9 @@ export default function Informes() {
           </TabsContent>
           <TabsContent value="analytics">
             <AnalisisTendencias />
+          </TabsContent>
+          <TabsContent value="demanda">
+            <AnalisisDemanda />
           </TabsContent>
           <TabsContent value="rendimiento">
             <RendimientoCamareros />

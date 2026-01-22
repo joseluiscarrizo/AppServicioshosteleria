@@ -5,9 +5,10 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText as FileIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { ExportadorPDF } from './ExportadorPDF';
 
 export default function InformeCliente() {
   const [selectedCliente, setSelectedCliente] = useState('');
@@ -92,6 +93,31 @@ export default function InformeCliente() {
     a.click();
   };
 
+  const exportarPDF = () => {
+    if (!datosInforme || !pedido) return;
+    
+    ExportadorPDF.generarInformeCliente({
+      cliente: pedido.cliente,
+      lugar: pedido.lugar_evento || '-',
+      fecha: datosInforme.dia ? format(new Date(datosInforme.dia), 'dd/MM/yyyy', { locale: es }) : '-',
+      totalCamareros: datosInforme.cantidad_camareros,
+      totalHoras: datosInforme.total_horas.toFixed(2),
+      turnos: datosInforme.turnos.length > 0 ? datosInforme.turnos.map(t => ({
+        cantidad: t.cantidad_camareros || 0,
+        entrada: t.entrada || '-',
+        salida: t.salida || '-',
+        horas: t.t_horas || 0,
+        total: ((t.t_horas || 0) * (t.cantidad_camareros || 0)).toFixed(2)
+      })) : [{
+        cantidad: pedido.cantidad_camareros || 0,
+        entrada: pedido.entrada || '-',
+        salida: pedido.salida || '-',
+        horas: pedido.t_horas || 0,
+        total: datosInforme.total_horas.toFixed(2)
+      }]
+    }, `informe_cliente_${selectedCliente}_${datosInforme.dia}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -136,10 +162,16 @@ export default function InformeCliente() {
                 <h3 className="text-lg font-semibold text-slate-800">{pedido.cliente}</h3>
                 <p className="text-sm text-slate-500">{pedido.lugar_evento || 'Sin ubicación'}</p>
               </div>
-              <Button onClick={exportarCSV} variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                Exportar CSV
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={exportarCSV} variant="outline" size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  CSV
+                </Button>
+                <Button onClick={exportarPDF} variant="outline" size="sm">
+                  <FileIcon className="w-4 h-4 mr-2" />
+                  PDF
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4 mb-6">
@@ -205,7 +237,7 @@ export default function InformeCliente() {
         </Card>
       ) : (
         <Card className="p-12 text-center text-slate-400">
-          <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          <FileIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p>Selecciona un cliente y un evento para ver el informe</p>
         </Card>
       )}
