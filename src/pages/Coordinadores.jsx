@@ -11,6 +11,7 @@ import { Plus, Pencil, Trash2, Mail, Bell, Phone, X, UserCog, Clock } from 'luci
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfiguracionRecordatorios from '../components/recordatorios/ConfiguracionRecordatorios';
+import NotificacionesMasivas from '../components/notificaciones/NotificacionesMasivas';
 
 export default function Coordinadores() {
   const [showForm, setShowForm] = useState(false);
@@ -105,7 +106,8 @@ export default function Coordinadores() {
                 Gestiona los coordinadores y sus preferencias de notificación
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <NotificacionesMasivas />
               <Button 
                 onClick={() => setMostrarRecordatorios(!mostrarRecordatorios)}
                 variant={mostrarRecordatorios ? "default" : "outline"}

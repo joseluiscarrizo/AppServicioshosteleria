@@ -364,7 +364,8 @@ Sistema de Gestión de Camareros
                     </div>
                   </div>
                 </Card>
-              ))
+              );
+              })
             )}
           </div>
         </ScrollArea>
