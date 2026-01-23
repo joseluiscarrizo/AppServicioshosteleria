@@ -331,12 +331,21 @@ export default function Pedidos() {
                           numeroCamarero += Math.max(1, turnos[i].cantidad_camareros || 0);
                         }
                         
-                        // Buscar asignación para este pedido y turno
-                        const asignacion = asignaciones.find(a => 
+                        // Buscar asignación para este pedido
+                        // Primero buscar con turno_index y posicion_slot exactos
+                        let asignacion = asignaciones.find(a => 
                           a.pedido_id === pedido.id && 
                           a.turno_index === turnoIndex &&
                           a.posicion_slot === camareroIndex
                         );
+                        
+                        // Si no se encuentra, buscar cualquier asignación para este pedido y slot
+                        if (!asignacion) {
+                          const asignacionesPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
+                          if (asignacionesPedido[numeroCamarero - 1]) {
+                            asignacion = asignacionesPedido[numeroCamarero - 1];
+                          }
+                        }
                         
                         return (
                           <motion.tr
