@@ -8,12 +8,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, Calendar as CalendarIcon, RefreshCw, X, ChevronRight, Star, Filter, Award, GripVertical, Sparkles } from 'lucide-react';
+import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, Calendar as CalendarIcon, RefreshCw, X, ChevronRight, Star, Filter, Award, GripVertical, Sparkles, Ban, Copy, Repeat, Pencil, Trash2 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import TareasService from '../components/camareros/TareasService';
 import CalendarioAsignaciones from '../components/asignacion/CalendarioAsignaciones';
 import CalendarioAsignacionRapida from '../components/asignacion/CalendarioAsignacionRapida';
@@ -21,6 +21,11 @@ import CargaCamareros from '../components/asignacion/CargaCamareros';
 import CargaTrabajoCamareros from '../components/asignacion/CargaTrabajoCamareros';
 import AsignacionAutomatica from '../components/asignacion/AsignacionAutomatica';
 import ReglasAsignacion from '../components/asignacion/ReglasAsignacion';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import EdicionRapida from '../components/pedidos/EdicionRapida';
+import DuplicarEvento from '../components/pedidos/DuplicarEvento';
+import EventoRecurrente from '../components/pedidos/EventoRecurrente';
+import PedidoFormNuevo from '../components/pedidos/PedidoFormNuevo';
 
 const estadoColors = {
   pendiente: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -44,6 +49,12 @@ export default function Asignacion() {
   const [showAsignacionAuto, setShowAsignacionAuto] = useState(false);
   const [showReglas, setShowReglas] = useState(false);
   const [vistaCalendario, setVistaCalendario] = useState('avanzado'); // 'avanzado' o 'clasico'
+  const [edicionRapida, setEdicionRapida] = useState({ open: false, pedido: null, campo: null });
+  const [duplicarDialog, setDuplicarDialog] = useState({ open: false, pedido: null });
+  const [recurrenteDialog, setRecurrenteDialog] = useState({ open: false, pedido: null });
+  const [editingSalida, setEditingSalida] = useState({ pedidoId: null, turnoIndex: null, camareroIndex: null });
+  const [showForm, setShowForm] = useState(false);
+  const [editingPedido, setEditingPedido] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -238,6 +249,25 @@ Sistema de Gestión de Camareros
     }
   });
 
+  const updatePedidoMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Pedido.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      setEditingSalida({ pedidoId: null, turnoIndex: null, camareroIndex: null });
+      setShowForm(false);
+      setEditingPedido(null);
+      toast.success('Pedido actualizado');
+    }
+  });
+
+  const deletePedidoMutation = useMutation({
+    mutationFn: (id) => base44.entities.Pedido.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      toast.success('Pedido eliminado');
+    }
+  });
+
   // Obtener asignaciones de un pedido
   const getAsignacionesPedido = (pedidoId) => {
     return asignaciones.filter(a => a.pedido_id === pedidoId);
@@ -380,6 +410,47 @@ Sistema de Gestión de Camareros
 
   const handleCambiarEstado = (asignacionId, nuevoEstado) => {
     updateAsignacionMutation.mutate({ id: asignacionId, data: { estado: nuevoEstado } });
+  };
+
+  const handleEditPedido = (pedido) => {
+    setEditingPedido(pedido);
+    setShowForm(true);
+  };
+
+  const handleSubmitPedido = (dataFromForm) => {
+    if (editingPedido) {
+      updatePedidoMutation.mutate({ id: editingPedido.id, data: dataFromForm });
+    }
+  };
+
+  const handleSalidaChange = (pedido, turnoIndex, camareroIndex, nuevaSalida) => {
+    const turnosActualizados = [...(pedido.turnos || [])];
+    if (turnosActualizados[turnoIndex]) {
+      turnosActualizados[turnoIndex] = {
+        ...turnosActualizados[turnoIndex],
+        salida: nuevaSalida
+      };
+      
+      // Calcular horas
+      const entrada = turnosActualizados[turnoIndex].entrada;
+      if (entrada && nuevaSalida) {
+        const [hE, mE] = entrada.split(':').map(Number);
+        const [hS, mS] = nuevaSalida.split(':').map(Number);
+        let horas = hS - hE;
+        let minutos = mS - mE;
+        if (minutos < 0) {
+          horas -= 1;
+          minutos += 60;
+        }
+        if (horas < 0) horas += 24;
+        turnosActualizados[turnoIndex].t_horas = horas + minutos / 60;
+      }
+      
+      updatePedidoMutation.mutate({
+        id: pedido.id,
+        data: { turnos: turnosActualizados }
+      });
+    }
   };
 
   const handleDragEnd = (result) => {
@@ -830,6 +901,279 @@ Sistema de Gestión de Camareros
           />
           </>
         )}
+
+        {/* Tabla de Pedidos/Eventos */}
+        <Card className="overflow-hidden mt-8">
+          <div className="p-4 border-b bg-slate-50">
+            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-[#1e3a5f]" />
+              Lista de Eventos
+            </h3>
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="font-semibold">Nº</TableHead>
+                  <TableHead className="font-semibold">Estado</TableHead>
+                  <TableHead className="font-semibold">Cliente</TableHead>
+                  <TableHead className="font-semibold">Lugar</TableHead>
+                  <TableHead className="font-semibold text-center">Nº</TableHead>
+                  <TableHead className="font-semibold">Camarero</TableHead>
+                  <TableHead className="font-semibold">Día</TableHead>
+                  <TableHead className="font-semibold">Entrada</TableHead>
+                  <TableHead className="font-semibold">Salida</TableHead>
+                  <TableHead className="font-semibold text-center">Horas</TableHead>
+                  <TableHead className="font-semibold">Camisa</TableHead>
+                  <TableHead className="font-semibold text-center">Transporte</TableHead>
+                  <TableHead className="font-semibold text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <AnimatePresence>
+                  {pedidos.flatMap((pedido) => {
+                    const turnos = pedido.turnos && pedido.turnos.length > 0 
+                      ? pedido.turnos 
+                      : [{ cantidad_camareros: pedido.cantidad_camareros || 0, entrada: pedido.entrada || '-', salida: pedido.salida || '-', t_horas: pedido.t_horas || 0 }];
+                    
+                    return turnos.flatMap((turno, turnoIndex) => {
+                      const cantidadCamareros = turno.cantidad_camareros || 0;
+                      const filasCamareros = Math.max(1, cantidadCamareros);
+                      
+                      return Array.from({ length: filasCamareros }, (_, camareroIndex) => {
+                        const esPrimeraFila = turnoIndex === 0 && camareroIndex === 0;
+                        const totalFilas = turnos.reduce((sum, t) => sum + Math.max(1, t.cantidad_camareros || 0), 0);
+                        
+                        // Calcular el número de camarero acumulado
+                        let numeroCamarero = camareroIndex + 1;
+                        for (let i = 0; i < turnoIndex; i++) {
+                          numeroCamarero += Math.max(1, turnos[i].cantidad_camareros || 0);
+                        }
+                        
+                        // Buscar asignación para este pedido
+                        let asignacion = asignaciones.find(a => 
+                          a.pedido_id === pedido.id && 
+                          a.turno_index === turnoIndex &&
+                          a.posicion_slot === camareroIndex
+                        );
+                        
+                        if (!asignacion) {
+                          const asignacionesPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
+                          if (asignacionesPedido[numeroCamarero - 1]) {
+                            asignacion = asignacionesPedido[numeroCamarero - 1];
+                          }
+                        }
+                        
+                        return (
+                          <motion.tr
+                            key={`${pedido.id}-${turnoIndex}-${camareroIndex}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="border-b hover:bg-slate-50/50"
+                          >
+                            {esPrimeraFila ? (
+                              <>
+                                <TableCell className="font-mono text-sm font-semibold text-[#1e3a5f]" rowSpan={totalFilas}>
+                                  {pedido.codigo_pedido || '-'}
+                                </TableCell>
+                                <TableCell rowSpan={totalFilas}>
+                                  <Badge
+                                    className={`cursor-pointer ${
+                                      pedido.estado_evento === 'cancelado' ? 'bg-red-100 text-red-700 hover:bg-red-200' :
+                                      pedido.estado_evento === 'finalizado' ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' :
+                                      pedido.estado_evento === 'en_curso' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
+                                      'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                    }`}
+                                    onClick={() => setEdicionRapida({ open: true, pedido, campo: 'estado' })}
+                                  >
+                                    {pedido.estado_evento === 'cancelado' && <Ban className="w-3 h-3 mr-1" />}
+                                    {pedido.estado_evento === 'cancelado' ? 'Cancelado' :
+                                     pedido.estado_evento === 'finalizado' ? 'Finalizado' :
+                                     pedido.estado_evento === 'en_curso' ? 'En Curso' : 'Planificado'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell 
+                                  className="font-medium cursor-pointer hover:text-[#1e3a5f] hover:underline"
+                                  onClick={() => setEdicionRapida({ open: true, pedido, campo: 'cliente' })}
+                                  rowSpan={totalFilas}
+                                >
+                                  {pedido.cliente}
+                                </TableCell>
+                                <TableCell 
+                                  className="text-slate-600 cursor-pointer hover:text-[#1e3a5f] hover:underline"
+                                  onClick={() => setEdicionRapida({ open: true, pedido, campo: 'lugar' })}
+                                  rowSpan={totalFilas}
+                                >
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />
+                                    {pedido.lugar_evento || 'Añadir lugar'}
+                                  </div>
+                                </TableCell>
+                              </>
+                            ) : null}
+                            <TableCell className="text-center">
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#1e3a5f]/10 text-[#1e3a5f] font-semibold">
+                                {numeroCamarero}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {asignacion ? (
+                                <span className="text-slate-700">{asignacion.camarero_nombre}</span>
+                              ) : (
+                                <span className="text-slate-400 italic">Sin asignar</span>
+                              )}
+                            </TableCell>
+                            {esPrimeraFila ? (
+                              <TableCell
+                                className="cursor-pointer hover:text-[#1e3a5f] hover:underline"
+                                onClick={() => setEdicionRapida({ open: true, pedido, campo: 'fecha' })}
+                                rowSpan={totalFilas}
+                              >
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {pedido.dia ? format(new Date(pedido.dia), 'dd MMM yyyy', { locale: es }) : '-'}
+                                </div>
+                              </TableCell>
+                            ) : null}
+                            <TableCell className="font-mono text-sm">
+                              {turno.entrada || '-'}
+                            </TableCell>
+                            <TableCell 
+                              className="font-mono text-sm cursor-pointer hover:bg-blue-50 transition-colors"
+                              onClick={() => setEditingSalida({ pedidoId: pedido.id, turnoIndex, camareroIndex })}
+                            >
+                              {editingSalida.pedidoId === pedido.id && 
+                               editingSalida.turnoIndex === turnoIndex && 
+                               editingSalida.camareroIndex === camareroIndex ? (
+                                <Input
+                                  type="time"
+                                  defaultValue={turno.salida || ''}
+                                  autoFocus
+                                  className="h-8 w-24 text-xs"
+                                  onBlur={(e) => {
+                                    handleSalidaChange(pedido, turnoIndex, camareroIndex, e.target.value);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleSalidaChange(pedido, turnoIndex, camareroIndex, e.target.value);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span className="hover:text-blue-600">
+                                  {turno.salida || '-'}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="px-2 py-1 rounded-full bg-slate-100 text-sm font-medium">
+                                {turno.t_horas ? turno.t_horas.toFixed(1) : 0}h
+                              </span>
+                            </TableCell>
+                            {esPrimeraFila ? (
+                              <>
+                                <TableCell rowSpan={totalFilas}>{pedido.camisa || '-'}</TableCell>
+                                <TableCell className="text-center" rowSpan={totalFilas}>
+                                  {pedido.extra_transporte ? (
+                                    <span className="text-emerald-600">✓</span>
+                                  ) : (
+                                    <span className="text-slate-300">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right" rowSpan={totalFilas}>
+                                  <div className="flex justify-end gap-1">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => setDuplicarDialog({ open: true, pedido })}
+                                      className="h-8 w-8"
+                                      title="Duplicar evento"
+                                    >
+                                      <Copy className="w-4 h-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => setRecurrenteDialog({ open: true, pedido })}
+                                      className="h-8 w-8"
+                                      title="Crear eventos recurrentes"
+                                    >
+                                      <Repeat className="w-4 h-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleEditPedido(pedido)}
+                                      className="h-8 w-8"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => deletePedidoMutation.mutate(pedido.id)}
+                                      className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </>
+                            ) : null}
+                          </motion.tr>
+                        );
+                      });
+                    });
+                  })}
+                </AnimatePresence>
+                {pedidos.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={13} className="h-32 text-center text-slate-500">
+                      No hay pedidos registrados
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+
+        {/* Modal Form */}
+        <AnimatePresence>
+          {showForm && (
+            <PedidoFormNuevo
+              pedido={editingPedido}
+              onSubmit={handleSubmitPedido}
+              onCancel={() => {
+                setShowForm(false);
+                setEditingPedido(null);
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Edición Rápida */}
+        <EdicionRapida
+          pedido={edicionRapida.pedido}
+          open={edicionRapida.open}
+          onOpenChange={(open) => setEdicionRapida({ ...edicionRapida, open })}
+          campo={edicionRapida.campo}
+        />
+
+        {/* Duplicar Evento */}
+        <DuplicarEvento
+          open={duplicarDialog.open}
+          onOpenChange={(open) => setDuplicarDialog({ ...duplicarDialog, open })}
+          pedidoOriginal={duplicarDialog.pedido}
+        />
+
+        {/* Evento Recurrente */}
+        <EventoRecurrente
+          open={recurrenteDialog.open}
+          onOpenChange={(open) => setRecurrenteDialog({ ...recurrenteDialog, open })}
+          pedidoBase={recurrenteDialog.pedido}
+        />
       </div>
     </div>
   );
