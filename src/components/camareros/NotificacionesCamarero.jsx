@@ -18,8 +18,15 @@ export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
   const [showRechazoDialog, setShowRechazoDialog] = useState(false);
   const [notificacionActual, setNotificacionActual] = useState(null);
   const [motivoRechazo, setMotivoRechazo] = useState('');
+  const [showDetalleDialog, setShowDetalleDialog] = useState(false);
+  const [detalleNotificacion, setDetalleNotificacion] = useState(null);
 
   const queryClient = useQueryClient();
+
+  const { data: pedidos = [] } = useQuery({
+    queryKey: ['pedidos'],
+    queryFn: () => base44.entities.Pedido.list('-dia', 200)
+  });
 
   const { data: notificaciones = [], isLoading } = useQuery({
     queryKey: ['notificaciones-camarero', camareroId],
@@ -47,6 +54,18 @@ export default function NotificacionesCamarero({ camareroId, camareroNombre }) {
 
   const pendientes = notificaciones.filter(n => !n.respondida && n.tipo === 'nueva_asignacion');
   const historial = notificaciones.filter(n => n.respondida || n.tipo !== 'nueva_asignacion');
+
+  const marcarVistaMutation = useMutation({
+    mutationFn: async (notificacionId) => {
+      await base44.entities.NotificacionCamarero.update(notificacionId, {
+        leida: true
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notificaciones-camarero'] });
+      toast.success('Notificación marcada como vista');
+    }
+  });
 
   const responderMutation = useMutation({
     mutationFn: async ({ notificacionId, respuesta, motivo }) => {
@@ -196,7 +215,7 @@ Sistema de Gestión de Camareros
         }
       }
     },
-    onSuccess: (_, variables) => {
+    onSuccess: async (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['notificaciones-camarero'] });
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
       queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
@@ -207,6 +226,17 @@ Sistema de Gestión de Camareros
           spread: 70,
           origin: { y: 0.6 }
         });
+      }
+      
+      // Eliminar notificación después de responder
+      const notif = notificaciones.find(n => n.id === variables.notificacionId);
+      if (notif?.id) {
+        try {
+          await base44.entities.NotificacionCamarero.delete(notif.id);
+          queryClient.invalidateQueries({ queryKey: ['notificaciones-camarero'] });
+        } catch (error) {
+          console.error('Error eliminando notificación:', error);
+        }
       }
       
       setShowRechazoDialog(false);
@@ -236,6 +266,16 @@ Sistema de Gestión de Camareros
       });
       toast.info('Pedido rechazado');
     }
+  };
+
+  const verDetalle = (notificacion) => {
+    const pedido = pedidos.find(p => p.id === notificacion.pedido_id);
+    setDetalleNotificacion({ ...notificacion, pedido });
+    setShowDetalleDialog(true);
+  };
+
+  const marcarComoVista = (notificacion) => {
+    marcarVistaMutation.mutate(notificacion.id);
   };
 
   if (isLoading) {
@@ -307,23 +347,32 @@ Sistema de Gestión de Camareros
                       </div>
 
                       {/* Botones de Acción */}
-                      <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div className="space-y-3 pt-2">
                         <Button
-                          onClick={() => handleAceptar(notif)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white h-12 text-base font-semibold shadow-md"
-                          disabled={responderMutation.isPending}
+                          onClick={() => verDetalle(notif)}
+                          variant="outline"
+                          className="w-full h-10 text-sm"
                         >
-                          <CheckCircle className="w-5 h-5 mr-2" />
-                          Confirmar
+                          Ver detalles completos
                         </Button>
-                        <Button
-                          onClick={() => handleRechazar(notif)}
-                          className="bg-red-600 hover:bg-red-700 text-white h-12 text-base font-semibold shadow-md"
-                          disabled={responderMutation.isPending}
-                        >
-                          <XCircle className="w-5 h-5 mr-2" />
-                          Rechazar
-                        </Button>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Button
+                            onClick={() => handleAceptar(notif)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white h-12 text-base font-semibold shadow-md"
+                            disabled={responderMutation.isPending}
+                          >
+                            <CheckCircle className="w-5 h-5 mr-2" />
+                            Confirmar
+                          </Button>
+                          <Button
+                            onClick={() => handleRechazar(notif)}
+                            className="bg-red-600 hover:bg-red-700 text-white h-12 text-base font-semibold shadow-md"
+                            disabled={responderMutation.isPending}
+                          >
+                            <XCircle className="w-5 h-5 mr-2" />
+                            Rechazar
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -346,10 +395,12 @@ Sistema de Gestión de Camareros
               <p className="text-sm text-slate-400 text-center py-8">No hay notificaciones</p>
             ) : (
               historial.map(notif => (
-                <Card key={notif.id} className={`p-3 ${notif.leida ? 'bg-slate-50' : 'bg-white border-l-2 border-l-blue-500'} ${
+                <Card key={notif.id} className={`p-3 cursor-pointer hover:bg-slate-100 transition-colors ${notif.leida ? 'bg-slate-50' : 'bg-white border-l-2 border-l-blue-500'} ${
                   notif.prioridad === 'urgente' ? 'border-2 border-red-300' :
                   notif.prioridad === 'importante' ? 'border-2 border-orange-300' : ''
-                }`}>
+                }`}
+                onClick={() => verDetalle(notif)}
+                >
                   <div className="flex items-start gap-3">
                     <div className={`p-2 rounded-lg ${
                       notif.respuesta === 'aceptado' ? 'bg-emerald-100' :
@@ -383,9 +434,23 @@ Sistema de Gestión de Camareros
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">{notif.mensaje}</p>
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">{notif.mensaje}</p>
                       {notif.motivo_rechazo && (
                         <p className="text-xs text-red-500 mt-1">Motivo: {notif.motivo_rechazo}</p>
+                      )}
+                      {!notif.leida && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 h-7 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            marcarComoVista(notif);
+                          }}
+                        >
+                          <Check className="w-3 h-3 mr-1" />
+                          Marcar como vista
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -428,6 +493,146 @@ Sistema de Gestión de Camareros
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Detalle */}
+      <Dialog open={showDetalleDialog} onOpenChange={setShowDetalleDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalles del Servicio</DialogTitle>
+          </DialogHeader>
+          {detalleNotificacion && (
+            <div className="space-y-4">
+              {/* Información del Evento */}
+              <div className="bg-slate-50 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-[#1e3a5f]" />
+                  <div>
+                    <p className="text-xs text-slate-500">Cliente</p>
+                    <p className="font-semibold text-slate-800">{detalleNotificacion.cliente || '-'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-[#1e3a5f]" />
+                  <div>
+                    <p className="text-xs text-slate-500">Fecha</p>
+                    <p className="font-medium text-slate-800">
+                      {detalleNotificacion.fecha ? format(new Date(detalleNotificacion.fecha), "EEEE, dd 'de' MMMM yyyy", { locale: es }) : '-'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-[#1e3a5f]" />
+                  <div>
+                    <p className="text-xs text-slate-500">Horario</p>
+                    <p className="font-medium text-slate-800">
+                      {detalleNotificacion.hora_entrada || '-'} - {detalleNotificacion.hora_salida || '-'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-5 h-5 text-[#1e3a5f] mt-0.5" />
+                  <div>
+                    <p className="text-xs text-slate-500">Lugar del Evento</p>
+                    <p className="font-medium text-slate-800">{detalleNotificacion.lugar_evento || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mensaje Completo */}
+              <div>
+                <p className="text-sm font-semibold text-slate-700 mb-2">Información del Servicio</p>
+                <div className="bg-white border border-slate-200 rounded-lg p-4">
+                  <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
+                    {detalleNotificacion.mensaje}
+                  </p>
+                </div>
+              </div>
+
+              {/* Detalles Adicionales del Pedido */}
+              {detalleNotificacion.pedido && (
+                <div>
+                  <p className="text-sm font-semibold text-slate-700 mb-2">Detalles Adicionales</p>
+                  <div className="bg-slate-50 rounded-lg p-4 space-y-2 text-sm">
+                    {detalleNotificacion.pedido.camisa && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Camisa:</span>
+                        <span className="font-medium text-slate-800 capitalize">{detalleNotificacion.pedido.camisa}</span>
+                      </div>
+                    )}
+                    {detalleNotificacion.pedido.extra_transporte !== undefined && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Transporte:</span>
+                        <span className="font-medium text-slate-800">
+                          {detalleNotificacion.pedido.extra_transporte ? '✓ Incluido' : 'No incluido'}
+                        </span>
+                      </div>
+                    )}
+                    {detalleNotificacion.pedido.notas && (
+                      <div>
+                        <span className="text-slate-600">Notas:</span>
+                        <p className="mt-1 text-slate-800">{detalleNotificacion.pedido.notas}</p>
+                      </div>
+                    )}
+                    {detalleNotificacion.pedido.link_ubicacion && (
+                      <div>
+                        <span className="text-slate-600">Ubicación:</span>
+                        <a 
+                          href={detalleNotificacion.pedido.link_ubicacion} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="block mt-1 text-blue-600 hover:underline break-all"
+                        >
+                          Ver en Google Maps
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Estado */}
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  {detalleNotificacion.respuesta === 'aceptado' && (
+                    <>
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
+                      <span className="text-sm font-medium text-emerald-700">Servicio Aceptado</span>
+                    </>
+                  )}
+                  {detalleNotificacion.respuesta === 'rechazado' && (
+                    <>
+                      <XCircle className="w-5 h-5 text-red-600" />
+                      <span className="text-sm font-medium text-red-700">Servicio Rechazado</span>
+                    </>
+                  )}
+                  {detalleNotificacion.respuesta === 'pendiente' && (
+                    <>
+                      <AlertCircle className="w-5 h-5 text-amber-600" />
+                      <span className="text-sm font-medium text-amber-700">Pendiente de Respuesta</span>
+                    </>
+                  )}
+                </div>
+                {!detalleNotificacion.leida && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      marcarComoVista(detalleNotificacion);
+                      setShowDetalleDialog(false);
+                    }}
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Marcar como vista
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
