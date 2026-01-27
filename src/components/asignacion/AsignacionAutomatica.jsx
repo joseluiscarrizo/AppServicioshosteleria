@@ -368,38 +368,100 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-purple-600" />
-            Asignación Automática Inteligente
-          </DialogTitle>
-          {pedido && (
-            <div className="text-sm text-slate-600 mt-2">
-              <p><strong>{pedido.cliente}</strong> • {pedido.lugar_evento}</p>
-              <p className="text-xs flex items-center gap-2 mt-1">
-                <span>Faltan: <strong className="text-orange-600">{faltantes}</strong> camareros</span>
-                {faltantes > 0 && (
-                  <Badge variant="outline" className="text-xs">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="pb-4 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-purple-100 to-blue-100">
+                <Sparkles className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-bold">
+                  Asignación Automática Inteligente
+                </DialogTitle>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Powered by IA • Sistema de scoring avanzado
+                </p>
+              </div>
+            </div>
+            {pedido && faltantes > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="text-right">
+                  <p className="text-xs text-slate-500">Progreso</p>
+                  <p className="text-lg font-bold text-slate-800">
                     {asignacionesActuales}/{cantidadNecesaria}
-                  </Badge>
-                )}
-              </p>
+                  </p>
+                </div>
+                <div className="relative w-16 h-16">
+                  <svg className="transform -rotate-90 w-16 h-16">
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r="28"
+                      stroke="currentColor"
+                      strokeWidth="6"
+                      fill="transparent"
+                      className="text-slate-200"
+                    />
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r="28"
+                      stroke="currentColor"
+                      strokeWidth="6"
+                      fill="transparent"
+                      strokeDasharray={`${2 * Math.PI * 28}`}
+                      strokeDashoffset={`${2 * Math.PI * 28 * (1 - asignacionesActuales / cantidadNecesaria)}`}
+                      className="text-purple-600 transition-all duration-500"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-semibold text-purple-600">
+                      {Math.round((asignacionesActuales / cantidadNecesaria) * 100)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          {pedido && (
+            <div className="mt-4 p-3 bg-slate-50 rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{pedido.cliente}</p>
+                  <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-3 h-3" />
+                    {pedido.lugar_evento || 'Ubicación por confirmar'}
+                  </p>
+                </div>
+              </div>
+              {faltantes > 0 ? (
+                <Badge className="bg-orange-500 text-white px-3 py-1">
+                  Faltan {faltantes} camarero{faltantes !== 1 ? 's' : ''}
+                </Badge>
+              ) : (
+                <Badge className="bg-emerald-500 text-white px-3 py-1">
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Completo
+                </Badge>
+              )}
             </div>
           )}
         </DialogHeader>
 
         {sugerencias.length === 0 ? (
-          <div className="text-center py-12">
-            <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500">No hay camareros disponibles para este evento</p>
-            <p className="text-xs text-slate-400 mt-2">Verifica disponibilidad y restricciones</p>
+          <div className="text-center py-16 flex-1">
+            <div className="inline-block p-4 rounded-full bg-slate-100 mb-4">
+              <AlertCircle className="w-12 h-12 text-slate-400" />
+            </div>
+            <p className="text-lg font-medium text-slate-700">No hay camareros disponibles</p>
+            <p className="text-sm text-slate-500 mt-2">Verifica disponibilidad, horarios y restricciones del evento</p>
           </div>
         ) : (
-          <>
+          <div className="flex-1 flex flex-col overflow-hidden">
             {/* Controles de modo */}
-            <div className="bg-slate-50 p-4 rounded-lg mb-4 space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-xl mb-4 border border-purple-100">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <Switch 
                     checked={modoRevision} 
@@ -407,50 +469,60 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
                     id="modo-revision"
                   />
                   <Label htmlFor="modo-revision" className="cursor-pointer">
-                    <span className="font-medium">Modo Revisión</span>
-                    <p className="text-xs text-slate-500">
-                      {modoRevision ? 'Selecciona manualmente antes de asignar' : 'Asigna automáticamente los mejores'}
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-800">Modo Revisión</span>
+                      <Badge variant="outline" className="text-xs">
+                        {modoRevision ? 'Manual' : 'Auto'}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      {modoRevision ? 'Selecciona manualmente antes de asignar' : 'Asigna automáticamente los mejores candidatos'}
                     </p>
                   </Label>
                 </div>
-                <Badge className="bg-slate-200 text-slate-700">
-                  <Info className="w-3 h-3 mr-1" />
-                  {sugerencias.length} candidatos
+                <Badge className="bg-white border-purple-200 text-purple-700 px-3 py-1.5">
+                  <Info className="w-3 h-3 mr-1.5" />
+                  {sugerencias.length} candidato{sugerencias.length !== 1 ? 's' : ''}
                 </Badge>
               </div>
 
-              {modoRevision && (
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={seleccionarMejores}
-                    disabled={faltantes <= 0}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Seleccionar Top {Math.min(faltantes, sugerencias.length)}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setSeleccionados(new Set())}
-                    disabled={seleccionados.size === 0}
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Limpiar selección
-                  </Button>
+              <div className="flex items-center justify-between gap-2">
+                {modoRevision && (
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={seleccionarMejores}
+                      disabled={faltantes <= 0}
+                      className="bg-white border-purple-200 hover:bg-purple-50"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Seleccionar Top {Math.min(faltantes, sugerencias.length)}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setSeleccionados(new Set())}
+                      disabled={seleccionados.size === 0}
+                      className="bg-white border-slate-200 hover:bg-slate-50"
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Limpiar
+                    </Button>
+                  </div>
+                )}
+                <div className="ml-auto">
+                  {modoRevision && seleccionados.size > 0 && (
+                    <Badge className="bg-purple-600 text-white px-3 py-1.5">
+                      {seleccionados.size} seleccionado{seleccionados.size !== 1 ? 's' : ''}
+                    </Badge>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
-            <div className="flex justify-between items-center mb-4">
-              <div className="text-sm text-slate-600">
-                {modoRevision && seleccionados.size > 0 && (
-                  <span className="font-medium text-purple-600">
-                    {seleccionados.size} seleccionado(s)
-                  </span>
-                )}
-              </div>
+            {/* Botón principal de asignación */}
+            <div className="mb-4">
               <Button 
                 onClick={handleAsignarTodos}
                 disabled={
@@ -458,94 +530,119 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
                   asignarMutation.isPending || 
                   (modoRevision && seleccionados.size === 0)
                 }
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="w-full h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold shadow-lg"
+                size="lg"
               >
                 {asignarMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                 ) : (
-                  <Sparkles className="w-4 h-4 mr-2" />
+                  <Sparkles className="w-5 h-5 mr-2" />
                 )}
                 {modoRevision 
-                  ? `Confirmar y Asignar (${seleccionados.size})`
-                  : `Asignar Mejores ${Math.min(faltantes, sugerencias.length)}`
+                  ? `Confirmar y Asignar ${seleccionados.size} Camarero${seleccionados.size !== 1 ? 's' : ''}`
+                  : `Asignar Automáticamente ${Math.min(faltantes, sugerencias.length)} Mejores`
                 }
               </Button>
             </div>
 
-            <ScrollArea className="max-h-[500px]">
-              <div className="space-y-3">
+            {/* Lista de candidatos */}
+            <ScrollArea className="flex-1 pr-2">
+              <div className="space-y-3 pb-2">
                 {sugerencias.map(({ camarero, score, razones, asignacionesMes }, index) => {
                   const yaAsignado = sugerenciasAceptadas.has(camarero.id);
                   const maxScore = 100;
                   const porcentaje = Math.round((score / maxScore) * 100);
-
                   const estaSeleccionado = seleccionados.has(camarero.id);
 
                   return (
                     <Card 
                       key={camarero.id}
-                      className={`p-4 transition-all cursor-pointer ${
-                        yaAsignado ? 'bg-emerald-50 border-emerald-300' : 
-                        estaSeleccionado ? 'bg-purple-50 border-purple-300 border-2' : 
-                        'hover:shadow-md hover:border-slate-300'
+                      className={`p-5 transition-all duration-200 ${
+                        yaAsignado ? 'bg-gradient-to-r from-emerald-50 to-emerald-100 border-emerald-300 shadow-sm' : 
+                        estaSeleccionado ? 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-400 border-2 shadow-md scale-[1.02]' : 
+                        'hover:shadow-lg hover:border-slate-300 hover:scale-[1.01] bg-white cursor-pointer'
                       }`}
                       onClick={() => modoRevision && !yaAsignado && toggleSeleccion(camarero.id)}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-                              #{index + 1}
-                            </Badge>
-                            <div>
-                              <p className="font-semibold text-slate-800">{camarero.nombre}</p>
-                              <p className="text-xs text-slate-500 font-mono">#{camarero.codigo}</p>
-                            </div>
-                            <div className="ml-auto flex items-center gap-2">
-                              <Badge variant="outline" className="font-semibold">
-                                {score} pts
-                              </Badge>
-                              <Badge 
-                                className={`${
-                                  porcentaje >= 80 ? 'bg-emerald-100 text-emerald-700' :
-                                  porcentaje >= 60 ? 'bg-blue-100 text-blue-700' :
-                                  porcentaje >= 40 ? 'bg-amber-100 text-amber-700' :
-                                  'bg-slate-100 text-slate-700'
-                                }`}
-                              >
-                                {porcentaje}% match
-                              </Badge>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4 text-xs text-slate-600 mb-3">
-                            {camarero.valoracion_promedio > 0 && (
-                              <span className="flex items-center gap-1">
-                                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                {camarero.valoracion_promedio.toFixed(1)}
-                              </span>
-                            )}
-                            <span>{camarero.especialidad}</span>
-                            <span>{asignacionesMes} asign. este mes</span>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            {razones.map((razon, idx) => (
-                              <Badge key={idx} variant="outline" className={`text-xs ${razon.color}`}>
-                                <razon.icon className="w-3 h-3 mr-1" />
-                                {razon.text}
-                              </Badge>
-                            ))}
+                      <div className="flex items-start gap-4">
+                        {/* Ranking badge */}
+                        <div className="flex-shrink-0">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${
+                            index === 0 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-md' :
+                            index === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' :
+                            index === 2 ? 'bg-gradient-to-br from-orange-300 to-orange-400 text-white' :
+                            'bg-gradient-to-br from-purple-100 to-blue-100 text-purple-700'
+                          }`}>
+                            #{index + 1}
                           </div>
                         </div>
 
-                        <div className="ml-4 flex items-center gap-2">
+                        {/* Contenido principal */}
+                        <div className="flex-1 min-w-0">
+                          {/* Nombre y score */}
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-bold text-lg text-slate-900">{camarero.nombre}</h4>
+                              <p className="text-xs text-slate-500 font-mono mt-0.5">Código: {camarero.codigo}</p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1.5">
+                              <Badge className="bg-slate-800 text-white px-3 py-1 font-bold text-sm">
+                                {score} pts
+                              </Badge>
+                              <Badge 
+                                className={`px-3 py-1 font-semibold ${
+                                  porcentaje >= 80 ? 'bg-emerald-500 text-white' :
+                                  porcentaje >= 60 ? 'bg-blue-500 text-white' :
+                                  porcentaje >= 40 ? 'bg-amber-500 text-white' :
+                                  'bg-slate-400 text-white'
+                                }`}
+                              >
+                                {porcentaje}% compatible
+                              </Badge>
+                            </div>
+                          </div>
+
+                          {/* Stats rápidas */}
+                          <div className="flex items-center gap-4 text-sm text-slate-600 mb-3 pb-3 border-b border-slate-200">
+                            {camarero.valoracion_promedio > 0 && (
+                              <div className="flex items-center gap-1.5">
+                                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                                <span className="font-semibold">{camarero.valoracion_promedio.toFixed(1)}</span>
+                              </div>
+                            )}
+                            <Badge variant="outline" className="font-medium">
+                              {camarero.especialidad}
+                            </Badge>
+                            <span className="text-xs">
+                              {asignacionesMes} servicios este mes
+                            </span>
+                          </div>
+
+                          {/* Razones destacadas */}
+                          {razones.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {razones.map((razon, idx) => (
+                                <Badge 
+                                  key={idx} 
+                                  variant="outline" 
+                                  className={`text-xs font-medium ${razon.color} bg-white`}
+                                >
+                                  <razon.icon className="w-3.5 h-3.5 mr-1.5" />
+                                  {razon.text}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Controles de selección/asignación */}
+                        <div className="flex-shrink-0 flex items-center gap-2">
                           {modoRevision && !yaAsignado && (
-                            <div 
-                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                            <button
+                              className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
                                 estaSeleccionado 
-                                  ? 'bg-purple-600 border-purple-600' 
-                                  : 'border-slate-300'
+                                  ? 'bg-purple-600 border-purple-600 scale-110' 
+                                  : 'border-slate-300 hover:border-purple-400'
                               }`}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -553,13 +650,13 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
                               }}
                             >
                               {estaSeleccionado && (
-                                <CheckCircle className="w-4 h-4 text-white" />
+                                <CheckCircle className="w-5 h-5 text-white" />
                               )}
-                            </div>
+                            </button>
                           )}
                           {yaAsignado ? (
-                            <Badge className="bg-emerald-600 text-white">
-                              <CheckCircle className="w-3 h-3 mr-1" />
+                            <Badge className="bg-emerald-600 text-white px-3 py-2 shadow-sm">
+                              <CheckCircle className="w-4 h-4 mr-1.5" />
                               Asignado
                             </Badge>
                           ) : !modoRevision && (
@@ -570,6 +667,7 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
                                 handleAsignarUno(camarero);
                               }}
                               disabled={asignarMutation.isPending || faltantes <= 0}
+                              className="bg-purple-600 hover:bg-purple-700"
                             >
                               Asignar
                             </Button>
@@ -581,11 +679,11 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
                 })}
               </div>
             </ScrollArea>
-          </>
+          </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
+        <div className="flex justify-end gap-3 pt-4 border-t mt-4">
+          <Button variant="outline" onClick={onClose} size="lg">
             Cerrar
           </Button>
         </div>
