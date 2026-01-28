@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Pencil, User, Star, Search, Filter, Award, MessageSquare, CheckCircle, XCircle, CalendarDays, UserCheck, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -445,12 +446,15 @@ export default function Camareros() {
           />
         )}
 
-        {camareroHistorial && (
-          <ValoracionesHistorial
-            open={showHistorial}
-            onOpenChange={setShowHistorial}
-            camarero={camareroHistorial}
-          />
+        {showHistorial && camareroHistorial && (
+          <Dialog open={showHistorial} onOpenChange={setShowHistorial}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Historial de Valoraciones - {camareroHistorial.nombre}</DialogTitle>
+              </DialogHeader>
+              <ValoracionesHistorial camareroId={camareroHistorial.id} />
+            </DialogContent>
+          </Dialog>
         )}
 
         <GestionDisponibilidad
