@@ -45,17 +45,23 @@ export default function TableroEventos() {
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ['pedidos'],
-    queryFn: () => base44.entities.Pedido.list('-dia', 500)
+    queryFn: () => base44.entities.Pedido.list('-dia', 500),
+    staleTime: 5 * 60 * 1000, // Datos válidos por 5 minutos
+    cacheTime: 10 * 60 * 1000
   });
 
   const { data: asignaciones = [] } = useQuery({
     queryKey: ['asignaciones'],
-    queryFn: () => base44.entities.AsignacionCamarero.list('-created_date', 1000)
+    queryFn: () => base44.entities.AsignacionCamarero.list('-created_date', 1000),
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 10 * 60 * 1000
   });
 
   const { data: camareros = [] } = useQuery({
     queryKey: ['camareros'],
-    queryFn: () => base44.entities.Camarero.list('nombre')
+    queryFn: () => base44.entities.Camarero.list('nombre'),
+    staleTime: 10 * 60 * 1000, // Los camareros no cambian frecuentemente
+    cacheTime: 20 * 60 * 1000
   });
 
   const updateEstadoMutation = useMutation({

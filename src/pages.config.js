@@ -50,6 +50,7 @@
 import Asignacion from './pages/Asignacion';
 import Camareros from './pages/Camareros';
 import Clientes from './pages/Clientes';
+import ConfiguracionNotificaciones from './pages/ConfiguracionNotificaciones';
 import ConfirmarServicio from './pages/ConfirmarServicio';
 import Coordinadores from './pages/Coordinadores';
 import DashboardCoordinador from './pages/DashboardCoordinador';
@@ -61,7 +62,6 @@ import PerfilCamarero from './pages/PerfilCamarero';
 import TableroEventos from './pages/TableroEventos';
 import TiempoReal from './pages/TiempoReal';
 import VistaMovil from './pages/VistaMovil';
-import ConfiguracionNotificaciones from './pages/ConfiguracionNotificaciones';
 import __Layout from './Layout.jsx';
 
 
@@ -69,6 +69,7 @@ export const PAGES = {
     "Asignacion": Asignacion,
     "Camareros": Camareros,
     "Clientes": Clientes,
+    "ConfiguracionNotificaciones": ConfiguracionNotificaciones,
     "ConfirmarServicio": ConfirmarServicio,
     "Coordinadores": Coordinadores,
     "DashboardCoordinador": DashboardCoordinador,
@@ -80,7 +81,6 @@ export const PAGES = {
     "TableroEventos": TableroEventos,
     "TiempoReal": TiempoReal,
     "VistaMovil": VistaMovil,
-    "ConfiguracionNotificaciones": ConfiguracionNotificaciones,
 }
 
 export const pagesConfig = {
