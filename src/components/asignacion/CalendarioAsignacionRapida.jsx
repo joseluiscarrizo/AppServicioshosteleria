@@ -13,6 +13,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMont
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import TareasService from '../camareros/TareasService';
+import EnviarWhatsApp from '../whatsapp/EnviarWhatsApp';
 
 export default function CalendarioAsignacionRapida() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -809,6 +810,14 @@ export default function CalendarioAsignacionRapida() {
                             </SelectItem>
                           </SelectContent>
                         </Select>
+
+                        <EnviarWhatsApp
+                          pedido={selectedPedidoAsignacion}
+                          asignaciones={[asig]}
+                          buttonVariant="outline"
+                          buttonSize="sm"
+                          buttonText="Enviar WhatsApp"
+                        />
 
                         <Button
                           variant="ghost"
