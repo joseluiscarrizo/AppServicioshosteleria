@@ -340,14 +340,19 @@ export default function Camareros() {
                     </TableCell>
                     <TableCell className="text-center">
                       {camarero.valoracion_promedio > 0 ? (
-                        <button
-                          onClick={() => handleVerHistorial(camarero)}
-                          className="flex items-center gap-1 text-amber-600 hover:text-amber-700 mx-auto"
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleVerHistorial(camarero);
+                          }}
+                          className="flex items-center gap-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50 h-8 px-2"
                         >
                           <Star className="w-4 h-4 fill-amber-400" />
                           <span className="font-semibold">{camarero.valoracion_promedio.toFixed(1)}</span>
                           <span className="text-xs text-slate-400">({camarero.total_valoraciones})</span>
-                        </button>
+                        </Button>
                       ) : (
                         <span className="text-xs text-slate-400">Sin valoraciones</span>
                       )}
@@ -367,7 +372,10 @@ export default function Camareros() {
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => handleValorar(camarero)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleValorar(camarero);
+                          }}
                           className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
                           title="Valorar"
                         >
@@ -376,9 +384,12 @@ export default function Camareros() {
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => handleVerHistorial(camarero)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleVerHistorial(camarero);
+                          }}
                           className="h-8 w-8"
-                          title="Ver valoraciones"
+                          title="Ver comentarios"
                         >
                           <MessageSquare className="w-4 h-4" />
                         </Button>
