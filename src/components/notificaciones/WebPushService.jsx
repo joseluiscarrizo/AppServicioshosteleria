@@ -37,28 +37,42 @@ export const useWebPushNotifications = () => {
       return;
     }
 
+    // Verificar configuración del usuario
+    const config = JSON.parse(localStorage.getItem('notif_config') || '{"habilitadas": true, "sonido": true}');
+    
+    if (!config.habilitadas) {
+      return;
+    }
+
     try {
-      // Reproducir sonido
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUKjj8LdjHAU2kdXy0HwzBSF7xvHglUMMEjTp6tCWQQQPU6vj77VqIQUygNLxx4IzBhRpv+7mnE4MDk+o4+6VQhQKRp/g8r5sIQUqgM/y3IwzBhpqvO7imEYLDlCn5O+1ah8GM4HSz8SAMwYTaL/u45ZFDA1PqOPwrmMcBTKA0s7FgDIGEWi+7t+XRQsNT6jj8K1mHwU0gtDLw30zBhFovO7el0QMDFCo4++zaiQFM4HSzsSANAcQabzu55dFDA1PqOPvsmkeByuBzvLaiTYIGWi76+yaTgwNUKjj77RpHAU2jtfyy3ovBSF6xvDdkEALEV60',);
-      audio.volume = 0.3;
-      audio.play().catch(() => {});
+      // Reproducir sonido si está habilitado
+      if (config.sonido) {
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUKjj8LdjHAU2kdXy0HwzBSF7xvHglUMMEjTp6tCWQQQPU6vj77VqIQUygNLxx4IzBhRpv+7mnE4MDk+o4+6VQhQKRp/g8r5sIQUqgM/y3IwzBhpqvO7imEYLDlCn5O+1ah8GM4HSz8SAMwYTaL/u45ZFDA1PqOPwrmMcBTKA0s7FgDIGEWi+7t+XRQsNT6jj8K1mHwU0gtDLw30zBhFovO7el0QMDFCo4++zaiQFM4HSzsSANAcQabzu55dFDA1PqOPvsmkeByuBzvLaiTYIGWi76+yaTgwNUKjj77RpHAU2jtfyy3ovBSF6xvDdkEALEV60',);
+        audio.volume = 0.3;
+        audio.play().catch(() => {});
+      }
 
       const notification = new Notification(title, {
         icon: '/logo192.png',
         badge: '/logo192.png',
         vibrate: [200, 100, 200],
-        tag: 'camarero-notification',
+        tag: options.tag || 'camarero-notification',
         renotify: true,
+        requireInteraction: options.urgente || false,
         ...options
       });
 
       notification.onclick = () => {
         window.focus();
+        if (options.onClick) {
+          options.onClick();
+        }
         notification.close();
       };
 
-      // Auto-cerrar después de 10 segundos
-      setTimeout(() => notification.close(), 10000);
+      // Auto-cerrar después de tiempo variable según urgencia
+      const duracion = options.urgente ? 30000 : 10000;
+      setTimeout(() => notification.close(), duracion);
 
       return notification;
     } catch (error) {
@@ -66,12 +80,17 @@ export const useWebPushNotifications = () => {
     }
   };
 
+  const isAllowed = permission === 'granted' && JSON.parse(
+    localStorage.getItem('notif_config') || '{"habilitadas": false}'
+  ).habilitadas;
+
   return {
     permission,
     isSupported,
     requestPermission,
     showNotification,
-    canNotify: permission === 'granted'
+    canNotify: permission === 'granted',
+    isAllowed
   };
 };
 
