@@ -114,11 +114,17 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
       const asignacionesActualizadas = [];
 
       for (const camarero of camarerosSeleccionados) {
-        if (!camarero.telefono) continue;
+        if (!camarero.telefono) {
+          console.warn(`Camarero ${camarero.nombre} no tiene teléfono`);
+          continue;
+        }
 
         // Buscar la asignación del camarero
         const asignacion = asignacionesArray.find(a => a.camarero_id === camarero.id);
-        if (!asignacion) continue;
+        if (!asignacion) {
+          console.warn(`No se encontró asignación para ${camarero.nombre}`);
+          continue;
+        }
 
         const mensaje = await generarMensajeWhatsApp(asignacion);
         
@@ -189,7 +195,15 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
     }
   });
 
-  const camarerosAsignados = asignacionesArray
+  // Eliminar duplicados de asignaciones por camarero_id
+  const asignacionesUnicas = asignacionesArray.reduce((acc, asig) => {
+    if (!acc.find(a => a.camarero_id === asig.camarero_id)) {
+      acc.push(asig);
+    }
+    return acc;
+  }, []);
+
+  const camarerosAsignados = asignacionesUnicas
     .map(a => listaCamareros.find(c => c.id === a.camarero_id))
     .filter(Boolean);
 
@@ -268,11 +282,16 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
               </div>
 
               <div className="space-y-2">
-                {camarerosAsignados.map(camarero => (
-                  <div 
-                    key={camarero.id}
-                    className="flex items-center gap-3 p-3 border rounded-lg hover:bg-slate-50"
-                  >
+                {camarerosAsignados.length === 0 ? (
+                  <p className="text-sm text-slate-500 py-4 text-center">
+                    No hay camareros asignados a este evento
+                  </p>
+                ) : (
+                  camarerosAsignados.map(camarero => (
+                    <div 
+                      key={camarero.id}
+                      className="flex items-center gap-3 p-3 border rounded-lg hover:bg-slate-50"
+                    >
                     <Checkbox
                       checked={selectedCamareros.includes(camarero.id)}
                       onCheckedChange={() => toggleCamarero(camarero.id)}
@@ -285,7 +304,8 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
                       <span className="text-xs text-red-500">Sin teléfono</span>
                     )}
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
