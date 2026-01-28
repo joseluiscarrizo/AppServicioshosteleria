@@ -119,37 +119,56 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
         <div className="space-y-6 py-4">
           {/* Activar Notificaciones */}
           <Card className="p-5 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Bell className="w-5 h-5 text-[#1e3a5f]" />
-                <div>
-                  <Label className="text-base font-semibold text-slate-800">
-                    Notificaciones del Navegador
-                  </Label>
-                  <p className="text-sm text-slate-600 mt-1">
-                    {typeof window !== 'undefined' && 'Notification' in window
-                      ? Notification.permission === 'granted' 
-                        ? 'Permisos otorgados ✓' 
-                        : Notification.permission === 'denied'
-                        ? 'Permisos denegados - Verifica configuración del navegador'
-                        : 'Requiere permiso del navegador'
-                      : 'Navegador no soporta notificaciones'}
-                  </p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Bell className="w-5 h-5 text-[#1e3a5f]" />
+                  <div>
+                    <Label className="text-base font-semibold text-slate-800">
+                      Notificaciones del Navegador
+                    </Label>
+                    <p className="text-sm text-slate-600 mt-1">
+                      {typeof window !== 'undefined' && 'Notification' in window
+                        ? Notification.permission === 'granted' 
+                          ? 'Permisos otorgados ✓' 
+                          : Notification.permission === 'denied'
+                          ? 'Permisos bloqueados'
+                          : 'Sin permisos'
+                        : 'No soportado'}
+                    </p>
+                  </div>
                 </div>
+                {typeof window !== 'undefined' && 'Notification' in window ? (
+                  Notification.permission === 'granted' ? (
+                    <Switch
+                      checked={config.habilitadas}
+                      onCheckedChange={(v) => handleChange('habilitadas', v)}
+                    />
+                  ) : (
+                    <Button 
+                      onClick={requestNotificationPermission} 
+                      size="sm"
+                      className="bg-[#1e3a5f] hover:bg-[#152a45]"
+                      disabled={Notification.permission === 'denied'}
+                    >
+                      {Notification.permission === 'denied' ? 'Bloqueado' : 'Activar'}
+                    </Button>
+                  )
+                ) : null}
               </div>
-              {typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' ? (
-                <Button 
-                  onClick={requestNotificationPermission} 
-                  size="sm"
-                  className="bg-[#1e3a5f] hover:bg-[#152a45]"
-                >
-                  Activar
-                </Button>
-              ) : (
-                <Switch
-                  checked={config.habilitadas}
-                  onCheckedChange={(v) => handleChange('habilitadas', v)}
-                />
+
+              {/* Instrucciones si está bloqueado */}
+              {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied' && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
+                  <p className="font-medium text-amber-900 mb-2">⚠️ Permisos bloqueados por el navegador</p>
+                  <p className="text-amber-800 text-xs mb-2">Para habilitar notificaciones:</p>
+                  <ol className="text-xs text-amber-800 space-y-1 ml-4 list-decimal">
+                    <li>Haz clic en el icono de candado/información en la barra de direcciones</li>
+                    <li>Busca "Notificaciones" en los permisos del sitio</li>
+                    <li>Cambia de "Bloquear" a "Permitir"</li>
+                    <li>Recarga esta página</li>
+                  </ol>
+                </div>
               )}
             </div>
           </Card>
