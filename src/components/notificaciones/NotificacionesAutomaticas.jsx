@@ -9,24 +9,29 @@ export default function NotificacionesAutomaticas({ showPushNotifications }) {
   const { data: pedidos = [] } = useQuery({
     queryKey: ['pedidos-automaticas'],
     queryFn: () => base44.entities.Pedido.list('dia', 500),
-    refetchInterval: 2 * 60 * 1000 // Cada 2 minutos para tiempo real
+    refetchInterval: 10 * 60 * 1000, // Reducido a 10 minutos
+    staleTime: 8 * 60 * 1000
   });
 
   const { data: asignaciones = [] } = useQuery({
     queryKey: ['asignaciones-automaticas'],
     queryFn: () => base44.entities.AsignacionCamarero.list('-created_date', 1000),
-    refetchInterval: 5 * 60 * 1000
+    refetchInterval: 15 * 60 * 1000, // Reducido a 15 minutos
+    staleTime: 12 * 60 * 1000
   });
 
   const { data: tareas = [] } = useQuery({
     queryKey: ['tareas-automaticas'],
     queryFn: () => base44.entities.Tarea.list('-created_date', 1000),
-    refetchInterval: 5 * 60 * 1000
+    refetchInterval: 15 * 60 * 1000, // Reducido a 15 minutos
+    staleTime: 12 * 60 * 1000
   });
 
   const { data: coordinadores = [] } = useQuery({
     queryKey: ['coordinadores-automaticas'],
-    queryFn: () => base44.entities.Coordinador.list('nombre')
+    queryFn: () => base44.entities.Coordinador.list('nombre'),
+    staleTime: 30 * 60 * 1000, // Los coordinadores no cambian frecuentemente
+    cacheTime: 60 * 60 * 1000
   });
 
   useEffect(() => {
