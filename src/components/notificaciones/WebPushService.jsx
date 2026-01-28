@@ -2,15 +2,20 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export const useWebPushNotifications = () => {
-  const [permission, setPermission] = useState(Notification.permission);
+  const [permission, setPermission] = useState(
+    typeof Notification !== 'undefined' ? Notification.permission : 'default'
+  );
   const [isSupported, setIsSupported] = useState(false);
 
   useEffect(() => {
     setIsSupported('Notification' in window && 'serviceWorker' in navigator);
+    if (typeof Notification !== 'undefined') {
+      setPermission(Notification.permission);
+    }
   }, []);
 
   const requestPermission = async () => {
-    if (!isSupported) {
+    if (!isSupported || typeof Notification === 'undefined') {
       toast.error('Las notificaciones no están soportadas en este navegador');
       return false;
     }
@@ -33,7 +38,7 @@ export const useWebPushNotifications = () => {
   };
 
   const showNotification = (title, options = {}) => {
-    if (!isSupported || permission !== 'granted') {
+    if (!isSupported || permission !== 'granted' || typeof Notification === 'undefined') {
       return;
     }
 
