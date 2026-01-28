@@ -23,11 +23,13 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
     queryFn: () => base44.entities.Coordinador.list('nombre')
   });
 
-  const { data: todosLosCamareros = [] } = useQuery({
+  const { data: todosLosCamareros = [], isLoading: loadingCamareros } = useQuery({
     queryKey: ['camareros'],
     queryFn: () => base44.entities.Camarero.list('nombre'),
     enabled: !camareros
   });
+
+  const listaCamareros = camareros || todosLosCamareros;
 
   const generarMensajeWhatsApp = async (asignacion) => {
     const baseUrl = window.location.origin;
@@ -103,7 +105,6 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
         throw new Error('El coordinador seleccionado no tiene teléfono configurado');
       }
 
-      const listaCamareros = camareros || todosLosCamareros;
       const camarerosSeleccionados = listaCamareros.filter(c => 
         selectedCamareros.includes(c.id)
       );
@@ -186,10 +187,9 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
     }
   });
 
-  const listaCamareros = camareros || todosLosCamareros;
   const camarerosAsignados = asignaciones
-    .map(a => listaCamareros.find(c => c.id === a.camarero_id))
-    .filter(Boolean);
+    ?.map(a => listaCamareros.find(c => c.id === a.camarero_id))
+    .filter(Boolean) || [];
 
   const toggleCamarero = (camareroId) => {
     setSelectedCamareros(prev => 
@@ -221,6 +221,12 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
+          {loadingCamareros && !camareros ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+              <span className="ml-2 text-slate-500">Cargando camareros...</span>
+            </div>
+          ) : (
           <div className="space-y-4">
             <div className="p-4 bg-slate-50 rounded-lg">
               <h4 className="font-medium mb-2">Evento: {pedido.cliente}</h4>
@@ -281,6 +287,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
               </div>
             </div>
           </div>
+          )}
         </div>
 
         <div className="px-6 py-4 border-t bg-white flex justify-end gap-3">
