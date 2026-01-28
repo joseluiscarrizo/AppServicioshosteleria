@@ -8,6 +8,7 @@ import NotificationBell from './components/notificaciones/NotificationBell';
 import NotificacionesAutomaticas from './components/notificaciones/NotificacionesAutomaticas';
 import { useWebPushNotifications } from './components/notificaciones/WebPushService';
 import ServicioRecordatorios from './components/recordatorios/ServicioRecordatorios';
+import RateLimitHandler from './components/notificaciones/RateLimitHandler';
 
 const navItems = [
   { name: 'Dashboard', page: 'DashboardCoordinador', icon: LayoutDashboard },
@@ -33,6 +34,9 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Manejador global de errores de rate limit */}
+      <RateLimitHandler />
+
       {/* Sistema de Notificaciones Automáticas Global */}
           <NotificacionesAutomaticas 
             showPushNotifications={isAllowed ? showNotification : null}

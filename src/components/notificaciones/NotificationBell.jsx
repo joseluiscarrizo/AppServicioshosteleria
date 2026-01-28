@@ -39,7 +39,8 @@ export default function NotificationBell() {
   const { data: notificaciones = [], isLoading } = useQuery({
     queryKey: ['notificaciones'],
     queryFn: () => base44.entities.Notificacion.list('-created_date', 50),
-    refetchInterval: 15000 // Refrescar cada 15 segundos para tiempo real
+    refetchInterval: 60000, // Reducido a 60 segundos
+    staleTime: 45000
   });
 
   const noLeidas = notificaciones.filter(n => !n.leida);
