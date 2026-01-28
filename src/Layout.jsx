@@ -72,7 +72,7 @@ export default function Layout({ children, currentPageName }) {
                   </Button>
                 </Link>
               ))}
-              <div className="ml-2 border-l border-slate-200 pl-2">
+              <div className="ml-2 border-l border-slate-200 pl-2 flex items-center gap-2">
                 <NotificationBell />
               </div>
             </nav>
