@@ -81,15 +81,28 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
   };
 
   const requestNotificationPermission = async () => {
-    if ('Notification' in window) {
+    if (!('Notification' in window)) {
+      toast.error('Tu navegador no soporta notificaciones');
+      return;
+    }
+
+    try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         toast.success('Permisos de notificación otorgados');
         handleChange('habilitadas', true);
+        // Forzar re-render para actualizar la UI
+        window.location.reload();
+      } else if (permission === 'denied') {
+        toast.error('Permisos de notificación denegados. Verifica la configuración de tu navegador.');
+        handleChange('habilitadas', false);
       } else {
-        toast.error('Permisos de notificación denegados');
+        toast.info('Permisos de notificación no otorgados');
         handleChange('habilitadas', false);
       }
+    } catch (error) {
+      console.error('Error al solicitar permisos:', error);
+      toast.error('Error al solicitar permisos de notificación');
     }
   };
 
@@ -114,14 +127,22 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
                     Notificaciones del Navegador
                   </Label>
                   <p className="text-sm text-slate-600 mt-1">
-                    {Notification.permission === 'granted' 
-                      ? 'Permisos otorgados ✓' 
-                      : 'Requiere permiso del navegador'}
+                    {typeof window !== 'undefined' && 'Notification' in window
+                      ? Notification.permission === 'granted' 
+                        ? 'Permisos otorgados ✓' 
+                        : Notification.permission === 'denied'
+                        ? 'Permisos denegados - Verifica configuración del navegador'
+                        : 'Requiere permiso del navegador'
+                      : 'Navegador no soporta notificaciones'}
                   </p>
                 </div>
               </div>
-              {Notification.permission !== 'granted' ? (
-                <Button onClick={requestNotificationPermission} size="sm">
+              {typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted' ? (
+                <Button 
+                  onClick={requestNotificationPermission} 
+                  size="sm"
+                  className="bg-[#1e3a5f] hover:bg-[#152a45]"
+                >
                   Activar
                 </Button>
               ) : (
