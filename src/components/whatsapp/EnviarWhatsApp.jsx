@@ -49,6 +49,39 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
     const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
     const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
 
+    // Calcular hora de encuentro si hay destino
+    let horaEncuentro = 'Por confirmar';
+    const puntoEncuentro = 'https://maps.app.goo.gl/zF44yK4fjTrVneoD9';
+    
+    if (pedido.link_ubicacion) {
+      try {
+        const resultadoDistancia = await base44.integrations.Core.InvokeLLM({
+          prompt: `Calcula el tiempo de viaje en transporte desde ${puntoEncuentro} hasta ${pedido.link_ubicacion}. Devuelve solo el tiempo estimado en minutos como número.`,
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              minutos: { type: "number" }
+            }
+          }
+        });
+        
+        const minutosViaje = resultadoDistancia?.minutos || 30;
+        const horaEntrada = asignacion.hora_entrada || pedido.entrada;
+        
+        if (horaEntrada) {
+          const [horas, minutos] = horaEntrada.split(':').map(Number);
+          const horaEntradaDate = new Date();
+          horaEntradaDate.setHours(horas, minutos, 0);
+          horaEntradaDate.setMinutes(horaEntradaDate.getMinutes() - minutosViaje - 10);
+          
+          horaEncuentro = `${horaEntradaDate.getHours().toString().padStart(2, '0')}:${horaEntradaDate.getMinutes().toString().padStart(2, '0')}`;
+        }
+      } catch (e) {
+        console.error('Error calculando hora de encuentro:', e);
+      }
+    }
+
     let resultado = contenido
       .replace(/\{\{cliente\}\}/g, pedido.cliente || '')
       .replace(/\{\{dia\}\}/g, pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Por confirmar')
@@ -56,6 +89,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
       .replace(/\{\{hora_entrada\}\}/g, asignacion.hora_entrada || pedido.entrada || '-')
       .replace(/\{\{hora_salida\}\}/g, asignacion.hora_salida || pedido.salida || '-')
       .replace(/\{\{camisa\}\}/g, pedido.camisa || 'blanca')
+      .replace(/\{\{hora_encuentro\}\}/g, horaEncuentro)
       .replace(/\{\{link_confirmar\}\}/g, linkConfirmar)
       .replace(/\{\{link_rechazar\}\}/g, linkRechazar)
       .replace(/\{\{link_ubicacion\}\}/g, pedido.link_ubicacion || '')

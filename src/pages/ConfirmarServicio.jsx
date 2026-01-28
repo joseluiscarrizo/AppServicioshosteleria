@@ -55,6 +55,11 @@ export default function ConfirmarServicio() {
     mutationFn: async () => {
       if (!asignacion) throw new Error('No hay asignación');
 
+      // Reproducir sonido de alerta
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTWN2e/IdCQEKXbF8NaLOwsVXLDq7a1OFQpJnuLswm4fBDGK2PCxcCo=');
+      audio.volume = 0.5;
+      audio.play().catch(() => {});
+      
       // Actualizar asignación a confirmado
       await base44.entities.AsignacionCamarero.update(asignacionId, {
         estado: 'confirmado'
