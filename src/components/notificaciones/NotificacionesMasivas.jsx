@@ -21,6 +21,7 @@ export default function NotificacionesMasivas() {
   const [filtroGrupo, setFiltroGrupo] = useState('todos');
   const [camarerosSeleccionados, setCamarerosSeleccionados] = useState([]);
   const [enviarWhatsApp, setEnviarWhatsApp] = useState(false);
+  const [eventoSeleccionado, setEventoSeleccionado] = useState('');
 
   const queryClient = useQueryClient();
 
@@ -37,6 +38,11 @@ export default function NotificacionesMasivas() {
   const { data: coordinadores = [] } = useQuery({
     queryKey: ['coordinadores'],
     queryFn: () => base44.entities.Coordinador.list('nombre')
+  });
+
+  const { data: pedidos = [] } = useQuery({
+    queryKey: ['pedidos'],
+    queryFn: () => base44.entities.Pedido.list('-dia', 500)
   });
 
   const enviarMutation = useMutation({
@@ -103,6 +109,7 @@ export default function NotificacionesMasivas() {
     setFiltroGrupo('todos');
     setCamarerosSeleccionados([]);
     setEnviarWhatsApp(false);
+    setEventoSeleccionado('');
   };
 
   // Filtrar camareros según el grupo seleccionado
@@ -137,6 +144,17 @@ export default function NotificacionesMasivas() {
           }
         });
         return camareros.filter(c => camarerosConEventosPasados.has(c.id));
+      }
+
+      case 'por_evento': {
+        if (!eventoSeleccionado) return [];
+        const camarerosDelEvento = new Set();
+        asignaciones.forEach(a => {
+          if (a.pedido_id === eventoSeleccionado) {
+            camarerosDelEvento.add(a.camarero_id);
+          }
+        });
+        return camareros.filter(c => camarerosDelEvento.has(c.id));
       }
       
       case 'seleccionados':
@@ -236,7 +254,12 @@ export default function NotificacionesMasivas() {
             {/* Grupo de destinatarios */}
             <div className="space-y-2">
               <Label>Enviar a</Label>
-              <Select value={filtroGrupo} onValueChange={setFiltroGrupo}>
+              <Select value={filtroGrupo} onValueChange={(value) => {
+                setFiltroGrupo(value);
+                if (value !== 'por_evento') {
+                  setEventoSeleccionado('');
+                }
+              }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -246,6 +269,7 @@ export default function NotificacionesMasivas() {
                   <SelectItem value="ocupados">Solo ocupados</SelectItem>
                   <SelectItem value="eventos_futuros">Con eventos futuros</SelectItem>
                   <SelectItem value="eventos_pasados">Con eventos pasados</SelectItem>
+                  <SelectItem value="por_evento">Por evento específico</SelectItem>
                   <SelectItem value="seleccionados">Selección personalizada</SelectItem>
                 </SelectContent>
               </Select>
@@ -253,6 +277,45 @@ export default function NotificacionesMasivas() {
                 {camarerosFiltrados.length} camarero(s)
               </Badge>
             </div>
+
+            {/* Selector de evento */}
+            {filtroGrupo === 'por_evento' && (
+              <div className="space-y-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <Label>Seleccionar Evento</Label>
+                <Select value={eventoSeleccionado} onValueChange={setEventoSeleccionado}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Elige un evento..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pedidos.map(pedido => {
+                      const numCamareros = asignaciones.filter(a => a.pedido_id === pedido.id).length;
+                      return (
+                        <SelectItem key={pedido.id} value={pedido.id}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{pedido.cliente}</span>
+                            <span className="text-xs text-slate-500">
+                              {pedido.dia} • {pedido.lugar_evento || 'Sin ubicación'} • {numCamareros} camarero(s)
+                            </span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {eventoSeleccionado && camarerosFiltrados.length > 0 && (
+                  <div className="mt-2 p-2 bg-white rounded border border-blue-200">
+                    <p className="text-xs font-medium text-blue-700 mb-1">Camareros asignados:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {camarerosFiltrados.map(c => (
+                        <Badge key={c.id} variant="outline" className="text-xs">
+                          {c.nombre}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Lista de camareros si es selección personalizada */}
             {filtroGrupo === 'seleccionados' && (
@@ -323,7 +386,8 @@ export default function NotificacionesMasivas() {
           <Button
             onClick={() => enviarMutation.mutate()}
             disabled={!titulo || !mensaje || enviarMutation.isPending || 
-              (filtroGrupo === 'seleccionados' && camarerosSeleccionados.length === 0)}
+              (filtroGrupo === 'seleccionados' && camarerosSeleccionados.length === 0) ||
+              (filtroGrupo === 'por_evento' && !eventoSeleccionado)}
             className="bg-[#1e3a5f] hover:bg-[#152a45]"
           >
             {enviarMutation.isPending ? (
