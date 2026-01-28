@@ -197,6 +197,60 @@ export class NotificationService {
       return false;
     }
   }
+
+  /**
+   * Marca una notificación como leída
+   */
+  static async marcarComoLeida(notificacionId) {
+    try {
+      await base44.entities.Notificacion.update(notificacionId, { leida: true });
+      return true;
+    } catch (error) {
+      console.error('Error marcando como leída:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Verifica eventos próximos y crea notificaciones si es necesario
+   */
+  static async verificarEventosProximos() {
+    try {
+      const hoy = new Date();
+      const manana = new Date(hoy);
+      manana.setDate(manana.getDate() + 1);
+
+      const pedidos = await base44.entities.Pedido.list('-dia', 100);
+      const eventosProximos = pedidos.filter(p => {
+        if (!p.dia) return false;
+        const fechaEvento = new Date(p.dia);
+        return fechaEvento >= hoy && fechaEvento <= manana;
+      });
+
+      // Crear notificaciones para coordinadores sobre eventos próximos
+      for (const pedido of eventosProximos) {
+        const notifExistente = await base44.entities.Notificacion.filter({
+          pedido_id: pedido.id,
+          tipo: 'evento_proximo'
+        });
+
+        if (notifExistente.length === 0) {
+          await base44.entities.Notificacion.create({
+            tipo: 'evento_proximo',
+            titulo: `Evento Próximo: ${pedido.cliente}`,
+            mensaje: `El evento está programado para ${pedido.dia} a las ${pedido.entrada || 'hora por confirmar'}`,
+            pedido_id: pedido.id,
+            prioridad: 'media'
+          });
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error verificando eventos próximos:', error);
+      return false;
+    }
+  }
 }
 
 export default NotificationService;
