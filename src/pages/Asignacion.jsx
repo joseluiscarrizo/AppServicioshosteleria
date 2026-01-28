@@ -491,21 +491,21 @@ Sistema de Gestión de Camareros
   const isLoading = loadingPedidos;
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col overflow-hidden">
-      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 overflow-y-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      <div className="max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
-            <UserPlus className="w-8 h-8 text-[#1e3a5f]" />
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-2 sm:gap-3">
+            <UserPlus className="w-6 h-6 sm:w-8 sm:h-8 text-[#1e3a5f]" />
             Asignación de Camareros
           </h1>
-          <p className="text-slate-500 mt-1">Asigna camareros a los pedidos con recomendaciones inteligentes</p>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">Asigna camareros a los pedidos con recomendaciones inteligentes</p>
         </div>
 
         {/* Selector de Vista */}
         <div className="mb-4">
           <Select value={vistaCalendario} onValueChange={setVistaCalendario}>
-            <SelectTrigger className="w-64">
+            <SelectTrigger className="w-full sm:w-64">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -530,23 +530,24 @@ Sistema de Gestión de Camareros
         {vistaCalendario === 'clasico' && (
           <>
             {/* Calendario y Carga */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
               <div className={mostrarCarga ? 'lg:col-span-2' : 'lg:col-span-3'}>
                 <CalendarioAsignaciones onSelectPedido={setSelectedPedido} />
               </div>
               {mostrarCarga && (
-                <div>
+                <div className="hidden lg:block">
                   <CargaTrabajoCamareros mes={new Date()} />
                 </div>
               )}
             </div>
 
             {/* Controles */}
-            <div className="mb-6 flex justify-between items-center">
+            <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center">
           <Button 
             variant="outline" 
             size="sm"
             onClick={() => setMostrarCarga(!mostrarCarga)}
+            className="w-full sm:w-auto text-xs sm:text-sm"
           >
             {mostrarCarga ? 'Ocultar' : 'Mostrar'} Carga de Trabajo
           </Button>
@@ -554,9 +555,9 @@ Sistema de Gestión de Camareros
           {selectedPedido && (
             <Button 
               onClick={() => setShowAsignacionAuto(true)}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+              className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-xs sm:text-sm"
             >
-              <Sparkles className="w-4 h-4 mr-2" />
+              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
               Asignación Automática
             </Button>
           )}
@@ -564,16 +565,16 @@ Sistema de Gestión de Camareros
 
         {/* Asignación con Drag & Drop */}
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
             {/* Panel Izquierdo: Lista de Camareros Disponibles */}
             <div>
-                <Card className="h-[600px] flex flex-col">
-                  <div className="p-4 border-b bg-slate-50">
-                    <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                      <Users className="w-5 h-5 text-[#1e3a5f]" />
+                <Card className="h-[400px] sm:h-[600px] flex flex-col">
+                  <div className="p-2 sm:p-4 border-b bg-slate-50">
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2 sm:mb-3 flex items-center gap-2">
+                      <Users className="w-4 h-4 sm:w-5 sm:h-5 text-[#1e3a5f]" />
                       Camareros Disponibles
                     </h3>
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="flex gap-1 sm:gap-2 flex-wrap">
                       <Select value={filtroEspecialidad} onValueChange={setFiltroEspecialidad}>
                         <SelectTrigger className="w-36 h-8 text-xs">
                           <Filter className="w-3 h-3 mr-1" />
@@ -678,7 +679,7 @@ Sistema de Gestión de Camareros
 
               {/* Panel Derecho: Slots de Asignación */}
               <div>
-                <Card className="h-[600px] flex flex-col">
+                <Card className="h-[400px] sm:h-[600px] flex flex-col">
                   <div className="p-4 border-b bg-slate-50">
                     <div className="flex items-center justify-between">
                       <div>
@@ -903,14 +904,14 @@ Sistema de Gestión de Camareros
         )}
 
         {/* Tabla de Pedidos/Eventos */}
-        <Card className="overflow-hidden mt-8">
-          <div className="p-4 border-b bg-slate-50">
-            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-[#1e3a5f]" />
+        <Card className="overflow-hidden mt-4 sm:mt-8">
+          <div className="p-2 sm:p-4 border-b bg-slate-50">
+            <h3 className="text-sm sm:text-base font-semibold text-slate-800 flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 sm:w-5 sm:h-5 text-[#1e3a5f]" />
               Lista de Eventos
             </h3>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
