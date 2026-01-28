@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users, LayoutDashboard } from 'lucide-react';
+import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users, LayoutDashboard, Bell } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
 import NotificationBell from './components/notificaciones/NotificationBell';
@@ -18,7 +18,8 @@ const navItems = [
   { name: 'Asignación', page: 'Asignacion', icon: UserCog },
   { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
   { name: 'Coordinadores', page: 'Coordinadores', icon: Users },
-  { name: 'Informes', page: 'Informes', icon: FileText }
+  { name: 'Informes', page: 'Informes', icon: FileText },
+  { name: 'Notificaciones', page: 'PreferenciasNotificaciones', icon: Bell }
 ];
 
 export default function Layout({ children, currentPageName }) {

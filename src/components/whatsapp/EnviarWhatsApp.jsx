@@ -223,19 +223,12 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
           respuesta: 'pendiente'
         });
 
-        // Enviar notificación push
-        const config = JSON.parse(localStorage.getItem('notif_config') || '{}');
-        if (config.habilitadas && config.nuevasAsignaciones !== false && Notification.permission === 'granted') {
-          try {
-            const { enviarNotificacionPush } = await import('../notificaciones/PushNotificationHelper');
-            enviarNotificacionPush(
-              'nuevasAsignaciones',
-              `📋 Nueva Asignación: ${pedido.cliente}`,
-              `${pedido.dia} • ${pedido.lugar_evento || 'Ubicación por confirmar'}`
-            );
-          } catch (e) {
-            console.error('Error enviando push:', e);
-          }
+        // Enviar notificación push usando el servicio
+        try {
+          const { NotificationService } = await import('../notificaciones/NotificationService');
+          await NotificationService.notificarNuevaAsignacion(camarero, pedido, asignacion);
+        } catch (e) {
+          console.error('Error enviando push:', e);
         }
 
         asignacionesActualizadas.push(asignacion.id);

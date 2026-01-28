@@ -1,139 +1,202 @@
 import { base44 } from '@/api/base44Client';
-import { format, differenceInDays, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
 
-export const NotificationService = {
-  // Crear notificación por cambio de estado
-  async notificarCambioEstado(pedido, campo, valorAnterior, valorNuevo) {
-    const titulo = campo === 'enviado' 
-      ? `Pedido ${valorNuevo ? 'Enviado' : 'Marcado como No Enviado'}`
-      : `Pedido ${valorNuevo ? 'Confirmado' : 'Pendiente de Confirmación'}`;
-    
-    const mensaje = `El pedido para ${pedido.cliente} del ${format(new Date(pedido.dia), 'dd/MM/yyyy', { locale: es })} ha cambiado su estado de ${campo} de "${valorAnterior ? 'Sí' : 'No'}" a "${valorNuevo ? 'Sí' : 'No'}". Camarero: ${pedido.camarero}.`;
-
-    const prioridad = campo === 'confirmado' && !valorNuevo ? 'alta' : 'media';
-
-    // Crear notificación in-app
-    const notificacion = await base44.entities.Notificacion.create({
-      tipo: 'estado_cambio',
-      titulo,
-      mensaje,
-      pedido_id: pedido.id,
-      coordinador: pedido.coordinador,
-      leida: false,
-      email_enviado: false,
-      prioridad
-    });
-
-    // Enviar email si el coordinador tiene email configurado
-    await this.enviarEmailNotificacion(pedido.coordinador, titulo, mensaje);
-
-    return notificacion;
-  },
-
-  // Verificar eventos próximos sin confirmar
-  async verificarEventosProximos() {
-    const pedidos = await base44.entities.Pedido.list();
-    const hoy = new Date();
-    const notificacionesCreadas = [];
-
-    for (const pedido of pedidos) {
-      if (!pedido.dia || pedido.confirmado) continue;
-
-      const fechaEvento = parseISO(pedido.dia);
-      const diasRestantes = differenceInDays(fechaEvento, hoy);
-
-      // Notificar si el evento es en 3 días o menos y no está confirmado
-      if (diasRestantes >= 0 && diasRestantes <= 3) {
-        // Verificar si ya existe una notificación reciente para este pedido
-        const notificacionesExistentes = await base44.entities.Notificacion.filter({
-          pedido_id: pedido.id,
-          tipo: 'evento_proximo'
-        });
-
-        const yaNotificadoHoy = notificacionesExistentes.some(n => {
-          const fechaNotif = new Date(n.created_date);
-          return differenceInDays(hoy, fechaNotif) < 1;
-        });
-
-        if (!yaNotificadoHoy) {
-          const prioridad = diasRestantes === 0 ? 'urgente' : diasRestantes === 1 ? 'alta' : 'media';
-          const titulo = diasRestantes === 0 
-            ? '⚠️ ¡Evento HOY sin confirmar!' 
-            : `⏰ Evento en ${diasRestantes} día${diasRestantes > 1 ? 's' : ''} sin confirmar`;
-
-          const mensaje = `El evento para ${pedido.cliente} en ${pedido.lugar_evento || 'ubicación no especificada'} del ${format(fechaEvento, 'dd/MM/yyyy', { locale: es })} aún no está confirmado. Camarero asignado: ${pedido.camarero}.`;
-
-          const notificacion = await base44.entities.Notificacion.create({
-            tipo: 'evento_proximo',
-            titulo,
-            mensaje,
-            pedido_id: pedido.id,
-            coordinador: pedido.coordinador,
-            leida: false,
-            email_enviado: false,
-            prioridad
-          });
-
-          await this.enviarEmailNotificacion(pedido.coordinador, titulo, mensaje);
-          notificacionesCreadas.push(notificacion);
-        }
-      }
-    }
-
-    return notificacionesCreadas;
-  },
-
-  // Enviar email de notificación
-  async enviarEmailNotificacion(coordinadorNombre, titulo, mensaje) {
+/**
+ * Servicio centralizado para enviar notificaciones push a camareros
+ */
+export class NotificationService {
+  
+  /**
+   * Verifica si un usuario tiene habilitadas las notificaciones push
+   */
+  static async verificarPreferencias(userId, tipoNotificacion) {
     try {
-      // Buscar email del coordinador
-      const coordinadores = await base44.entities.Coordinador.filter({
-        nombre: coordinadorNombre
-      });
-
-      if (coordinadores.length > 0 && coordinadores[0].email && coordinadores[0].notificaciones_email) {
-        await base44.integrations.Core.SendEmail({
-          to: coordinadores[0].email,
-          subject: `[Staff Coordinator] ${titulo}`,
-          body: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8f 100%); padding: 20px; border-radius: 10px 10px 0 0;">
-                <h1 style="color: white; margin: 0; font-size: 24px;">Staff Coordinator</h1>
-              </div>
-              <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
-                <h2 style="color: #1e3a5f; margin-top: 0;">${titulo}</h2>
-                <p style="color: #475569; line-height: 1.6;">${mensaje}</p>
-                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-                <p style="color: #94a3b8; font-size: 12px;">Este es un mensaje automático del sistema de gestión de camareros.</p>
-              </div>
-            </div>
-          `
-        });
-        return true;
-      }
+      const prefs = await base44.entities.PreferenciasNotificacion.filter({ user_id: userId });
+      if (!prefs[0]) return true; // Por defecto, todas habilitadas
+      
+      const pref = prefs[0];
+      if (!pref.push_habilitadas) return false;
+      
+      // Verificar tipo específico
+      const mapaTipos = {
+        'nueva_asignacion': 'nuevas_asignaciones',
+        'cambio_horario': 'cambios_horario',
+        'cancelacion': 'cancelaciones',
+        'recordatorio': 'recordatorios',
+        'mensaje_coordinador': 'mensajes_coordinador',
+        'tarea_pendiente': 'tareas_pendientes'
+      };
+      
+      const campo = mapaTipos[tipoNotificacion];
+      return campo ? (pref[campo] ?? true) : true;
     } catch (error) {
-      console.error('Error enviando email:', error);
-    }
-    return false;
-  },
-
-  // Marcar notificación como leída
-  async marcarComoLeida(notificacionId) {
-    return await base44.entities.Notificacion.update(notificacionId, { leida: true });
-  },
-
-  // Marcar todas como leídas
-  async marcarTodasComoLeidas(coordinador) {
-    const notificaciones = await base44.entities.Notificacion.filter({
-      coordinador,
-      leida: false
-    });
-
-    for (const notif of notificaciones) {
-      await base44.entities.Notificacion.update(notif.id, { leida: true });
+      console.error('Error verificando preferencias:', error);
+      return true;
     }
   }
-};
+
+  /**
+   * Envía una notificación push usando la API de notificaciones del navegador
+   */
+  static async enviarPush(titulo, mensaje, icono = '/icon.png', data = {}) {
+    if (!('Notification' in window)) {
+      console.warn('Notificaciones push no soportadas');
+      return false;
+    }
+
+    if (Notification.permission === 'granted') {
+      try {
+        const notification = new Notification(titulo, {
+          body: mensaje,
+          icon: icono,
+          badge: icono,
+          tag: data.tag || 'default',
+          data: data,
+          requireInteraction: data.importante || false,
+          vibrate: data.vibrar ? [200, 100, 200] : undefined
+        });
+
+        notification.onclick = () => {
+          window.focus();
+          if (data.url) {
+            window.location.hash = data.url;
+          }
+          notification.close();
+        };
+
+        // Reproducir sonido si está habilitado
+        const config = JSON.parse(localStorage.getItem('notif_config') || '{}');
+        if (config.sonido_habilitado !== false) {
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTWN2e/IdCQEKXbF8NaLOwsVXLDq7a1OFQpJnuLswm4fBDGK2PCxcCo=');
+          audio.volume = 0.3;
+          audio.play().catch(() => {});
+        }
+
+        return true;
+      } catch (error) {
+        console.error('Error enviando notificación:', error);
+        return false;
+      }
+    }
+    
+    return false;
+  }
+
+  /**
+   * Notifica a un camarero sobre una nueva asignación
+   */
+  static async notificarNuevaAsignacion(camarero, pedido, asignacion) {
+    try {
+      // Verificar si el camarero tiene un user_id asociado
+      if (!camarero.user_id) return false;
+
+      const habilitado = await this.verificarPreferencias(camarero.user_id, 'nueva_asignacion');
+      if (!habilitado) return false;
+
+      await this.enviarPush(
+        `📋 Nueva Asignación: ${pedido.cliente}`,
+        `${pedido.dia} • ${asignacion.hora_entrada} - ${asignacion.hora_salida}\n${pedido.lugar_evento || 'Ubicación por confirmar'}`,
+        '/icon.png',
+        {
+          tag: `asignacion-${asignacion.id}`,
+          url: `/ConfirmarServicio?asignacion=${asignacion.id}`,
+          importante: true,
+          vibrar: true
+        }
+      );
+
+      return true;
+    } catch (error) {
+      console.error('Error notificando nueva asignación:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Notifica sobre un cambio de horario
+   */
+  static async notificarCambioHorario(camarero, pedido, cambios) {
+    try {
+      if (!camarero.user_id) return false;
+
+      const habilitado = await this.verificarPreferencias(camarero.user_id, 'cambio_horario');
+      if (!habilitado) return false;
+
+      await this.enviarPush(
+        `⚠️ Cambio de Horario: ${pedido.cliente}`,
+        `Se ha modificado el horario del evento.\n${cambios}`,
+        '/icon.png',
+        {
+          tag: `cambio-${pedido.id}`,
+          url: `/PerfilCamarero`,
+          importante: true,
+          vibrar: true
+        }
+      );
+
+      return true;
+    } catch (error) {
+      console.error('Error notificando cambio:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Notifica sobre una cancelación
+   */
+  static async notificarCancelacion(camarero, pedido, motivo = '') {
+    try {
+      if (!camarero.user_id) return false;
+
+      const habilitado = await this.verificarPreferencias(camarero.user_id, 'cancelacion');
+      if (!habilitado) return false;
+
+      await this.enviarPush(
+        `❌ Evento Cancelado: ${pedido.cliente}`,
+        `El evento del ${pedido.dia} ha sido cancelado.\n${motivo}`,
+        '/icon.png',
+        {
+          tag: `cancelacion-${pedido.id}`,
+          url: `/PerfilCamarero`,
+          importante: true,
+          vibrar: true
+        }
+      );
+
+      return true;
+    } catch (error) {
+      console.error('Error notificando cancelación:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Notifica un recordatorio
+   */
+  static async notificarRecordatorio(camarero, pedido, horasAntes) {
+    try {
+      if (!camarero.user_id) return false;
+
+      const habilitado = await this.verificarPreferencias(camarero.user_id, 'recordatorio');
+      if (!habilitado) return false;
+
+      await this.enviarPush(
+        `⏰ Recordatorio: ${pedido.cliente}`,
+        `Tu servicio es en ${horasAntes} horas\n${pedido.dia} • ${pedido.entrada}\n${pedido.lugar_evento}`,
+        '/icon.png',
+        {
+          tag: `recordatorio-${pedido.id}`,
+          url: `/PerfilCamarero`,
+          importante: false,
+          vibrar: true
+        }
+      );
+
+      return true;
+    } catch (error) {
+      console.error('Error notificando recordatorio:', error);
+      return false;
+    }
+  }
+}
 
 export default NotificationService;
