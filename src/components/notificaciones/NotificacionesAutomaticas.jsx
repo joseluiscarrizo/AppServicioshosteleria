@@ -79,10 +79,14 @@ export default function NotificacionesAutomaticas({ showPushNotifications }) {
                 });
                 
                 // Push notification
-                if (showPushNotifications) {
+                const config = JSON.parse(localStorage.getItem('notif_config') || '{}');
+                if (showPushNotifications && config.recordatorios !== false) {
                   showPushNotifications(
                     '⏰ Servicio Mañana',
-                    `Tienes un servicio con ${pedido.cliente} en ${pedido.lugar_evento || 'ubicación por confirmar'}`
+                    { 
+                      body: `Tienes un servicio con ${pedido.cliente} en ${pedido.lugar_evento || 'ubicación por confirmar'}`,
+                      tag: 'recordatorio-evento'
+                    }
                   );
                 }
               }
@@ -240,10 +244,14 @@ Sistema de Gestión de Camareros
                 leida: false
               });
               
-              if (showPushNotifications) {
+              const config = JSON.parse(localStorage.getItem('notif_config') || '{}');
+              if (showPushNotifications && config.tareasPendientes !== false) {
                 showPushNotifications(
                   `${urgencia}: Tarea Pendiente`,
-                  tarea.titulo
+                  { 
+                    body: tarea.titulo,
+                    tag: 'tarea-pendiente'
+                  }
                 );
               }
             }
