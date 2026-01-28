@@ -28,7 +28,7 @@ export default function Layout({ children, currentPageName }) {
   
   // Solicitar permisos al cargar la app
   React.useEffect(() => {
-    if (!isAllowed && Notification.permission === 'default') {
+    if (typeof Notification !== 'undefined' && !isAllowed && Notification.permission === 'default') {
       setTimeout(() => requestPermission(), 2000);
     }
   }, [isAllowed, requestPermission]);
