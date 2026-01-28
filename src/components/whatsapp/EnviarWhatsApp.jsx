@@ -130,7 +130,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
         
         // Enviar mensaje directo por WhatsApp usando backend function
         try {
-          await base44.functions.enviarWhatsAppDirecto({
+          await base44.functions.invoke('enviarWhatsAppDirecto', {
             telefono: camarero.telefono,
             mensaje: mensaje
           });
