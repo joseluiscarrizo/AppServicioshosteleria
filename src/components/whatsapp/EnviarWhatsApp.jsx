@@ -2,20 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { MessageCircle, Loader2, Send } from 'lucide-react';
+import { MessageCircle, Loader2, Send, Upload, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import GestionPlantillas from './GestionPlantillas';
 
 export default function EnviarWhatsApp({ pedido, asignaciones, camareros, buttonVariant, buttonSize, buttonText }) {
   const [open, setOpen] = useState(false);
   const [selectedCamareros, setSelectedCamareros] = useState([]);
   const [coordinadorId, setCoordinadorId] = useState(null);
+  const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
+  const [mensajePersonalizado, setMensajePersonalizado] = useState('');
+  const [archivoAdjunto, setArchivoAdjunto] = useState(null);
+  const [archivoUrl, setArchivoUrl] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: coordinadores = [] } = useQuery({
@@ -29,11 +35,50 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
     enabled: !camareros
   });
 
+  const { data: plantillas = [] } = useQuery({
+    queryKey: ['plantillas-whatsapp'],
+    queryFn: () => base44.entities.PlantillaWhatsApp.filter({ activa: true }, 'nombre')
+  });
+
   // Asegurar que siempre tengamos arrays válidos
   const listaCamareros = Array.isArray(camareros) ? camareros : (Array.isArray(todosLosCamareros) ? todosLosCamareros : []);
   const asignacionesArray = Array.isArray(asignaciones) ? asignaciones : [];
 
-  const generarMensajeWhatsApp = async (asignacion) => {
+  const reemplazarCamposDinamicos = async (contenido, asignacion, camarero) => {
+    const baseUrl = window.location.origin;
+    const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
+    const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
+
+    let resultado = contenido
+      .replace(/\{\{cliente\}\}/g, pedido.cliente || '')
+      .replace(/\{\{dia\}\}/g, pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Por confirmar')
+      .replace(/\{\{lugar_evento\}\}/g, pedido.lugar_evento || 'Por confirmar')
+      .replace(/\{\{hora_entrada\}\}/g, asignacion.hora_entrada || pedido.entrada || '-')
+      .replace(/\{\{hora_salida\}\}/g, asignacion.hora_salida || pedido.salida || '-')
+      .replace(/\{\{camisa\}\}/g, pedido.camisa || 'blanca')
+      .replace(/\{\{link_confirmar\}\}/g, linkConfirmar)
+      .replace(/\{\{link_rechazar\}\}/g, linkRechazar)
+      .replace(/\{\{link_ubicacion\}\}/g, pedido.link_ubicacion || '')
+      .replace(/\{\{camarero_nombre\}\}/g, camarero?.nombre || '');
+
+    return resultado;
+  };
+
+  const generarMensajeWhatsApp = async (asignacion, camarero) => {
+    // Si hay una plantilla seleccionada, usarla
+    if (plantillaSeleccionada) {
+      const plantilla = plantillas.find(p => p.id === plantillaSeleccionada);
+      if (plantilla) {
+        return await reemplazarCamposDinamicos(plantilla.contenido, asignacion, camarero);
+      }
+    }
+
+    // Si hay mensaje personalizado, usarlo
+    if (mensajePersonalizado.trim()) {
+      return await reemplazarCamposDinamicos(mensajePersonalizado, asignacion, camarero);
+    }
+
+    // Mensaje por defecto
     const baseUrl = window.location.origin;
     const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
     const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
@@ -107,6 +152,19 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
         throw new Error('El coordinador seleccionado no tiene teléfono configurado');
       }
 
+      // Subir archivo si hay
+      let urlArchivo = archivoUrl;
+      if (archivoAdjunto && !urlArchivo) {
+        try {
+          const resultado = await base44.integrations.Core.UploadFile({ file: archivoAdjunto });
+          urlArchivo = resultado.file_url;
+          setArchivoUrl(urlArchivo);
+        } catch (error) {
+          console.error('Error subiendo archivo:', error);
+          toast.error('Error al subir archivo adjunto');
+        }
+      }
+
       const camarerosSeleccionados = listaCamareros.filter(c => 
         selectedCamareros.includes(c.id)
       );
@@ -126,7 +184,12 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
           continue;
         }
 
-        const mensaje = await generarMensajeWhatsApp(asignacion);
+        let mensaje = await generarMensajeWhatsApp(asignacion, camarero);
+        
+        // Añadir link de archivo si existe
+        if (urlArchivo) {
+          mensaje += `\n\n📎 *Archivo adjunto:*\n${urlArchivo}`;
+        }
         
         // Enviar mensaje directo por WhatsApp usando backend function
         try {
@@ -189,6 +252,10 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
       toast.success('Mensajes enviados correctamente');
       setOpen(false);
       setSelectedCamareros([]);
+      setPlantillaSeleccionada(null);
+      setMensajePersonalizado('');
+      setArchivoAdjunto(null);
+      setArchivoUrl(null);
     },
     onError: (error) => {
       toast.error(error.message || 'Error al enviar mensajes');
@@ -218,6 +285,28 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
   const seleccionarTodos = () => {
     setSelectedCamareros(camarerosAsignados.map(c => c.id));
   };
+
+  const handleArchivoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('El archivo no puede superar los 5MB');
+        return;
+      }
+      setArchivoAdjunto(file);
+      setArchivoUrl(null);
+    }
+  };
+
+  // Cargar plantilla predeterminada al abrir
+  useEffect(() => {
+    if (open && plantillas.length > 0) {
+      const predeterminada = plantillas.find(p => p.es_predeterminada);
+      if (predeterminada) {
+        setPlantillaSeleccionada(predeterminada.id);
+      }
+    }
+  }, [open, plantillas]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -271,6 +360,73 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
               {coordinadorId && !coordinadores.find(c => c.id === coordinadorId)?.telefono && (
                 <p className="text-xs text-red-500">⚠️ Este coordinador no tiene teléfono configurado</p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label>Plantilla de Mensaje</Label>
+                <GestionPlantillas />
+              </div>
+              <Select value={plantillaSeleccionada || ''} onValueChange={setPlantillaSeleccionada}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona una plantilla o escribe personalizado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Mensaje Personalizado</SelectItem>
+                  {plantillas.map(pl => (
+                    <SelectItem key={pl.id} value={pl.id}>
+                      {pl.nombre} {pl.es_predeterminada && '⭐'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(!plantillaSeleccionada || plantillaSeleccionada === 'none') && (
+              <div className="space-y-2">
+                <Label>Mensaje Personalizado</Label>
+                <Textarea
+                  value={mensajePersonalizado}
+                  onChange={(e) => setMensajePersonalizado(e.target.value)}
+                  placeholder="Escribe tu mensaje. Usa {{cliente}}, {{dia}}, {{lugar_evento}}, etc."
+                  rows={6}
+                />
+                <p className="text-xs text-slate-500">
+                  Campos: {'{{cliente}}'}, {'{{dia}}'}, {'{{lugar_evento}}'}, {'{{hora_entrada}}'}, {'{{camisa}}'}, {'{{link_confirmar}}'}
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Archivo Adjunto (opcional)</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => document.getElementById('file-upload').click()}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {archivoAdjunto ? archivoAdjunto.name : 'Seleccionar archivo (máx. 5MB)'}
+                </Button>
+                {archivoAdjunto && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setArchivoAdjunto(null); setArchivoUrl(null); }}
+                  >
+                    ✕
+                  </Button>
+                )}
+              </div>
+              <input
+                id="file-upload"
+                type="file"
+                className="hidden"
+                onChange={handleArchivoChange}
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              />
             </div>
 
             <div>
