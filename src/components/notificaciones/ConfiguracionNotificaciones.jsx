@@ -80,6 +80,12 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
     toast.success('Reproduciendo sonido de prueba');
   };
 
+  const [permissionState, setPermissionState] = useState(
+    typeof window !== 'undefined' && 'Notification' in window 
+      ? Notification.permission 
+      : 'default'
+  );
+
   const requestNotificationPermission = async () => {
     if (!('Notification' in window)) {
       toast.error('Tu navegador no soporta notificaciones');
@@ -88,16 +94,16 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
 
     try {
       const permission = await Notification.requestPermission();
+      setPermissionState(permission);
+      
       if (permission === 'granted') {
         toast.success('Permisos de notificación otorgados');
         handleChange('habilitadas', true);
-        // Forzar re-render para actualizar la UI
-        window.location.reload();
       } else if (permission === 'denied') {
-        toast.error('Permisos de notificación denegados. Verifica la configuración de tu navegador.');
+        toast.error('Permisos denegados. Actívalos en la configuración del navegador.');
         handleChange('habilitadas', false);
       } else {
-        toast.info('Permisos de notificación no otorgados');
+        toast.info('Permisos no otorgados');
         handleChange('habilitadas', false);
       }
     } catch (error) {
@@ -128,45 +134,40 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
                       Notificaciones del Navegador
                     </Label>
                     <p className="text-sm text-slate-600 mt-1">
-                      {typeof window !== 'undefined' && 'Notification' in window
-                        ? Notification.permission === 'granted' 
-                          ? 'Permisos otorgados ✓' 
-                          : Notification.permission === 'denied'
-                          ? 'Permisos bloqueados'
-                          : 'Sin permisos'
-                        : 'No soportado'}
+                      {permissionState === 'granted' 
+                        ? 'Permisos otorgados ✓' 
+                        : permissionState === 'denied'
+                        ? 'Permisos bloqueados'
+                        : 'Sin permisos'}
                     </p>
                   </div>
                 </div>
-                {typeof window !== 'undefined' && 'Notification' in window ? (
-                  Notification.permission === 'granted' ? (
-                    <Switch
-                      checked={config.habilitadas}
-                      onCheckedChange={(v) => handleChange('habilitadas', v)}
-                    />
-                  ) : (
-                    <Button 
-                      onClick={requestNotificationPermission} 
-                      size="sm"
-                      className="bg-[#1e3a5f] hover:bg-[#152a45]"
-                      disabled={Notification.permission === 'denied'}
-                    >
-                      {Notification.permission === 'denied' ? 'Bloqueado' : 'Activar'}
-                    </Button>
-                  )
-                ) : null}
+                {permissionState === 'granted' ? (
+                  <Switch
+                    checked={config.habilitadas}
+                    onCheckedChange={(v) => handleChange('habilitadas', v)}
+                  />
+                ) : (
+                  <Button 
+                    onClick={requestNotificationPermission} 
+                    size="sm"
+                    className="bg-[#1e3a5f] hover:bg-[#152a45]"
+                    disabled={permissionState === 'denied'}
+                  >
+                    {permissionState === 'denied' ? 'Bloqueado' : 'Activar'}
+                  </Button>
+                )}
               </div>
 
               {/* Instrucciones si está bloqueado */}
-              {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied' && (
+              {permissionState === 'denied' && (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
-                  <p className="font-medium text-amber-900 mb-2">⚠️ Permisos bloqueados por el navegador</p>
-                  <p className="text-amber-800 text-xs mb-2">Para habilitar notificaciones:</p>
+                  <p className="font-medium text-amber-900 mb-2">⚠️ Permisos bloqueados</p>
+                  <p className="text-amber-800 text-xs mb-2">Para activar:</p>
                   <ol className="text-xs text-amber-800 space-y-1 ml-4 list-decimal">
-                    <li>Haz clic en el icono de candado/información en la barra de direcciones</li>
-                    <li>Busca "Notificaciones" en los permisos del sitio</li>
-                    <li>Cambia de "Bloquear" a "Permitir"</li>
-                    <li>Recarga esta página</li>
+                    <li>Clic en el icono de candado en la barra de direcciones</li>
+                    <li>Busca "Notificaciones" y cambia a "Permitir"</li>
+                    <li>Recarga la página</li>
                   </ol>
                 </div>
               )}
