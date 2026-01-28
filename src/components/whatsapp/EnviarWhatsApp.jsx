@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
+export default function EnviarWhatsApp({ pedido, asignaciones, camareros, buttonVariant, buttonSize, buttonText }) {
   const [open, setOpen] = useState(false);
   const [selectedCamareros, setSelectedCamareros] = useState([]);
   const [coordinadorId, setCoordinadorId] = useState(null);
@@ -21,6 +21,12 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
   const { data: coordinadores = [] } = useQuery({
     queryKey: ['coordinadores'],
     queryFn: () => base44.entities.Coordinador.list('nombre')
+  });
+
+  const { data: todosLosCamareros = [] } = useQuery({
+    queryKey: ['camareros'],
+    queryFn: () => base44.entities.Camarero.list('nombre'),
+    enabled: !camareros
   });
 
   const generarMensajeWhatsApp = async (asignacion) => {
@@ -97,7 +103,8 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
         throw new Error('El coordinador seleccionado no tiene teléfono configurado');
       }
 
-      const camarerosSeleccionados = camareros.filter(c => 
+      const listaCamareros = camareros || todosLosCamareros;
+      const camarerosSeleccionados = listaCamareros.filter(c => 
         selectedCamareros.includes(c.id)
       );
 
@@ -179,8 +186,9 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
     }
   });
 
+  const listaCamareros = camareros || todosLosCamareros;
   const camarerosAsignados = asignaciones
-    .map(a => camareros.find(c => c.id === a.camarero_id))
+    .map(a => listaCamareros.find(c => c.id === a.camarero_id))
     .filter(Boolean);
 
   const toggleCamarero = (camareroId) => {
@@ -198,9 +206,13 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-green-600 hover:bg-green-700">
+        <Button 
+          variant={buttonVariant || "default"}
+          size={buttonSize || "default"}
+          className={!buttonVariant ? "bg-green-600 hover:bg-green-700" : ""}
+        >
           <MessageCircle className="w-4 h-4 mr-2" />
-          Enviar WhatsApp
+          {buttonText || "Enviar WhatsApp"}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
