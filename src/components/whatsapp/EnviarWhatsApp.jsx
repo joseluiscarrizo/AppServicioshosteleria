@@ -29,7 +29,9 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
     enabled: !camareros
   });
 
-  const listaCamareros = camareros || todosLosCamareros;
+  // Asegurar que siempre tengamos arrays válidos
+  const listaCamareros = Array.isArray(camareros) ? camareros : (Array.isArray(todosLosCamareros) ? todosLosCamareros : []);
+  const asignacionesArray = Array.isArray(asignaciones) ? asignaciones : [];
 
   const generarMensajeWhatsApp = async (asignacion) => {
     const baseUrl = window.location.origin;
@@ -115,7 +117,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
         if (!camarero.telefono) continue;
 
         // Buscar la asignación del camarero
-        const asignacion = asignaciones.find(a => a.camarero_id === camarero.id);
+        const asignacion = asignacionesArray.find(a => a.camarero_id === camarero.id);
         if (!asignacion) continue;
 
         const mensaje = await generarMensajeWhatsApp(asignacion);
@@ -187,9 +189,9 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
     }
   });
 
-  const camarerosAsignados = asignaciones
-    ?.map(a => listaCamareros.find(c => c.id === a.camarero_id))
-    .filter(Boolean) || [];
+  const camarerosAsignados = asignacionesArray
+    .map(a => listaCamareros.find(c => c.id === a.camarero_id))
+    .filter(Boolean);
 
   const toggleCamarero = (camareroId) => {
     setSelectedCamareros(prev => 
