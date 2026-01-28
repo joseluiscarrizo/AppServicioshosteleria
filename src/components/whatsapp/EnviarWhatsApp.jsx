@@ -97,7 +97,6 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
         throw new Error('El coordinador seleccionado no tiene teléfono configurado');
       }
 
-      const telefonoCoordinador = coordinador.telefono.replace(/\D/g, '');
       const camarerosSeleccionados = camareros.filter(c => 
         selectedCamareros.includes(c.id)
       );
@@ -113,13 +112,16 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
 
         const mensaje = await generarMensajeWhatsApp(asignacion);
         
-        // Crear URL de WhatsApp con el número del coordinador
-        const telefonoCamarero = camarero.telefono.replace(/\D/g, '');
-        const mensajeEncoded = encodeURIComponent(mensaje);
-        const whatsappURL = `https://wa.me/${telefonoCamarero}?text=${mensajeEncoded}`;
-        
-        // Abrir en nueva pestaña
-        window.open(whatsappURL, '_blank');
+        // Enviar mensaje directo por WhatsApp usando backend function
+        try {
+          await base44.functions.enviarWhatsAppDirecto({
+            telefono: camarero.telefono,
+            mensaje: mensaje
+          });
+        } catch (error) {
+          console.error(`Error enviando WhatsApp a ${camarero.nombre}:`, error);
+          throw new Error(`Error al enviar mensaje a ${camarero.nombre}`);
+        }
         
         // Actualizar estado a "enviado" y crear notificación
         await base44.entities.AsignacionCamarero.update(asignacion.id, { estado: 'enviado' });
@@ -145,7 +147,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros }) {
         asignacionesActualizadas.push(asignacion.id);
         
         // Pequeña pausa entre mensajes
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 800));
       }
 
       return asignacionesActualizadas;
