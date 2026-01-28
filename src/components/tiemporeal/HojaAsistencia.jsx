@@ -86,9 +86,8 @@ export default function HojaAsistencia({ pedido, asignaciones, camareros }) {
       const hojaHTML = generarHojaHTML();
       
       const emails = [
-        pedido.cliente_email,
-        pedido.cliente_email_2,
-        pedido.cliente_email_3
+        pedido.cliente_email_1,
+        pedido.cliente_email_2
       ].filter(Boolean);
 
       if (emails.length === 0) {
