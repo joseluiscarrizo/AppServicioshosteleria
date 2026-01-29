@@ -18,7 +18,6 @@ const navItems = [
   { name: 'Asignación', page: 'Asignacion', icon: UserCog },
   { name: 'Chat', page: 'Chat', icon: MessageCircle },
   { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
-  { name: 'Coordinadores', page: 'Coordinadores', icon: Users },
   { name: 'Informes', page: 'Informes', icon: FileText },
   { name: 'Notificaciones', page: 'PreferenciasNotificaciones', icon: Bell }
 ];

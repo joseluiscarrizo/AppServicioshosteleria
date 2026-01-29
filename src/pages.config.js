@@ -64,6 +64,7 @@ import TableroEventos from './pages/TableroEventos';
 import TiempoReal from './pages/TiempoReal';
 import VistaMovil from './pages/VistaMovil';
 import Chat from './pages/Chat';
+import HistorialMensajes from './pages/HistorialMensajes';
 import __Layout from './Layout.jsx';
 
 
@@ -85,6 +86,7 @@ export const PAGES = {
     "TiempoReal": TiempoReal,
     "VistaMovil": VistaMovil,
     "Chat": Chat,
+    "HistorialMensajes": HistorialMensajes,
 }
 
 export const pagesConfig = {
