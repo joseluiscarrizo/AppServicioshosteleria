@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import EnvioMasivoWhatsApp from './EnvioMasivoWhatsApp';
 import { base44 } from '@/api/base44Client';
+import EnvioMasivoWhatsApp from './EnvioMasivoWhatsApp';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { MessageCircle, Loader2, Send, Upload, FileText } from 'lucide-react';
@@ -23,6 +23,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
   const [mensajePersonalizado, setMensajePersonalizado] = useState('');
   const [archivoAdjunto, setArchivoAdjunto] = useState(null);
   const [archivoUrl, setArchivoUrl] = useState(null);
+  const [mostrarEnvioMasivo, setMostrarEnvioMasivo] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: coordinadores = [] } = useQuery({
@@ -512,8 +513,21 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
             )}
             Enviar a {selectedCamareros.length} camarero(s)
           </Button>
+          <Button
+            onClick={() => { setOpen(false); setMostrarEnvioMasivo(true); }}
+            variant="outline"
+          >
+            Envío Masivo Mejorado
+          </Button>
         </div>
       </DialogContent>
+
+      <EnvioMasivoWhatsApp
+        pedidoId={pedido?.id}
+        camarerosPredefinidos={selectedCamareros}
+        open={mostrarEnvioMasivo}
+        onClose={() => setMostrarEnvioMasivo(false)}
+      />
     </Dialog>
   );
 }
