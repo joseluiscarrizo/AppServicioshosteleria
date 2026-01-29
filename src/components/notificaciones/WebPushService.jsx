@@ -25,7 +25,13 @@ export const useWebPushNotifications = () => {
       setPermission(result);
       
       if (result === 'granted') {
-        toast.success('Notificaciones activadas');
+        // Guardar configuración como habilitada
+        localStorage.setItem('notif_config', JSON.stringify({ 
+          habilitadas: true, 
+          sonido: true, 
+          vibrar: true 
+        }));
+        toast.success('✅ Notificaciones activadas correctamente');
         return true;
       } else {
         toast.error('Permiso de notificaciones denegado');

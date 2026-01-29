@@ -28,10 +28,14 @@ export default function Layout({ children, currentPageName }) {
   
   // Solicitar permisos al cargar la app
   React.useEffect(() => {
-    if (typeof Notification !== 'undefined' && !isAllowed && Notification.permission === 'default') {
-      setTimeout(() => requestPermission(), 2000);
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      // Esperar 3 segundos y luego solicitar permisos
+      const timer = setTimeout(() => {
+        requestPermission();
+      }, 3000);
+      return () => clearTimeout(timer);
     }
-  }, [isAllowed, requestPermission]);
+  }, [requestPermission]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -78,6 +82,15 @@ export default function Layout({ children, currentPageName }) {
                 </Link>
               ))}
               <div className="ml-2 border-l border-slate-200 pl-2 flex items-center gap-2">
+                {!isAllowed && typeof Notification !== 'undefined' && Notification.permission === 'default' && (
+                  <Button
+                    size="sm"
+                    onClick={requestPermission}
+                    className="bg-amber-500 hover:bg-amber-600 text-white text-xs"
+                  >
+                    🔔 Activar Notificaciones
+                  </Button>
+                )}
                 <NotificationBell />
               </div>
             </nav>
