@@ -107,47 +107,49 @@ Deno.serve(async (req) => {
           numeroWhatsApp = '34' + numeroWhatsApp;
         }
 
-        // Intentar envío real con Twilio si está configurado
-        const twilioToken = Deno.env.get('WHATSAPP_API_TOKEN');
-        const twilioPhone = Deno.env.get('WHATSAPP_PHONE_NUMBER');
+        // Intentar envío real con WhatsApp Business API
+        const whatsappToken = Deno.env.get('WHATSAPP_API_TOKEN');
+        const whatsappPhone = Deno.env.get('WHATSAPP_PHONE_NUMBER');
         
         let estadoEnvio = 'enviado';
         let mensajeIdProveedor = null;
         let proveedor = 'whatsapp_web';
 
-        if (twilioToken && twilioPhone) {
+        if (whatsappToken && whatsappPhone) {
           try {
-            // Envío real con Twilio
-            const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-            const authToken = twilioToken;
-            
+            // Envío real con WhatsApp Business API
             const response = await fetch(
-              `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+              `https://graph.facebook.com/v18.0/${whatsappPhone}/messages`,
               {
                 method: 'POST',
                 headers: {
-                  'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
-                  'Content-Type': 'application/x-www-form-urlencoded',
+                  'Authorization': `Bearer ${whatsappToken}`,
+                  'Content-Type': 'application/json',
                 },
-                body: new URLSearchParams({
-                  From: `whatsapp:${twilioPhone}`,
-                  To: `whatsapp:+${numeroWhatsApp}`,
-                  Body: mensajePersonalizado
+                body: JSON.stringify({
+                  messaging_product: 'whatsapp',
+                  to: numeroWhatsApp,
+                  type: 'text',
+                  text: {
+                    body: mensajePersonalizado
+                  }
                 })
               }
             );
 
             const data = await response.json();
             
-            if (response.ok) {
-              mensajeIdProveedor = data.sid;
-              proveedor = 'twilio';
+            if (response.ok && data.messages) {
+              mensajeIdProveedor = data.messages[0]?.id;
+              proveedor = 'whatsapp_api';
+              console.log(`✅ Mensaje enviado vía API a ${camarero.nombre}: ${mensajeIdProveedor}`);
             } else {
-              throw new Error(data.message || 'Error en Twilio');
+              throw new Error(data.error?.message || 'Error en WhatsApp API');
             }
-          } catch (twilioError) {
-            console.log('Twilio no disponible, usando WhatsApp Web:', twilioError.message);
-            proveedor = 'whatsapp_web';
+          } catch (apiError) {
+            console.error('WhatsApp API error:', apiError.message);
+            estadoEnvio = 'fallido';
+            throw apiError;
           }
         }
 
@@ -165,7 +167,7 @@ Deno.serve(async (req) => {
           coordinador_id: coordinador_id
         });
 
-        // Abrir WhatsApp Web si no se usó Twilio
+        // Abrir WhatsApp Web si no se usó API
         if (proveedor === 'whatsapp_web') {
           const mensajeCodificado = encodeURIComponent(mensajePersonalizado);
           const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${mensajeCodificado}`;
@@ -182,7 +184,7 @@ Deno.serve(async (req) => {
             camarero: camarero.nombre,
             telefono: numeroWhatsApp,
             estado: 'enviado',
-            proveedor: 'twilio',
+            proveedor: proveedor,
             mensaje_id: mensajeIdProveedor
           });
         }
