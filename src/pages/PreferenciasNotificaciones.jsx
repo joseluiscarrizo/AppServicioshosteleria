@@ -61,11 +61,46 @@ export default function PreferenciasNotificaciones() {
     if (!isAllowed) {
       const granted = await requestPermission();
       if (granted) {
-        handleToggle('push_habilitadas', true);
+        // Guardar en localStorage primero
+        localStorage.setItem('notif_config', JSON.stringify({ 
+          habilitadas: true, 
+          sonido: true, 
+          vibrar: true 
+        }));
+        
+        // Crear o actualizar preferencias en base de datos
+        const datos = { 
+          ...preferencias, 
+          push_habilitadas: true,
+          sonido_habilitado: true,
+          vibrar_habilitado: true,
+          user_id: user.id 
+        };
+        
+        if (preferencias?.id) {
+          actualizarMutation.mutate({ 
+            id: preferencias.id, 
+            data: { 
+              push_habilitadas: true,
+              sonido_habilitado: true,
+              vibrar_habilitado: true
+            } 
+          });
+        } else {
+          crearMutation.mutate(datos);
+        }
+        
         toast.success('¡Notificaciones habilitadas! Ahora recibirás alertas en tiempo real.');
       }
     } else {
-      handleToggle('push_habilitadas', !preferencias?.push_habilitadas);
+      // Desactivar
+      const nuevoEstado = !preferencias?.push_habilitadas;
+      localStorage.setItem('notif_config', JSON.stringify({ 
+        habilitadas: nuevoEstado, 
+        sonido: preferencias?.sonido_habilitado ?? true, 
+        vibrar: preferencias?.vibrar_habilitado ?? true 
+      }));
+      handleToggle('push_habilitadas', nuevoEstado);
     }
   };
 
