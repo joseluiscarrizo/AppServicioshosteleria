@@ -349,12 +349,12 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
           {buttonText || "Enviar WhatsApp"}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle>Enviar Confirmación por WhatsApp</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
           {loadingCamareros && !camareros ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
@@ -497,7 +497,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
           )}
         </div>
 
-        <div className="px-6 py-4 border-t bg-white flex justify-end gap-3">
+        <div className="px-6 py-4 border-t bg-white flex flex-wrap justify-end gap-3 shrink-0">
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancelar
           </Button>
