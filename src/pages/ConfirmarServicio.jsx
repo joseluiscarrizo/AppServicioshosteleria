@@ -33,22 +33,24 @@ export default function ConfirmarServicio() {
     }
   }, []);
 
-  const { data: asignacion, isLoading: loadingAsignacion } = useQuery({
+  const { data: asignacion, isLoading: loadingAsignacion, error: asignacionError } = useQuery({
     queryKey: ['asignacion', asignacionId],
     queryFn: async () => {
-      const asignaciones = await base44.entities.AsignacionCamarero.list();
-      return asignaciones.find(a => a.id === asignacionId);
+      const asignaciones = await base44.entities.AsignacionCamarero.filter({ id: asignacionId });
+      return asignaciones[0];
     },
-    enabled: !!asignacionId
+    enabled: !!asignacionId,
+    retry: 1
   });
 
-  const { data: pedido } = useQuery({
+  const { data: pedido, error: pedidoError } = useQuery({
     queryKey: ['pedido', asignacion?.pedido_id],
     queryFn: async () => {
-      const pedidos = await base44.entities.Pedido.list();
-      return pedidos.find(p => p.id === asignacion.pedido_id);
+      const pedidos = await base44.entities.Pedido.filter({ id: asignacion.pedido_id });
+      return pedidos[0];
     },
-    enabled: !!asignacion?.pedido_id
+    enabled: !!asignacion?.pedido_id,
+    retry: 1
   });
 
   const aceptarMutation = useMutation({

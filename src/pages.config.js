@@ -49,12 +49,14 @@
  */
 import Asignacion from './pages/Asignacion';
 import Camareros from './pages/Camareros';
+import Chat from './pages/Chat';
 import Clientes from './pages/Clientes';
 import ConfiguracionNotificaciones from './pages/ConfiguracionNotificaciones';
 import ConfirmarServicio from './pages/ConfirmarServicio';
 import Coordinadores from './pages/Coordinadores';
 import DashboardCoordinador from './pages/DashboardCoordinador';
 import Disponibilidad from './pages/Disponibilidad';
+import HistorialMensajes from './pages/HistorialMensajes';
 import Home from './pages/Home';
 import Informes from './pages/Informes';
 import Pedidos from './pages/Pedidos';
@@ -63,20 +65,20 @@ import PreferenciasNotificaciones from './pages/PreferenciasNotificaciones';
 import TableroEventos from './pages/TableroEventos';
 import TiempoReal from './pages/TiempoReal';
 import VistaMovil from './pages/VistaMovil';
-import Chat from './pages/Chat';
-import HistorialMensajes from './pages/HistorialMensajes';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Asignacion": Asignacion,
     "Camareros": Camareros,
+    "Chat": Chat,
     "Clientes": Clientes,
     "ConfiguracionNotificaciones": ConfiguracionNotificaciones,
     "ConfirmarServicio": ConfirmarServicio,
     "Coordinadores": Coordinadores,
     "DashboardCoordinador": DashboardCoordinador,
     "Disponibilidad": Disponibilidad,
+    "HistorialMensajes": HistorialMensajes,
     "Home": Home,
     "Informes": Informes,
     "Pedidos": Pedidos,
@@ -85,8 +87,6 @@ export const PAGES = {
     "TableroEventos": TableroEventos,
     "TiempoReal": TiempoReal,
     "VistaMovil": VistaMovil,
-    "Chat": Chat,
-    "HistorialMensajes": HistorialMensajes,
 }
 
 export const pagesConfig = {
