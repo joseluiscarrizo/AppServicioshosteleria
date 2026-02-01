@@ -1,23 +1,78 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, CheckCircle, XCircle, Clock, Search, Filter } from 'lucide-react';
+import { MessageCircle, CheckCircle, XCircle, Clock, Search, User, Calendar, MapPin, Phone, RefreshCw, CheckCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 export default function HistorialWhatsApp() {
   const [filtro, setFiltro] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState('todos');
+  const queryClient = useQueryClient();
 
   const { data: historial = [], isLoading } = useQuery({
     queryKey: ['historial-whatsapp'],
     queryFn: () => base44.entities.HistorialWhatsApp.list('-created_date', 100),
     refetchInterval: 10000
+  });
+
+  const { data: asignaciones = [] } = useQuery({
+    queryKey: ['asignaciones-whatsapp'],
+    queryFn: async () => {
+      return await base44.entities.AsignacionCamarero.list();
+    }
+  });
+
+  const { data: pedidos = [] } = useQuery({
+    queryKey: ['pedidos-whatsapp'],
+    queryFn: async () => {
+      return await base44.entities.Pedido.list();
+    }
+  });
+
+  const marcarConfirmadoMutation = useMutation({
+    mutationFn: async ({ asignacionId }) => {
+      await base44.entities.AsignacionCamarero.update(asignacionId, {
+        estado: 'confirmado'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asignaciones-whatsapp'] });
+      toast.success('Asignación marcada como confirmada');
+    }
+  });
+
+  const reenviarMutation = useMutation({
+    mutationFn: async ({ telefono, mensaje }) => {
+      const telefonoLimpio = telefono.replace(/\D/g, '');
+      let numeroWhatsApp = telefonoLimpio;
+      if (!numeroWhatsApp.startsWith('34') && numeroWhatsApp.length === 9) {
+        numeroWhatsApp = '34' + numeroWhatsApp;
+      }
+      
+      const mensajeCodificado = encodeURIComponent(mensaje);
+      const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${mensajeCodificado}`;
+      
+      window.open(whatsappUrl, '_blank');
+      
+      await base44.entities.HistorialWhatsApp.create({
+        telefono: numeroWhatsApp,
+        mensaje: mensaje,
+        destinatario_nombre: telefono,
+        estado: 'enviado',
+        proveedor: 'whatsapp_web'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['historial-whatsapp'] });
+      toast.success('Mensaje reenviado');
+    }
   });
 
   const historialFiltrado = historial.filter(item => {
@@ -49,6 +104,14 @@ export default function HistorialWhatsApp() {
       default:
         return <Badge variant="outline">{estado}</Badge>;
     }
+  };
+
+  const obtenerDetallesPedido = (pedidoId) => {
+    return pedidos.find(p => p.id === pedidoId);
+  };
+
+  const obtenerAsignacion = (asignacionId) => {
+    return asignaciones.find(a => a.id === asignacionId);
   };
 
   return (
@@ -142,51 +205,115 @@ export default function HistorialWhatsApp() {
                   No se encontraron mensajes
                 </p>
               ) : (
-                historialFiltrado.map(item => (
-                  <Card key={item.id} className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-semibold text-slate-800">
-                            {item.destinatario_nombre}
-                          </h4>
-                          {getEstadoBadge(item.estado)}
-                          {item.proveedor && (
-                            <Badge variant="outline" className="text-xs">
-                              {item.proveedor}
-                            </Badge>
-                          )}
+                historialFiltrado.map(item => {
+                  const pedido = item.pedido_id ? obtenerDetallesPedido(item.pedido_id) : null;
+                  const asignacion = item.asignacion_id ? obtenerAsignacion(item.asignacion_id) : null;
+
+                  return (
+                    <Card key={item.id} className="p-4">
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <User className="w-4 h-4 text-slate-500" />
+                            <h4 className="font-semibold text-slate-800">
+                              {item.destinatario_nombre}
+                            </h4>
+                            {getEstadoBadge(item.estado)}
+                            {item.proveedor && (
+                              <Badge variant="outline" className="text-xs">
+                                {item.proveedor}
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-sm text-slate-600 mb-3">
+                            <Phone className="w-4 h-4" />
+                            <span>{item.telefono}</span>
+                          </div>
                         </div>
                         
-                        <p className="text-sm text-slate-600 mb-2">
-                          📱 {item.telefono}
+                        <div className="text-right text-xs text-slate-400">
+                          {format(new Date(item.created_date), 'dd/MM/yyyy HH:mm', { locale: es })}
+                        </div>
+                      </div>
+
+                      {/* Detalles del servicio */}
+                      {pedido && (
+                        <div className="bg-blue-50 rounded-lg p-3 mb-3 border border-blue-100">
+                          <h4 className="font-semibold text-sm text-blue-900 mb-2">📋 Detalles del Servicio</h4>
+                          <div className="space-y-1 text-xs text-blue-800">
+                            <div className="flex items-center gap-2">
+                              <User className="w-3 h-3" />
+                              <span className="font-medium">{pedido.cliente}</span>
+                            </div>
+                            {pedido.dia && (
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-3 h-3" />
+                                <span>{format(new Date(pedido.dia), 'EEEE dd/MM/yyyy', { locale: es })}</span>
+                              </div>
+                            )}
+                            {pedido.entrada && pedido.salida && (
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-3 h-3" />
+                                <span>{pedido.entrada} - {pedido.salida}</span>
+                              </div>
+                            )}
+                            {pedido.lugar_evento && (
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-3 h-3" />
+                                <span>{pedido.lugar_evento}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="bg-slate-50 rounded-lg p-3 mb-3">
+                        <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                          {item.mensaje}
                         </p>
-                        
-                        <div className="bg-slate-50 rounded-lg p-3 mb-2">
-                          <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                            {item.mensaje}
-                          </p>
-                        </div>
-                        
-                        {item.plantilla_usada && (
-                          <p className="text-xs text-slate-500">
-                            Plantilla: {item.plantilla_usada}
-                          </p>
+                      </div>
+
+                      {/* Botones de acción */}
+                      <div className="flex gap-2 mb-2">
+                        {asignacion && asignacion.estado !== 'confirmado' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => marcarConfirmadoMutation.mutate({ asignacionId: asignacion.id })}
+                            disabled={marcarConfirmadoMutation.isPending}
+                            className="text-xs"
+                          >
+                            <CheckCheck className="w-3 h-3 mr-1" />
+                            Marcar Confirmado
+                          </Button>
                         )}
-                        
-                        {item.error && (
-                          <p className="text-xs text-red-600 mt-1">
-                            Error: {item.error}
-                          </p>
-                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => reenviarMutation.mutate({ telefono: item.telefono, mensaje: item.mensaje })}
+                          disabled={reenviarMutation.isPending}
+                          className="text-xs"
+                        >
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Reenviar
+                        </Button>
                       </div>
                       
-                      <div className="text-right text-xs text-slate-400">
-                        {format(new Date(item.created_date), 'dd/MM/yyyy HH:mm', { locale: es })}
-                      </div>
-                    </div>
-                  </Card>
-                ))
+                      {item.plantilla_usada && (
+                        <p className="text-xs text-slate-500">
+                          Plantilla: {item.plantilla_usada}
+                        </p>
+                      )}
+                      
+                      {item.error && (
+                        <p className="text-xs text-red-600 mt-1">
+                          Error: {item.error}
+                        </p>
+                      )}
+                    </Card>
+                  );
+                })
               )}
             </div>
           </ScrollArea>
