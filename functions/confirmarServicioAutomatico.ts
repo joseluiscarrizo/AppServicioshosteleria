@@ -134,10 +134,34 @@ Tu servicio ha sido confirmado por el coordinador:
       }
     }
 
+    // Verificar si todos los camareros están confirmados
+    const todasAsignaciones = await base44.asServiceRole.entities.AsignacionCamarero.filter({ 
+      pedido_id: asignacion.pedido_id 
+    });
+
+    const cantidadNecesaria = pedido.turnos?.length > 0 
+      ? pedido.turnos.reduce((sum, t) => sum + (t.cantidad_camareros || 0), 0)
+      : (pedido.cantidad_camareros || 0);
+
+    const todosConfirmados = todasAsignaciones.length >= cantidadNecesaria && 
+                            todasAsignaciones.every(a => a.estado === 'confirmado');
+
+    // Si todos están confirmados, enviar parte automáticamente
+    if (todosConfirmados) {
+      try {
+        await base44.asServiceRole.functions.invoke('enviarParteAutomatico', { 
+          pedido_id: asignacion.pedido_id 
+        });
+      } catch (e) {
+        console.error('Error enviando parte automático:', e);
+      }
+    }
+
     return Response.json({
       success: true,
       mensaje: 'Servicio confirmado. Grupo de chat creado y notificación enviada.',
-      grupo_creado: gruposExistentes.length === 0
+      grupo_creado: gruposExistentes.length === 0,
+      parte_enviado: todosConfirmados
     });
 
   } catch (error) {
