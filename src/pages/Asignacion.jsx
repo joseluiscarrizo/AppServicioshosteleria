@@ -408,8 +408,28 @@ Sistema de Gestión de Camareros
     });
   };
 
-  const handleCambiarEstado = (asignacionId, nuevoEstado) => {
-    updateAsignacionMutation.mutate({ id: asignacionId, data: { estado: nuevoEstado } });
+  const handleCambiarEstado = async (asignacionId, nuevoEstado) => {
+    if (nuevoEstado === 'confirmado') {
+      // Usar función automática de confirmación
+      try {
+        const resultado = await base44.functions.invoke('confirmarServicioAutomatico', { 
+          asignacion_id: asignacionId 
+        });
+        
+        if (resultado.whatsapp_url) {
+          window.open(resultado.whatsapp_url, '_blank');
+        }
+        
+        queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+        queryClient.invalidateQueries({ queryKey: ['camareros'] });
+        toast.success('Servicio confirmado automáticamente. Chat creado y camarero notificado.');
+      } catch (e) {
+        console.error('Error en confirmación automática:', e);
+        toast.error('Error al confirmar automáticamente');
+      }
+    } else {
+      updateAsignacionMutation.mutate({ id: asignacionId, data: { estado: nuevoEstado } });
+    }
   };
 
   const handleEditPedido = (pedido) => {
