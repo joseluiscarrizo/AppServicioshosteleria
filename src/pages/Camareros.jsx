@@ -305,6 +305,7 @@ export default function Camareros() {
                       <div className="text-sm text-slate-600">
                         {camarero.telefono && <p>{camarero.telefono}</p>}
                         {camarero.email && <p className="text-xs truncate max-w-[200px]">{camarero.email}</p>}
+                        <DocumentosWidget camarero={camarero} />
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
