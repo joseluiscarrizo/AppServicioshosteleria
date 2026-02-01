@@ -228,14 +228,27 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
         }
         
         // Enviar mensaje directo por WhatsApp usando backend function
+        let whatsappUrl = null;
         try {
-          await base44.functions.invoke('enviarWhatsAppDirecto', {
+          const resultado = await base44.functions.invoke('enviarWhatsAppDirecto', {
             telefono: camarero.telefono,
-            mensaje: mensaje
+            mensaje: mensaje,
+            camarero_id: camarero.id,
+            camarero_nombre: camarero.nombre,
+            pedido_id: pedido.id,
+            asignacion_id: asignacion.id,
+            plantilla_usada: plantillaSeleccionada ? plantillas.find(p => p.id === plantillaSeleccionada)?.nombre : 'Manual'
           });
+          whatsappUrl = resultado.whatsapp_url;
         } catch (error) {
           console.error(`Error enviando WhatsApp a ${camarero.nombre}:`, error);
           throw new Error(`Error al enviar mensaje a ${camarero.nombre}`);
+        }
+        
+        // Abrir WhatsApp Web automáticamente
+        if (whatsappUrl) {
+          window.open(whatsappUrl, '_blank');
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
         
         // Actualizar estado a "enviado" y crear notificación
