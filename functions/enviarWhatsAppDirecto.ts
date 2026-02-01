@@ -29,7 +29,52 @@ Deno.serve(async (req) => {
       numeroWhatsApp = '34' + numeroWhatsApp; // España
     }
     
-    // Construir URL de WhatsApp Web
+    const whatsappToken = Deno.env.get('WHATSAPP_API_TOKEN');
+    const whatsappPhone = Deno.env.get('WHATSAPP_PHONE_NUMBER');
+    
+    let enviadoPorAPI = false;
+    let mensajeIdProveedor = null;
+    let errorAPI = null;
+
+    // Intentar enviar por API de WhatsApp Business
+    if (whatsappToken && whatsappPhone) {
+      try {
+        const apiResponse = await fetch(
+          `https://graph.facebook.com/v21.0/${whatsappPhone}/messages`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${whatsappToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: numeroWhatsApp,
+              type: 'text',
+              text: {
+                body: mensaje
+              }
+            })
+          }
+        );
+
+        const resultado = await apiResponse.json();
+        
+        if (apiResponse.ok && resultado.messages?.[0]?.id) {
+          enviadoPorAPI = true;
+          mensajeIdProveedor = resultado.messages[0].id;
+          console.log(`✅ Mensaje enviado por API a ${numeroWhatsApp}: ${mensajeIdProveedor}`);
+        } else {
+          errorAPI = resultado.error?.message || 'Error desconocido de la API';
+          console.error('Error en API de WhatsApp:', resultado);
+        }
+      } catch (e) {
+        errorAPI = e.message;
+        console.error('Error llamando a la API de WhatsApp:', e);
+      }
+    }
+    
+    // Construir URL de WhatsApp Web como fallback
     const mensajeCodificado = encodeURIComponent(mensaje);
     const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${mensajeCodificado}`;
     
@@ -43,21 +88,24 @@ Deno.serve(async (req) => {
         plantilla_usada: plantilla_usada || null,
         pedido_id: pedido_id || null,
         asignacion_id: asignacion_id || null,
-        estado: 'enviado',
-        proveedor: 'whatsapp_web',
+        estado: enviadoPorAPI ? 'enviado' : 'pendiente',
+        proveedor: enviadoPorAPI ? 'whatsapp_api' : 'whatsapp_web',
+        mensaje_id_proveedor: mensajeIdProveedor,
+        error: errorAPI,
         coordinador_id: user.id
       });
     } catch (e) {
       console.error('Error registrando en historial:', e);
     }
-
-    console.log(`📱 Mensaje WhatsApp enviado a: ${numeroWhatsApp}`);
     
     return Response.json({
       success: true,
       telefono: numeroWhatsApp,
-      whatsapp_url: whatsappUrl,
-      mensaje_enviado: true,
+      whatsapp_url: enviadoPorAPI ? null : whatsappUrl,
+      enviado_por_api: enviadoPorAPI,
+      mensaje_id: mensajeIdProveedor,
+      mensaje_enviado: enviadoPorAPI,
+      error_api: errorAPI,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
