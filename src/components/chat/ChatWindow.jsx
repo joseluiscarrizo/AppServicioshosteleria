@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Send, Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import ChatBubble from './ChatBubble';
@@ -12,6 +13,7 @@ import ChatBubble from './ChatBubble';
 export default function ChatWindow({ grupo, user }) {
   const [mensaje, setMensaje] = useState('');
   const [mensajesLocales, setMensajesLocales] = useState([]);
+  const [mostrarMiembros, setMostrarMiembros] = useState(false);
   const scrollRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -113,21 +115,27 @@ export default function ChatWindow({ grupo, user }) {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="border-b">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>{grupo.nombre}</CardTitle>
-            {grupo.descripcion && (
-              <p className="text-sm text-slate-500 mt-1">{grupo.descripcion}</p>
-            )}
+    <>
+      <Card className="h-full flex flex-col">
+        <CardHeader className="border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{grupo.nombre}</CardTitle>
+              {grupo.descripcion && (
+                <p className="text-sm text-slate-500 mt-1">{grupo.descripcion}</p>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMostrarMiembros(true)}
+              className="flex items-center gap-2"
+            >
+              <Users className="w-4 h-4" />
+              {grupo.miembros?.length || 0} miembros
+            </Button>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <Users className="w-4 h-4" />
-            {grupo.miembros?.length || 0} miembros
-          </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
 
       <CardContent className="flex-1 flex flex-col p-0">
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
@@ -175,5 +183,27 @@ export default function ChatWindow({ grupo, user }) {
         </div>
       </CardContent>
     </Card>
+
+    <Dialog open={mostrarMiembros} onOpenChange={setMostrarMiembros}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Miembros del Chat</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2 mt-4">
+          {grupo.miembros?.map((miembro, index) => (
+            <div key={index} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1e3a5f] to-[#2d5a8f] flex items-center justify-center text-white font-semibold">
+                {miembro.nombre.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-slate-800">{miembro.nombre}</p>
+                <p className="text-xs text-slate-500 capitalize">{miembro.rol}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
