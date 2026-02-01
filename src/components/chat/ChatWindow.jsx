@@ -47,8 +47,6 @@ export default function ChatWindow({ grupo, user }) {
             audio.play().catch(() => {});
           } catch (e) {}
         }
-        
-        scrollToBottom();
       }
     });
 
@@ -65,7 +63,7 @@ export default function ChatWindow({ grupo, user }) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [mensajesLocales]);
+  }, [mensajes.length]);
 
   const enviarMutation = useMutation({
     mutationFn: async (nuevoMensaje) => {
