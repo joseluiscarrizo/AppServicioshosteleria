@@ -272,7 +272,8 @@ Sistema de Gestión de Camareros
     }
   });
 
-  if (estado === 'cargando' || loadingAsignacion) {
+  // Mostrar loader mientras carga
+  if (estado === 'cargando' || loadingAsignacion || (asignacionId && !asignacion) || (asignacion?.pedido_id && !pedido)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-[#1e3a5f]" />
@@ -280,7 +281,8 @@ Sistema de Gestión de Camareros
     );
   }
 
-  if (estado === 'error' || !asignacion || !pedido) {
+  // Mostrar error solo si realmente hay un error
+  if (estado === 'error' || (asignacionId && !loadingAsignacion && !asignacion) || (asignacion && !pedido && asignacion.pedido_id)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
         <Card className="p-8 text-center max-w-md">
