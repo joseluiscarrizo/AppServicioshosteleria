@@ -9,6 +9,7 @@ import NotificacionesAutomaticas from './components/notificaciones/Notificacione
 import { useWebPushNotifications } from './components/notificaciones/WebPushService';
 import ServicioRecordatorios from './components/recordatorios/ServicioRecordatorios';
 import RateLimitHandler from './components/notificaciones/RateLimitHandler';
+import RecordatoriosProactivos from './components/whatsapp/RecordatoriosProactivos';
 
 const navItems = [
   { name: 'Dashboard', page: 'DashboardCoordinador', icon: LayoutDashboard },
@@ -48,7 +49,10 @@ export default function Layout({ children, currentPageName }) {
           />
 
           {/* Sistema de Recordatorios Automáticos */}
-          <ServicioRecordatorios />
+              <ServicioRecordatorios />
+
+              {/* Recordatorios Proactivos de WhatsApp */}
+              <RecordatoriosProactivos />
       
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
