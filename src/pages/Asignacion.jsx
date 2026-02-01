@@ -894,7 +894,7 @@ Sistema de Gestión de Camareros
                                               </div>
                                             )}
                                             {providedSlot.placeholder}
-                                          </div>
+                                          </motion.div>
                                         )}
                                       </Droppable>
                                     );
@@ -992,7 +992,7 @@ Sistema de Gestión de Camareros
                                         </div>
                                       )}
                                       {providedSlot.placeholder}
-                                    </div>
+                                    </motion.div>
                                   )}
                                 </Droppable>
                               );
