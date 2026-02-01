@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import GestionCamareros from '../components/asignacion/GestionCamareros';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import ValoracionesHistorial from '../components/camareros/ValoracionesHistorial';
+import DocumentosWidget from '../components/camareros/DocumentosWidget';
 import GestionDisponibilidad from '../components/camareros/GestionDisponibilidad';
 
 const especialidadColors = {

@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import GestionDocumentosCamarero from '../components/camareros/GestionDocumentosCamarero';
 
 const especialidadColors = {
   general: 'bg-slate-100 text-slate-700',
@@ -222,12 +223,13 @@ export default function PerfilCamarero() {
           </Card>
         </div>
 
-        {/* Tabs: Historial, Valoraciones, Disponibilidad */}
+        {/* Tabs: Historial, Valoraciones, Disponibilidad, Documentos */}
         <Tabs defaultValue="historial" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="historial">Historial de Eventos</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="historial">Historial</TabsTrigger>
             <TabsTrigger value="valoraciones">Valoraciones</TabsTrigger>
             <TabsTrigger value="disponibilidad">Disponibilidad</TabsTrigger>
+            <TabsTrigger value="documentos">Documentos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="historial">
@@ -409,6 +411,12 @@ export default function PerfilCamarero() {
                   </Link>
                 </div>
               )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="documentos">
+            <Card className="p-6">
+              <GestionDocumentosCamarero camarero={camarero} />
             </Card>
           </TabsContent>
         </Tabs>
