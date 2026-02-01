@@ -19,8 +19,22 @@ export default function Chat() {
     queryFn: async () => {
       if (!user?.id) return [];
       
-      // Obtener grupos donde el usuario es miembro
+      // Obtener todos los grupos activos
       const todosGrupos = await base44.entities.GrupoChat.filter({ activo: true }, '-created_date');
+      
+      // Si es admin o coordinador, mostrar todos los grupos
+      if (user.role === 'admin' || user.role === 'coordinador') {
+        return todosGrupos;
+      }
+      
+      // Si es camarero, buscar por camarero_id
+      if (user.role === 'camarero' && user.camarero_id) {
+        return todosGrupos.filter(grupo => 
+          grupo.miembros?.some(m => m.user_id === user.camarero_id)
+        );
+      }
+      
+      // Fallback: buscar por user.id
       return todosGrupos.filter(grupo => 
         grupo.miembros?.some(m => m.user_id === user.id)
       );
