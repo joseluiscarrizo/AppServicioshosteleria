@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
           try {
             // Envío real con WhatsApp Business API
             const response = await fetch(
-              `https://graph.facebook.com/v18.0/${whatsappPhone}/messages`,
+              `https://graph.facebook.com/v21.0/${whatsappPhone}/messages`,
               {
                 method: 'POST',
                 headers: {
