@@ -588,15 +588,20 @@ Sistema de Gestión de Camareros
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
             {/* Panel Izquierdo: Lista de Camareros Disponibles */}
             <div>
-                <Card className="h-[400px] sm:h-[600px] flex flex-col">
-                  <div className="p-2 sm:p-4 border-b bg-slate-50">
-                    <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2 sm:mb-3 flex items-center gap-2">
-                      <Users className="w-4 h-4 sm:w-5 sm:h-5 text-[#1e3a5f]" />
+                <Card className="h-[400px] sm:h-[600px] flex flex-col shadow-xl border-2">
+                  <div className="p-4 border-b bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8f]">
+                    <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+                      <Users className="w-5 h-5" />
                       Camareros Disponibles
+                      {selectedPedido && getCamarerosDisponibles(selectedPedido).length > 0 && (
+                        <Badge className="bg-white/20 text-white border-white/30">
+                          {getCamarerosDisponibles(selectedPedido).length}
+                        </Badge>
+                      )}
                     </h3>
-                    <div className="flex gap-1 sm:gap-2 flex-wrap">
+                    <div className="flex gap-2 flex-wrap">
                       <Select value={filtroEspecialidad} onValueChange={setFiltroEspecialidad}>
-                        <SelectTrigger className="w-36 h-8 text-xs">
+                        <SelectTrigger className="w-40 h-9 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
                           <Filter className="w-3 h-3 mr-1" />
                           <SelectValue placeholder="Especialidad" />
                         </SelectTrigger>
@@ -610,7 +615,7 @@ Sistema de Gestión de Camareros
                         </SelectContent>
                       </Select>
                       <Select value={filtroHabilidad} onValueChange={setFiltroHabilidad}>
-                        <SelectTrigger className="w-36 h-8 text-xs">
+                        <SelectTrigger className="w-40 h-9 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
                           <Award className="w-3 h-3 mr-1" />
                           <SelectValue placeholder="Habilidad" />
                         </SelectTrigger>
@@ -625,9 +630,10 @@ Sistema de Gestión de Camareros
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-8 text-xs"
+                          className="h-9 text-xs text-white hover:bg-white/20 border border-white/20"
                           onClick={() => { setFiltroEspecialidad(''); setFiltroHabilidad(''); }}
                         >
+                          <X className="w-3 h-3 mr-1" />
                           Limpiar
                         </Button>
                       )}
@@ -636,59 +642,85 @@ Sistema de Gestión de Camareros
 
                   <Droppable droppableId="camareros-disponibles" isDropDisabled={true}>
                     {(provided) => (
-                      <ScrollArea className="flex-1 p-3" type="always">
-                        <div className="space-y-2" ref={provided.innerRef} {...provided.droppableProps}>
+                      <ScrollArea className="flex-1 p-4" type="always">
+                        <div className="space-y-3" ref={provided.innerRef} {...provided.droppableProps}>
                           {selectedPedido && getCamarerosDisponibles(selectedPedido).map((camarero, index) => (
                             <Draggable key={camarero.id} draggableId={camarero.id} index={index}>
                               {(provided, snapshot) => (
-                                <div
+                                <motion.div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`p-3 rounded-lg border-2 bg-white transition-all cursor-grab active:cursor-grabbing ${
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: index * 0.05 }}
+                                  className={`group p-4 rounded-xl border-2 bg-gradient-to-br from-white to-slate-50 transition-all cursor-grab active:cursor-grabbing ${
                                     snapshot.isDragging 
-                                      ? 'border-[#1e3a5f] shadow-lg rotate-2 scale-105' 
-                                      : 'border-slate-200 hover:border-[#1e3a5f]/50 hover:shadow-md'
+                                      ? 'border-[#1e3a5f] shadow-2xl rotate-3 scale-110 from-blue-50 to-indigo-50' 
+                                      : 'border-slate-200 hover:border-[#1e3a5f] hover:shadow-lg hover:scale-105'
                                   }`}
                                   style={{
                                     ...provided.draggableProps.style,
                                     userSelect: 'none'
                                   }}
                                 >
-                                  <div className="flex items-center gap-3">
-                                    <GripVertical className="w-4 h-4 text-slate-400" />
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-medium text-slate-800">{camarero.nombre}</span>
+                                  <div className="flex items-start gap-3">
+                                    <div className={`p-2 rounded-lg transition-colors ${
+                                      snapshot.isDragging ? 'bg-[#1e3a5f] text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-[#1e3a5f] group-hover:text-white'
+                                    }`}>
+                                      <GripVertical className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="font-semibold text-slate-800 truncate">{camarero.nombre}</span>
                                         {camarero.valoracion_promedio > 0 && (
-                                          <span className="flex items-center gap-0.5 text-amber-500 text-xs">
-                                            <Star className="w-3 h-3 fill-amber-400" />
+                                          <span className="flex items-center gap-0.5 text-amber-500 text-xs font-medium">
+                                            <Star className="w-3.5 h-3.5 fill-amber-400" />
                                             {camarero.valoracion_promedio.toFixed(1)}
                                           </span>
                                         )}
                                       </div>
                                       <span className="text-xs text-slate-500 font-mono">#{camarero.codigo}</span>
-                                      {camarero.especialidad && (
-                                        <Badge variant="outline" className="text-xs mt-1">
-                                          {camarero.especialidad}
-                                        </Badge>
-                                      )}
+                                      <div className="flex gap-1.5 mt-2 flex-wrap">
+                                        {camarero.especialidad && (
+                                          <Badge variant="outline" className="text-xs bg-white border-[#1e3a5f]/20 text-[#1e3a5f]">
+                                            {camarero.especialidad}
+                                          </Badge>
+                                        )}
+                                        {camarero.experiencia_anios > 0 && (
+                                          <Badge variant="outline" className="text-xs bg-white border-emerald-500/20 text-emerald-700">
+                                            {camarero.experiencia_anios} años
+                                          </Badge>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
+                                </motion.div>
                               )}
                             </Draggable>
                           ))}
                           {provided.placeholder}
                           {!selectedPedido && (
-                            <p className="text-center text-slate-400 py-8">
-                              Selecciona un evento del calendario
-                            </p>
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="text-center text-slate-400 py-12"
+                            >
+                              <CalendarIcon className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                              <p className="font-medium">Selecciona un evento del calendario</p>
+                              <p className="text-xs mt-1">para ver camareros disponibles</p>
+                            </motion.div>
                           )}
                           {selectedPedido && getCamarerosDisponibles(selectedPedido).length === 0 && (
-                            <p className="text-center text-slate-400 py-8">
-                              No hay camareros disponibles
-                            </p>
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="text-center text-slate-400 py-12"
+                            >
+                              <Users className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                              <p className="font-medium">No hay camareros disponibles</p>
+                              <p className="text-xs mt-1">Ajusta los filtros o verifica disponibilidad</p>
+                            </motion.div>
                           )}
                         </div>
                       </ScrollArea>
@@ -699,40 +731,51 @@ Sistema de Gestión de Camareros
 
               {/* Panel Derecho: Slots de Asignación */}
               <div>
-                <Card className="h-[400px] sm:h-[600px] flex flex-col">
-                  <div className="p-4 border-b bg-slate-50">
+                <Card className="h-[400px] sm:h-[600px] flex flex-col shadow-xl border-2">
+                  <div className="p-4 border-b bg-gradient-to-r from-emerald-600 to-teal-600">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-slate-800">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-white text-lg">
                           {selectedPedido ? selectedPedido.cliente : 'Slots de Asignación'}
                         </h3>
                         {selectedPedido && (
                           <>
-                            <p className="text-sm text-slate-500">
-                              {selectedPedido.lugar_evento} • {selectedPedido.dia ? format(new Date(selectedPedido.dia), 'dd MMM yyyy', { locale: es }) : ''}
-                            </p>
+                            <div className="flex items-center gap-2 mt-1 text-white/90 text-sm">
+                              <MapPin className="w-3.5 h-3.5" />
+                              <span>{selectedPedido.lugar_evento}</span>
+                              <span>•</span>
+                              <Calendar className="w-3.5 h-3.5" />
+                              <span>{selectedPedido.dia ? format(new Date(selectedPedido.dia), 'dd MMM yyyy', { locale: es }) : ''}</span>
+                            </div>
                             {selectedPedido.turnos && selectedPedido.turnos.length > 0 ? (
-                              <div className="mt-2 space-y-1">
+                              <div className="mt-2 space-y-1.5">
                                 {selectedPedido.turnos.map((turno, idx) => (
-                                  <p key={idx} className="text-xs text-slate-600 flex items-center gap-2">
-                                    <Clock className="w-3 h-3" />
-                                    Turno {idx + 1}: {turno.entrada} - {turno.salida} 
-                                    <Badge variant="outline" className="ml-1">
+                                  <div key={idx} className="flex items-center gap-2 text-xs text-white/90 bg-white/10 rounded-lg px-3 py-1.5">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    <span className="font-medium">Turno {idx + 1}:</span>
+                                    <span>{turno.entrada} - {turno.salida}</span>
+                                    <Badge className="ml-auto bg-white/20 text-white border-white/30">
                                       {turno.cantidad_camareros} camareros
                                     </Badge>
-                                  </p>
+                                  </div>
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-xs text-slate-600 mt-1">
-                                {selectedPedido.entrada} - {selectedPedido.salida}
-                              </p>
+                              <div className="mt-2 flex items-center gap-2 text-xs text-white/90 bg-white/10 rounded-lg px-3 py-1.5">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>{selectedPedido.entrada} - {selectedPedido.salida}</span>
+                              </div>
                             )}
                           </>
                         )}
                       </div>
                       {selectedPedido && (
-                        <Button variant="ghost" size="icon" onClick={() => setSelectedPedido(null)}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => setSelectedPedido(null)}
+                          className="text-white hover:bg-white/20"
+                        >
                           <X className="w-5 h-5" />
                         </Button>
                       )}
@@ -772,33 +815,51 @@ Sistema de Gestión de Camareros
                                     return (
                                       <Droppable key={slotIdx} droppableId={`slot-turno-${turnoIdx}-posicion-${slotIdx}`}>
                                         {(providedSlot, snapshotSlot) => (
-                                          <div 
+                                          <motion.div 
                                             ref={providedSlot.innerRef}
                                             {...providedSlot.droppableProps}
-                                            className={`rounded-xl border-2 p-4 min-h-[120px] transition-all ${
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: slotIdx * 0.05 }}
+                                            className={`rounded-xl border-2 p-4 min-h-[130px] transition-all relative overflow-hidden ${
                                               asignacion 
-                                                ? `${estadoBgColors[asignacion.estado]} border-slate-200` 
+                                                ? `${estadoBgColors[asignacion.estado]} border-slate-200 shadow-md` 
                                                 : snapshotSlot.isDraggingOver 
-                                                ? 'bg-[#1e3a5f]/10 border-[#1e3a5f] border-dashed scale-105'
-                                                : 'bg-slate-50 border-dashed border-slate-300'
+                                                ? 'bg-gradient-to-br from-[#1e3a5f]/10 to-blue-50 border-[#1e3a5f] border-2 scale-105 shadow-lg'
+                                                : 'bg-gradient-to-br from-slate-50 to-slate-100 border-dashed border-slate-300 hover:border-slate-400 hover:shadow-md'
                                             }`}
                                           >
+                                            {!asignacion && snapshotSlot.isDraggingOver && (
+                                              <motion.div
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                                className="absolute inset-0 bg-[#1e3a5f]/5 flex items-center justify-center"
+                                              >
+                                                <div className="text-[#1e3a5f] font-semibold text-sm flex items-center gap-2">
+                                                  <ChevronRight className="w-5 h-5 animate-pulse" />
+                                                  Soltar aquí
+                                                </div>
+                                              </motion.div>
+                                            )}
                                             {asignacion ? (
-                                              <div>
-                                                <div className="flex items-center justify-between mb-2">
-                                                  <span className="font-medium text-slate-800">
+                                              <motion.div
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                              >
+                                                <div className="flex items-center justify-between mb-3">
+                                                  <span className="font-bold text-slate-800 text-base">
                                                     {asignacion.camarero_nombre}
                                                   </span>
                                                   <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-6 w-6 text-slate-400 hover:text-red-500"
+                                                    className="h-7 w-7 text-slate-400 hover:text-red-500 hover:bg-red-50"
                                                     onClick={() => deleteAsignacionMutation.mutate(asignacion)}
                                                   >
                                                     <X className="w-4 h-4" />
                                                   </Button>
                                                 </div>
-                                                <span className="text-xs text-slate-500 font-mono">
+                                                <span className="text-xs text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded">
                                                   #{asignacion.camarero_codigo}
                                                 </span>
 
@@ -806,23 +867,30 @@ Sistema de Gestión de Camareros
                                                   value={asignacion.estado} 
                                                   onValueChange={(v) => handleCambiarEstado(asignacion.id, v)}
                                                 >
-                                                  <SelectTrigger className={`mt-3 h-8 text-sm ${estadoColors[asignacion.estado]}`}>
+                                                  <SelectTrigger className={`mt-3 h-9 text-sm font-medium border-2 ${estadoColors[asignacion.estado]}`}>
                                                     <SelectValue />
                                                   </SelectTrigger>
                                                   <SelectContent>
-                                                    <SelectItem value="pendiente">Pendiente</SelectItem>
-                                                    <SelectItem value="enviado">Enviado</SelectItem>
-                                                    <SelectItem value="confirmado">Confirmado</SelectItem>
-                                                    <SelectItem value="alta">Alta</SelectItem>
+                                                    <SelectItem value="pendiente">⏳ Pendiente</SelectItem>
+                                                    <SelectItem value="enviado">📤 Enviado</SelectItem>
+                                                    <SelectItem value="confirmado">✅ Confirmado</SelectItem>
+                                                    <SelectItem value="alta">🎯 Alta</SelectItem>
                                                   </SelectContent>
                                                 </Select>
-                                              </div>
+                                              </motion.div>
                                             ) : (
-                                              <div className="flex items-center justify-center h-full">
-                                                <p className="text-sm text-slate-400">
-                                                  Arrastra aquí<br/>
-                                                  <span className="text-xs">Slot {slotIdx + 1}</span>
+                                              <div className="flex flex-col items-center justify-center h-full text-center">
+                                                <div className={`p-3 rounded-full mb-2 transition-all ${
+                                                  snapshotSlot.isDraggingOver 
+                                                    ? 'bg-[#1e3a5f] text-white scale-110' 
+                                                    : 'bg-slate-200 text-slate-400'
+                                                }`}>
+                                                  <UserPlus className="w-6 h-6" />
+                                                </div>
+                                                <p className="text-sm text-slate-500 font-medium">
+                                                  {snapshotSlot.isDraggingOver ? 'Soltar aquí' : 'Arrastra un camarero'}
                                                 </p>
+                                                <span className="text-xs text-slate-400 mt-1">Slot {slotIdx + 1}</span>
                                               </div>
                                             )}
                                             {providedSlot.placeholder}
@@ -845,33 +913,51 @@ Sistema de Gestión de Camareros
                               return (
                                 <Droppable key={index} droppableId={`slot-general-${index}`}>
                                   {(providedSlot, snapshotSlot) => (
-                                    <div 
+                                    <motion.div 
                                       ref={providedSlot.innerRef}
                                       {...providedSlot.droppableProps}
-                                      className={`rounded-xl border-2 p-4 min-h-[120px] transition-all ${
+                                      initial={{ opacity: 0, scale: 0.9 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      transition={{ delay: index * 0.05 }}
+                                      className={`rounded-xl border-2 p-4 min-h-[130px] transition-all relative overflow-hidden ${
                                         asignacion 
-                                          ? `${estadoBgColors[asignacion.estado]} border-slate-200` 
+                                          ? `${estadoBgColors[asignacion.estado]} border-slate-200 shadow-md` 
                                           : snapshotSlot.isDraggingOver 
-                                          ? 'bg-[#1e3a5f]/10 border-[#1e3a5f] border-dashed scale-105'
-                                          : 'bg-slate-50 border-dashed border-slate-300'
+                                          ? 'bg-gradient-to-br from-[#1e3a5f]/10 to-blue-50 border-[#1e3a5f] border-2 scale-105 shadow-lg'
+                                          : 'bg-gradient-to-br from-slate-50 to-slate-100 border-dashed border-slate-300 hover:border-slate-400 hover:shadow-md'
                                       }`}
                                     >
+                                      {!asignacion && snapshotSlot.isDraggingOver && (
+                                        <motion.div
+                                          initial={{ scale: 0 }}
+                                          animate={{ scale: 1 }}
+                                          className="absolute inset-0 bg-[#1e3a5f]/5 flex items-center justify-center"
+                                        >
+                                          <div className="text-[#1e3a5f] font-semibold text-sm flex items-center gap-2">
+                                            <ChevronRight className="w-5 h-5 animate-pulse" />
+                                            Soltar aquí
+                                          </div>
+                                        </motion.div>
+                                      )}
                                       {asignacion ? (
-                                        <div>
-                                          <div className="flex items-center justify-between mb-2">
-                                            <span className="font-medium text-slate-800">
+                                        <motion.div
+                                          initial={{ opacity: 0, y: 10 }}
+                                          animate={{ opacity: 1, y: 0 }}
+                                        >
+                                          <div className="flex items-center justify-between mb-3">
+                                            <span className="font-bold text-slate-800 text-base">
                                               {asignacion.camarero_nombre}
                                             </span>
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="h-6 w-6 text-slate-400 hover:text-red-500"
+                                              className="h-7 w-7 text-slate-400 hover:text-red-500 hover:bg-red-50"
                                               onClick={() => deleteAsignacionMutation.mutate(asignacion)}
                                             >
                                               <X className="w-4 h-4" />
                                             </Button>
                                           </div>
-                                          <span className="text-xs text-slate-500 font-mono">
+                                          <span className="text-xs text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded">
                                             #{asignacion.camarero_codigo}
                                           </span>
 
@@ -879,23 +965,30 @@ Sistema de Gestión de Camareros
                                             value={asignacion.estado} 
                                             onValueChange={(v) => handleCambiarEstado(asignacion.id, v)}
                                           >
-                                            <SelectTrigger className={`mt-3 h-8 text-sm ${estadoColors[asignacion.estado]}`}>
+                                            <SelectTrigger className={`mt-3 h-9 text-sm font-medium border-2 ${estadoColors[asignacion.estado]}`}>
                                               <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                              <SelectItem value="pendiente">Pendiente</SelectItem>
-                                              <SelectItem value="enviado">Enviado</SelectItem>
-                                              <SelectItem value="confirmado">Confirmado</SelectItem>
-                                              <SelectItem value="alta">Alta</SelectItem>
+                                              <SelectItem value="pendiente">⏳ Pendiente</SelectItem>
+                                              <SelectItem value="enviado">📤 Enviado</SelectItem>
+                                              <SelectItem value="confirmado">✅ Confirmado</SelectItem>
+                                              <SelectItem value="alta">🎯 Alta</SelectItem>
                                             </SelectContent>
                                           </Select>
-                                        </div>
+                                        </motion.div>
                                       ) : (
-                                        <div className="flex items-center justify-center h-full">
-                                          <p className="text-sm text-slate-400">
-                                            Arrastra aquí<br/>
-                                            <span className="text-xs">Slot {index + 1}</span>
+                                        <div className="flex flex-col items-center justify-center h-full text-center">
+                                          <div className={`p-3 rounded-full mb-2 transition-all ${
+                                            snapshotSlot.isDraggingOver 
+                                              ? 'bg-[#1e3a5f] text-white scale-110' 
+                                              : 'bg-slate-200 text-slate-400'
+                                          }`}>
+                                            <UserPlus className="w-6 h-6" />
+                                          </div>
+                                          <p className="text-sm text-slate-500 font-medium">
+                                            {snapshotSlot.isDraggingOver ? 'Soltar aquí' : 'Arrastra un camarero'}
                                           </p>
+                                          <span className="text-xs text-slate-400 mt-1">Slot {index + 1}</span>
                                         </div>
                                       )}
                                       {providedSlot.placeholder}
