@@ -26,6 +26,7 @@ import EdicionRapida from '../components/pedidos/EdicionRapida';
 import DuplicarEvento from '../components/pedidos/DuplicarEvento';
 import EventoRecurrente from '../components/pedidos/EventoRecurrente';
 import PedidoFormNuevo from '../components/pedidos/PedidoFormNuevo';
+import SugerenciasInteligentes from '../components/asignacion/SugerenciasInteligentes';
 
 const estadoColors = {
   pendiente: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -573,13 +574,19 @@ Sistema de Gestión de Camareros
           </Button>
 
           {selectedPedido && (
-            <Button 
-              onClick={() => setShowAsignacionAuto(true)}
-              className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-xs sm:text-sm"
-            >
-              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-              Asignación Automática
-            </Button>
+            <div className="flex gap-2">
+              <SugerenciasInteligentes 
+                pedido={selectedPedido} 
+                onAsignar={(camarero) => handleAsignarCamarero(selectedPedido, camarero)} 
+              />
+              <Button 
+                onClick={() => setShowAsignacionAuto(true)}
+                className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-xs sm:text-sm"
+              >
+                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                Asignación Automática
+              </Button>
+            </div>
           )}
         </div>
 
