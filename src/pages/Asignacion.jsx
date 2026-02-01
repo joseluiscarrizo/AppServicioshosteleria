@@ -859,18 +859,18 @@ Sistema de Gestión de Camareros
                                       <Droppable key={slotIdx} droppableId={`slot-turno-${turnoIdx}-posicion-${slotIdx}`}>
                                         {(providedSlot, snapshotSlot) => (
                                           <motion.div 
-                                            ref={providedSlot.innerRef}
-                                            {...providedSlot.droppableProps}
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            transition={{ delay: slotIdx * 0.05 }}
-                                            className={`rounded-xl border-2 p-4 min-h-[130px] transition-all relative overflow-hidden ${
-                                              asignacion 
-                                                ? `${estadoBgColors[asignacion.estado]} border-slate-200 shadow-md` 
-                                                : snapshotSlot.isDraggingOver 
-                                                ? 'bg-gradient-to-br from-[#1e3a5f]/10 to-blue-50 border-[#1e3a5f] border-2 scale-105 shadow-lg'
-                                                : 'bg-gradient-to-br from-slate-50 to-slate-100 border-dashed border-slate-300 hover:border-slate-400 hover:shadow-md'
-                                            }`}
+                                           ref={providedSlot.innerRef}
+                                           {...providedSlot.droppableProps}
+                                           initial={{ opacity: 0, scale: 0.9 }}
+                                           animate={{ opacity: 1, scale: 1 }}
+                                           transition={{ delay: slotIdx * 0.05 }}
+                                           className={`rounded-xl border-2 p-5 min-h-[150px] transition-all relative overflow-hidden ${
+                                             asignacion 
+                                               ? `${estadoBgColors[asignacion.estado]} border-slate-200 shadow-lg` 
+                                               : snapshotSlot.isDraggingOver 
+                                               ? 'bg-gradient-to-br from-[#1e3a5f]/10 to-blue-50 border-[#1e3a5f] border-[3px] scale-[1.03] shadow-2xl'
+                                               : 'bg-gradient-to-br from-slate-50 to-slate-100 border-dashed border-slate-300 hover:border-[#1e3a5f] hover:shadow-lg hover:scale-[1.02]'
+                                           }`}
                                           >
                                             {!asignacion && snapshotSlot.isDraggingOver && (
                                               <motion.div
@@ -888,52 +888,81 @@ Sistema de Gestión de Camareros
                                               <motion.div
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
+                                                className="h-full"
                                               >
-                                                <div className="flex items-center justify-between mb-3">
-                                                  <span className="font-bold text-slate-800 text-base">
-                                                    {asignacion.camarero_nombre}
-                                                  </span>
+                                                {/* Header con nombre y botón de eliminar */}
+                                                <div className="flex items-start justify-between mb-3">
+                                                  <div className="flex-1">
+                                                    <div className="font-bold text-slate-800 text-lg mb-1">
+                                                      {asignacion.camarero_nombre}
+                                                    </div>
+                                                    <span className="text-xs text-slate-500 font-mono bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                                                      #{asignacion.camarero_codigo}
+                                                    </span>
+                                                  </div>
                                                   <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-7 w-7 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
                                                     onClick={() => deleteAsignacionMutation.mutate(asignacion)}
                                                   >
                                                     <X className="w-4 h-4" />
                                                   </Button>
                                                 </div>
-                                                <span className="text-xs text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded">
-                                                  #{asignacion.camarero_codigo}
-                                                </span>
 
+                                                {/* Estado con mejor UI */}
                                                 <Select 
                                                   value={asignacion.estado} 
                                                   onValueChange={(v) => handleCambiarEstado(asignacion.id, v)}
                                                 >
-                                                  <SelectTrigger className={`mt-3 h-9 text-sm font-medium border-2 ${estadoColors[asignacion.estado]}`}>
+                                                  <SelectTrigger className={`mt-3 h-10 text-sm font-semibold border-2 shadow-sm ${estadoColors[asignacion.estado]}`}>
                                                     <SelectValue />
                                                   </SelectTrigger>
                                                   <SelectContent>
-                                                    <SelectItem value="pendiente">⏳ Pendiente</SelectItem>
-                                                    <SelectItem value="enviado">📤 Enviado</SelectItem>
-                                                    <SelectItem value="confirmado">✅ Confirmado</SelectItem>
-                                                    <SelectItem value="alta">🎯 Alta</SelectItem>
+                                                    <SelectItem value="pendiente">
+                                                      <div className="flex items-center gap-2">
+                                                        <span className="text-base">⏳</span>
+                                                        <span>Pendiente</span>
+                                                      </div>
+                                                    </SelectItem>
+                                                    <SelectItem value="enviado">
+                                                      <div className="flex items-center gap-2">
+                                                        <span className="text-base">📤</span>
+                                                        <span>Enviado</span>
+                                                      </div>
+                                                    </SelectItem>
+                                                    <SelectItem value="confirmado">
+                                                      <div className="flex items-center gap-2">
+                                                        <span className="text-base">✅</span>
+                                                        <span>Confirmado</span>
+                                                      </div>
+                                                    </SelectItem>
+                                                    <SelectItem value="alta">
+                                                      <div className="flex items-center gap-2">
+                                                        <span className="text-base">🎯</span>
+                                                        <span>Alta</span>
+                                                      </div>
+                                                    </SelectItem>
                                                   </SelectContent>
                                                 </Select>
                                               </motion.div>
                                             ) : (
                                               <div className="flex flex-col items-center justify-center h-full text-center">
-                                                <div className={`p-3 rounded-full mb-2 transition-all ${
-                                                  snapshotSlot.isDraggingOver 
-                                                    ? 'bg-[#1e3a5f] text-white scale-110' 
-                                                    : 'bg-slate-200 text-slate-400'
-                                                }`}>
-                                                  <UserPlus className="w-6 h-6" />
-                                                </div>
-                                                <p className="text-sm text-slate-500 font-medium">
-                                                  {snapshotSlot.isDraggingOver ? 'Soltar aquí' : 'Arrastra un camarero'}
+                                                <motion.div 
+                                                  className={`p-4 rounded-2xl mb-3 transition-all ${
+                                                    snapshotSlot.isDraggingOver 
+                                                      ? 'bg-[#1e3a5f] text-white scale-125 shadow-xl' 
+                                                      : 'bg-slate-200 text-slate-400'
+                                                  }`}
+                                                  animate={snapshotSlot.isDraggingOver ? { rotate: [0, -10, 10, 0] } : {}}
+                                                  transition={{ duration: 0.5, repeat: snapshotSlot.isDraggingOver ? Infinity : 0 }}
+                                                >
+                                                  <UserPlus className="w-7 h-7" />
+                                                </motion.div>
+                                                <p className="text-sm text-slate-600 font-semibold mb-1">
+                                                  {snapshotSlot.isDraggingOver ? '¡Soltar aquí!' : 'Arrastra un camarero'}
                                                 </p>
-                                                <span className="text-xs text-slate-400 mt-1">Slot {slotIdx + 1}</span>
+                                                <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-full">Slot {slotIdx + 1}</span>
                                               </div>
                                             )}
                                             {providedSlot.placeholder}
@@ -962,12 +991,12 @@ Sistema de Gestión de Camareros
                                       initial={{ opacity: 0, scale: 0.9 }}
                                       animate={{ opacity: 1, scale: 1 }}
                                       transition={{ delay: index * 0.05 }}
-                                      className={`rounded-xl border-2 p-4 min-h-[130px] transition-all relative overflow-hidden ${
+                                      className={`rounded-xl border-2 p-5 min-h-[150px] transition-all relative overflow-hidden ${
                                         asignacion 
-                                          ? `${estadoBgColors[asignacion.estado]} border-slate-200 shadow-md` 
+                                          ? `${estadoBgColors[asignacion.estado]} border-slate-200 shadow-lg` 
                                           : snapshotSlot.isDraggingOver 
-                                          ? 'bg-gradient-to-br from-[#1e3a5f]/10 to-blue-50 border-[#1e3a5f] border-2 scale-105 shadow-lg'
-                                          : 'bg-gradient-to-br from-slate-50 to-slate-100 border-dashed border-slate-300 hover:border-slate-400 hover:shadow-md'
+                                          ? 'bg-gradient-to-br from-[#1e3a5f]/10 to-blue-50 border-[#1e3a5f] border-[3px] scale-[1.03] shadow-2xl'
+                                          : 'bg-gradient-to-br from-slate-50 to-slate-100 border-dashed border-slate-300 hover:border-[#1e3a5f] hover:shadow-lg hover:scale-[1.02]'
                                       }`}
                                     >
                                       {!asignacion && snapshotSlot.isDraggingOver && (
@@ -986,52 +1015,81 @@ Sistema de Gestión de Camareros
                                         <motion.div
                                           initial={{ opacity: 0, y: 10 }}
                                           animate={{ opacity: 1, y: 0 }}
+                                          className="h-full"
                                         >
-                                          <div className="flex items-center justify-between mb-3">
-                                            <span className="font-bold text-slate-800 text-base">
-                                              {asignacion.camarero_nombre}
-                                            </span>
+                                          {/* Header con nombre y botón de eliminar */}
+                                          <div className="flex items-start justify-between mb-3">
+                                            <div className="flex-1">
+                                              <div className="font-bold text-slate-800 text-lg mb-1">
+                                                {asignacion.camarero_nombre}
+                                              </div>
+                                              <span className="text-xs text-slate-500 font-mono bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                                                #{asignacion.camarero_codigo}
+                                              </span>
+                                            </div>
                                             <Button
                                               variant="ghost"
                                               size="icon"
-                                              className="h-7 w-7 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                              className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
                                               onClick={() => deleteAsignacionMutation.mutate(asignacion)}
                                             >
                                               <X className="w-4 h-4" />
                                             </Button>
                                           </div>
-                                          <span className="text-xs text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded">
-                                            #{asignacion.camarero_codigo}
-                                          </span>
 
+                                          {/* Estado con mejor UI */}
                                           <Select 
                                             value={asignacion.estado} 
                                             onValueChange={(v) => handleCambiarEstado(asignacion.id, v)}
                                           >
-                                            <SelectTrigger className={`mt-3 h-9 text-sm font-medium border-2 ${estadoColors[asignacion.estado]}`}>
+                                            <SelectTrigger className={`mt-3 h-10 text-sm font-semibold border-2 shadow-sm ${estadoColors[asignacion.estado]}`}>
                                               <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                              <SelectItem value="pendiente">⏳ Pendiente</SelectItem>
-                                              <SelectItem value="enviado">📤 Enviado</SelectItem>
-                                              <SelectItem value="confirmado">✅ Confirmado</SelectItem>
-                                              <SelectItem value="alta">🎯 Alta</SelectItem>
+                                              <SelectItem value="pendiente">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="text-base">⏳</span>
+                                                  <span>Pendiente</span>
+                                                </div>
+                                              </SelectItem>
+                                              <SelectItem value="enviado">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="text-base">📤</span>
+                                                  <span>Enviado</span>
+                                                </div>
+                                              </SelectItem>
+                                              <SelectItem value="confirmado">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="text-base">✅</span>
+                                                  <span>Confirmado</span>
+                                                </div>
+                                              </SelectItem>
+                                              <SelectItem value="alta">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="text-base">🎯</span>
+                                                  <span>Alta</span>
+                                                </div>
+                                              </SelectItem>
                                             </SelectContent>
                                           </Select>
                                         </motion.div>
                                       ) : (
                                         <div className="flex flex-col items-center justify-center h-full text-center">
-                                          <div className={`p-3 rounded-full mb-2 transition-all ${
-                                            snapshotSlot.isDraggingOver 
-                                              ? 'bg-[#1e3a5f] text-white scale-110' 
-                                              : 'bg-slate-200 text-slate-400'
-                                          }`}>
-                                            <UserPlus className="w-6 h-6" />
-                                          </div>
-                                          <p className="text-sm text-slate-500 font-medium">
-                                            {snapshotSlot.isDraggingOver ? 'Soltar aquí' : 'Arrastra un camarero'}
+                                          <motion.div 
+                                            className={`p-4 rounded-2xl mb-3 transition-all ${
+                                              snapshotSlot.isDraggingOver 
+                                                ? 'bg-[#1e3a5f] text-white scale-125 shadow-xl' 
+                                                : 'bg-slate-200 text-slate-400'
+                                            }`}
+                                            animate={snapshotSlot.isDraggingOver ? { rotate: [0, -10, 10, 0] } : {}}
+                                            transition={{ duration: 0.5, repeat: snapshotSlot.isDraggingOver ? Infinity : 0 }}
+                                          >
+                                            <UserPlus className="w-7 h-7" />
+                                          </motion.div>
+                                          <p className="text-sm text-slate-600 font-semibold mb-1">
+                                            {snapshotSlot.isDraggingOver ? '¡Soltar aquí!' : 'Arrastra un camarero'}
                                           </p>
-                                          <span className="text-xs text-slate-400 mt-1">Slot {index + 1}</span>
+                                          <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-full">Slot {index + 1}</span>
                                         </div>
                                       )}
                                       {providedSlot.placeholder}
