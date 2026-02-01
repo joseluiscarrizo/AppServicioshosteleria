@@ -649,8 +649,8 @@ Sistema de Gestión de Camareros
 
                   <Droppable droppableId="camareros-disponibles" isDropDisabled={true}>
                     {(provided) => (
-                      <ScrollArea className="flex-1 p-4" type="always">
-                        <div className="space-y-3" ref={provided.innerRef} {...provided.droppableProps}>
+                      <ScrollArea className="flex-1" type="always">
+                        <div className="space-y-3 p-4 min-h-[500px]" ref={provided.innerRef} {...provided.droppableProps}>
                           {selectedPedido && getCamarerosDisponibles(selectedPedido).map((camarero, index) => (
                             <Draggable key={camarero.id} draggableId={camarero.id} index={index}>
                               {(provided, snapshot) => (
@@ -789,7 +789,8 @@ Sistema de Gestión de Camareros
                     </div>
                   </div>
 
-                  <ScrollArea className="flex-1 p-4" type="always">
+                  <ScrollArea className="flex-1" type="always">
+                    <div className="p-4 min-h-[500px]">
                     {!selectedPedido ? (
                       <div className="flex items-center justify-center h-full">
                         <div className="text-center text-slate-400">
@@ -1008,6 +1009,7 @@ Sistema de Gestión de Camareros
                         )}
                       </div>
                     )}
+                    </div>
                   </ScrollArea>
                 </Card>
               </div>
