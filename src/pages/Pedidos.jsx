@@ -22,6 +22,7 @@ import EdicionRapida from '../components/pedidos/EdicionRapida';
 import DuplicarEvento from '../components/pedidos/DuplicarEvento';
 import EventoRecurrente from '../components/pedidos/EventoRecurrente';
 import PedidoFormNuevo from '../components/pedidos/PedidoFormNuevo';
+import GenerarDocumentacion from '../components/pedidos/GenerarDocumentacion';
 
 export default function Pedidos() {
   const [showForm, setShowForm] = useState(false);
@@ -466,6 +467,7 @@ export default function Pedidos() {
                                 </TableCell>
                                 <TableCell className="text-right" rowSpan={totalFilas}>
                                   <div className="flex justify-end gap-1">
+                                    <GenerarDocumentacion pedido={pedido} variant="ghost" size="icon" />
                                     <Button 
                                       variant="ghost" 
                                       size="icon"
