@@ -67,18 +67,19 @@ export default function ConfirmarServicio() {
         estado: 'confirmado'
       });
 
-      // Verificar si todos los camareros están confirmados para crear grupo de chat
-      const todasAsignaciones = await base44.entities.AsignacionCamarero.filter({ 
-        pedido_id: asignacion.pedido_id 
-      });
-      const todasConfirmadas = todasAsignaciones.every(a => a.estado === 'confirmado');
-      
-      if (todasConfirmadas) {
-        try {
+      // Crear grupo de chat siempre que haya al menos una confirmación
+      try {
+        const gruposExistentes = await base44.entities.GrupoChat.filter({ 
+          pedido_id: asignacion.pedido_id,
+          activo: true
+        });
+        
+        // Solo crear si no existe ya un grupo activo
+        if (gruposExistentes.length === 0) {
           await base44.functions.invoke('crearGrupoChat', { pedido_id: asignacion.pedido_id });
-        } catch (e) {
-          console.error('Error creando grupo de chat:', e);
         }
+      } catch (e) {
+        console.error('Error creando grupo de chat:', e);
       }
 
       // Actualizar notificación si existe
