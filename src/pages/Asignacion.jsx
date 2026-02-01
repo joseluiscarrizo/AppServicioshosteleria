@@ -661,43 +661,78 @@ Sistema de Gestión de Camareros
                                   initial={{ opacity: 0, x: -20 }}
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ delay: index * 0.05 }}
-                                  className={`group p-4 rounded-xl border-2 bg-gradient-to-br from-white to-slate-50 transition-all cursor-grab active:cursor-grabbing ${
+                                  className={`group rounded-xl border-2 bg-gradient-to-br transition-all cursor-grab active:cursor-grabbing overflow-hidden ${
                                     snapshot.isDragging 
-                                      ? 'border-[#1e3a5f] shadow-2xl rotate-3 scale-110 from-blue-50 to-indigo-50' 
-                                      : 'border-slate-200 hover:border-[#1e3a5f] hover:shadow-lg hover:scale-105'
+                                      ? 'border-[#1e3a5f] shadow-2xl rotate-2 scale-110 from-blue-50 to-indigo-50' 
+                                      : 'border-slate-200 hover:border-[#1e3a5f] hover:shadow-xl hover:scale-[1.02] from-white to-slate-50'
                                   }`}
                                   style={{
                                     ...provided.draggableProps.style,
                                     userSelect: 'none'
                                   }}
                                 >
-                                  <div className="flex items-start gap-3">
-                                    <div className={`p-2 rounded-lg transition-colors ${
-                                      snapshot.isDragging ? 'bg-[#1e3a5f] text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-[#1e3a5f] group-hover:text-white'
-                                    }`}>
-                                      <GripVertical className="w-4 h-4" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-semibold text-slate-800 truncate">{camarero.nombre}</span>
-                                        {camarero.valoracion_promedio > 0 && (
-                                          <span className="flex items-center gap-0.5 text-amber-500 text-xs font-medium">
-                                            <Star className="w-3.5 h-3.5 fill-amber-400" />
-                                            {camarero.valoracion_promedio.toFixed(1)}
-                                          </span>
-                                        )}
+                                  {/* Barra superior con degradado */}
+                                  <div className={`h-1.5 w-full transition-all ${
+                                    snapshot.isDragging ? 'bg-gradient-to-r from-[#1e3a5f] to-blue-500' : 'bg-gradient-to-r from-slate-300 to-slate-400 group-hover:from-[#1e3a5f] group-hover:to-blue-500'
+                                  }`} />
+
+                                  <div className="p-4">
+                                    <div className="flex items-start gap-3">
+                                      <div className={`p-2.5 rounded-xl transition-all shadow-sm ${
+                                        snapshot.isDragging ? 'bg-[#1e3a5f] text-white scale-110' : 'bg-slate-100 text-slate-400 group-hover:bg-[#1e3a5f] group-hover:text-white group-hover:scale-105'
+                                      }`}>
+                                        <GripVertical className="w-5 h-5" />
                                       </div>
-                                      <span className="text-xs text-slate-500 font-mono">#{camarero.codigo}</span>
-                                      <div className="flex gap-1.5 mt-2 flex-wrap">
-                                        {camarero.especialidad && (
-                                          <Badge variant="outline" className="text-xs bg-white border-[#1e3a5f]/20 text-[#1e3a5f]">
-                                            {camarero.especialidad}
-                                          </Badge>
-                                        )}
-                                        {camarero.experiencia_anios > 0 && (
-                                          <Badge variant="outline" className="text-xs bg-white border-emerald-500/20 text-emerald-700">
-                                            {camarero.experiencia_anios} años
-                                          </Badge>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                          <span className="font-bold text-slate-800 text-base truncate">{camarero.nombre}</span>
+                                          {camarero.valoracion_promedio > 0 && (
+                                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200">
+                                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                              <span className="text-xs font-bold text-amber-700">{camarero.valoracion_promedio.toFixed(1)}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <span className="text-xs text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded">#{camarero.codigo}</span>
+                                          {camarero.telefono && (
+                                            <span className="text-xs text-slate-400">📱 {camarero.telefono.slice(-3)}</span>
+                                          )}
+                                        </div>
+
+                                        {/* Badges mejorados */}
+                                        <div className="flex gap-1.5 flex-wrap">
+                                          {camarero.especialidad && (
+                                            <Badge variant="outline" className="text-xs font-semibold bg-blue-50 border-[#1e3a5f]/30 text-[#1e3a5f]">
+                                              {camarero.especialidad}
+                                            </Badge>
+                                          )}
+                                          {camarero.experiencia_anios > 0 && (
+                                            <Badge variant="outline" className="text-xs font-semibold bg-emerald-50 border-emerald-500/30 text-emerald-700">
+                                              ✨ {camarero.experiencia_anios} años
+                                            </Badge>
+                                          )}
+                                          {camarero.idiomas?.length > 0 && (
+                                            <Badge variant="outline" className="text-xs font-semibold bg-purple-50 border-purple-500/30 text-purple-700">
+                                              🌐 {camarero.idiomas.length}
+                                            </Badge>
+                                          )}
+                                        </div>
+
+                                        {/* Habilidades */}
+                                        {camarero.habilidades?.length > 0 && (
+                                          <div className="mt-2 flex gap-1 flex-wrap">
+                                            {camarero.habilidades.slice(0, 3).map((hab, idx) => (
+                                              <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+                                                {hab}
+                                              </span>
+                                            ))}
+                                            {camarero.habilidades.length > 3 && (
+                                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+                                                +{camarero.habilidades.length - 3}
+                                              </span>
+                                            )}
+                                          </div>
                                         )}
                                       </div>
                                     </div>
