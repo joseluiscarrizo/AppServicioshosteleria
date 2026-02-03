@@ -230,7 +230,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
         // Enviar mensaje directo por WhatsApp usando backend function
         let whatsappUrl = null;
         try {
-          const resultado = await base44.functions.invoke('enviarWhatsAppDirecto', {
+          const response = await base44.functions.invoke('enviarWhatsAppDirecto', {
             telefono: camarero.telefono,
             mensaje: mensaje,
             camarero_id: camarero.id,
@@ -239,7 +239,14 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
             asignacion_id: asignacion.id,
             plantilla_usada: plantillaSeleccionada ? plantillas.find(p => p.id === plantillaSeleccionada)?.nombre : 'Manual'
           });
+          const resultado = response.data || response;
           whatsappUrl = resultado.whatsapp_url;
+          
+          // Si se envió por API, no necesitamos abrir WhatsApp Web
+          if (resultado.enviado_por_api) {
+            console.log(`✅ Mensaje enviado por API a ${camarero.nombre}`);
+            whatsappUrl = null; // No abrir WhatsApp Web
+          }
         } catch (error) {
           console.error(`Error enviando WhatsApp a ${camarero.nombre}:`, error);
           throw new Error(`Error al enviar mensaje a ${camarero.nombre}`);
