@@ -113,7 +113,8 @@ Deno.serve(async (req) => {
         
         let estadoEnvio = 'enviado';
         let mensajeIdProveedor = null;
-        let proveedor = 'whatsapp_web';
+        let proveedor = 'whatsapp_api'; // Por defecto intentar API
+        let enviadoPorAPI = false;
 
         if (whatsappToken && whatsappPhone) {
           try {
@@ -142,15 +143,19 @@ Deno.serve(async (req) => {
             if (response.ok && data.messages) {
               mensajeIdProveedor = data.messages[0]?.id;
               proveedor = 'whatsapp_api';
+              enviadoPorAPI = true;
               console.log(`✅ Mensaje enviado vía API a ${camarero.nombre}: ${mensajeIdProveedor}`);
             } else {
               throw new Error(data.error?.message || 'Error en WhatsApp API');
             }
           } catch (apiError) {
             console.error('WhatsApp API error:', apiError.message);
-            estadoEnvio = 'fallido';
-            throw apiError;
+            proveedor = 'whatsapp_web'; // Fallback a WhatsApp Web
+            estadoEnvio = 'pendiente';
           }
+        } else {
+          proveedor = 'whatsapp_web';
+          estadoEnvio = 'pendiente';
         }
 
         // Registrar en historial
@@ -167,27 +172,14 @@ Deno.serve(async (req) => {
           coordinador_id: coordinador_id
         });
 
-        // Abrir WhatsApp Web si no se usó API
-        if (proveedor === 'whatsapp_web') {
-          const mensajeCodificado = encodeURIComponent(mensajePersonalizado);
-          const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${mensajeCodificado}`;
-          
-          resultados.detalles.push({
-            camarero: camarero.nombre,
-            telefono: numeroWhatsApp,
-            estado: 'pendiente_apertura',
-            whatsapp_url: whatsappUrl,
-            proveedor: 'whatsapp_web'
-          });
-        } else {
-          resultados.detalles.push({
-            camarero: camarero.nombre,
-            telefono: numeroWhatsApp,
-            estado: 'enviado',
-            proveedor: proveedor,
-            mensaje_id: mensajeIdProveedor
-          });
-        }
+        resultados.detalles.push({
+          camarero: camarero.nombre,
+          telefono: numeroWhatsApp,
+          estado: enviadoPorAPI ? 'enviado' : 'pendiente',
+          proveedor: proveedor,
+          mensaje_id: mensajeIdProveedor,
+          enviado_por_api: enviadoPorAPI
+        });
 
         resultados.exitosos++;
 

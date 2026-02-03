@@ -206,6 +206,8 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
       );
 
       const asignacionesActualizadas = [];
+      let enviadosDirectos = 0;
+      let enviadosPorWeb = 0;
 
       for (const camarero of camarerosSeleccionados) {
         if (!camarero.telefono) {
@@ -228,7 +230,6 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
         }
         
         // Enviar mensaje directo por WhatsApp usando backend function
-        let whatsappUrl = null;
         try {
           const response = await base44.functions.invoke('enviarWhatsAppDirecto', {
             telefono: camarero.telefono,
@@ -240,22 +241,18 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
             plantilla_usada: plantillaSeleccionada ? plantillas.find(p => p.id === plantillaSeleccionada)?.nombre : 'Manual'
           });
           const resultado = response.data || response;
-          whatsappUrl = resultado.whatsapp_url;
           
-          // Si se envió por API, no necesitamos abrir WhatsApp Web
+          // Contar según método de envío
           if (resultado.enviado_por_api) {
-            console.log(`✅ Mensaje enviado por API a ${camarero.nombre}`);
-            whatsappUrl = null; // No abrir WhatsApp Web
+            enviadosDirectos++;
+            console.log(`✅ Mensaje enviado directamente a ${camarero.nombre}`);
+          } else if (resultado.whatsapp_url) {
+            enviadosPorWeb++;
+            // Ya no abrir WhatsApp Web, solo registrar
           }
         } catch (error) {
           console.error(`Error enviando WhatsApp a ${camarero.nombre}:`, error);
           throw new Error(`Error al enviar mensaje a ${camarero.nombre}`);
-        }
-        
-        // Abrir WhatsApp Web automáticamente
-        if (whatsappUrl) {
-          window.open(whatsappUrl, '_blank');
-          await new Promise(resolve => setTimeout(resolve, 1500));
         }
         
         // Actualizar estado a "enviado" y crear notificación
@@ -293,12 +290,20 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
         await new Promise(resolve => setTimeout(resolve, 800));
       }
 
-      return asignacionesActualizadas;
+      return { asignacionesActualizadas, enviadosDirectos, enviadosPorWeb };
     },
-    onSuccess: () => {
+    onSuccess: ({ enviadosDirectos, enviadosPorWeb }) => {
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
       queryClient.invalidateQueries({ queryKey: ['notificaciones-camarero'] });
-      toast.success('Mensajes enviados correctamente');
+      
+      if (enviadosDirectos > 0 && enviadosPorWeb === 0) {
+        toast.success(`✅ ${enviadosDirectos} mensaje${enviadosDirectos !== 1 ? 's' : ''} enviado${enviadosDirectos !== 1 ? 's' : ''} directamente por WhatsApp`);
+      } else if (enviadosDirectos > 0 && enviadosPorWeb > 0) {
+        toast.success(`✅ ${enviadosDirectos} enviados directamente, ${enviadosPorWeb} requieren WhatsApp Web`);
+      } else {
+        toast.success('Mensajes procesados correctamente');
+      }
+      
       setOpen(false);
       setSelectedCamareros([]);
       setPlantillaSeleccionada(null);
