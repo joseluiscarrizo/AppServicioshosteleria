@@ -52,20 +52,18 @@ export default function EnvioMasivoWhatsApp({ pedidoId, camarerosPredefinidos = 
       setMostrarResultados(true);
       queryClient.invalidateQueries({ queryKey: ['historial-whatsapp'] });
       
-      // Abrir URLs de WhatsApp Web si es necesario
-      if (data.detalles) {
-        data.detalles.forEach((detalle, index) => {
-          if (detalle.whatsapp_url) {
-            setTimeout(() => {
-              window.open(detalle.whatsapp_url, '_blank');
-            }, index * 1000); // 1 segundo entre cada ventana
-          }
-        });
+      // Contar mensajes enviados directamente vs por web
+      const directos = data.detalles?.filter(d => d.enviado_por_api).length || 0;
+      const porWeb = data.detalles?.filter(d => !d.enviado_por_api && d.whatsapp_url).length || 0;
+      
+      if (directos > 0 && porWeb === 0) {
+        toast.success(`✅ ${directos} mensaje${directos !== 1 ? 's' : ''} enviado${directos !== 1 ? 's' : ''} directamente por WhatsApp`);
+      } else if (directos > 0 && porWeb > 0) {
+        toast.success(`✅ ${directos} enviados directamente`);
+      } else if (data.exitosos > 0) {
+        toast.success(`${data.exitosos} mensajes procesados`);
       }
-
-      if (data.exitosos > 0) {
-        toast.success(`${data.exitosos} mensajes enviados correctamente`);
-      }
+      
       if (data.fallidos > 0) {
         toast.warning(`${data.fallidos} mensajes fallaron`);
       }
@@ -248,7 +246,7 @@ export default function EnvioMasivoWhatsApp({ pedidoId, camarerosPredefinidos = 
                 <Card key={index} className="p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {detalle.estado === 'enviado' || detalle.estado === 'pendiente_apertura' ? (
+                      {detalle.estado === 'enviado' ? (
                         <CheckCircle className="w-5 h-5 text-green-500" />
                       ) : detalle.estado === 'fallido' ? (
                         <XCircle className="w-5 h-5 text-red-500" />
@@ -263,7 +261,9 @@ export default function EnvioMasivoWhatsApp({ pedidoId, camarerosPredefinidos = 
                         {detalle.error && (
                           <p className="text-xs text-red-500">{detalle.error}</p>
                         )}
-                        {detalle.proveedor && (
+                        {detalle.enviado_por_api ? (
+                          <p className="text-xs text-green-600 font-medium">✓ Enviado directamente por WhatsApp API</p>
+                        ) : detalle.proveedor && (
                           <p className="text-xs text-slate-400">Vía: {detalle.proveedor}</p>
                         )}
                       </div>
