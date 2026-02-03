@@ -46,6 +46,7 @@ export default function Asignacion() {
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [filtroHabilidad, setFiltroHabilidad] = useState('');
   const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
+  const [busquedaCamarero, setBusquedaCamarero] = useState('');
   const [mostrarCarga, setMostrarCarga] = useState(false);
   const [showAsignacionAuto, setShowAsignacionAuto] = useState(false);
   const [showReglas, setShowReglas] = useState(false);
@@ -350,8 +351,38 @@ Sistema de Gestión de Camareros
       if (filtroEspecialidad && c.especialidad !== filtroEspecialidad) return false;
       if (filtroHabilidad && !c.habilidades?.includes(filtroHabilidad)) return false;
       
+      // Filtro de búsqueda por nombre o código
+      if (busquedaCamarero) {
+        const busqueda = busquedaCamarero.toLowerCase();
+        const coincide = c.nombre.toLowerCase().includes(busqueda) || 
+                         c.codigo?.toLowerCase().includes(busqueda);
+        if (!coincide) return false;
+      }
+      
       return true;
-    }).sort((a, b) => (b.valoracion_promedio || 0) - (a.valoracion_promedio || 0)); // Ordenar por valoración
+    }).sort((a, b) => {
+      // Ordenar por: 1) Valoración, 2) Menor carga de trabajo del día
+      const diffValoracion = (b.valoracion_promedio || 0) - (a.valoracion_promedio || 0);
+      if (diffValoracion !== 0) return diffValoracion;
+      
+      // Si empatan en valoración, priorizar quien tenga menos horas trabajadas ese día
+      const calcularHoras = (camareroId) => {
+        const asigs = asignaciones.filter(asig => 
+          asig.camarero_id === camareroId && asig.fecha_pedido === pedido.dia
+        );
+        let total = 0;
+        asigs.forEach(asig => {
+          if (asig.hora_entrada && asig.hora_salida) {
+            const [hE, mE] = asig.hora_entrada.split(':').map(Number);
+            const [hS, mS] = asig.hora_salida.split(':').map(Number);
+            total += ((hS * 60 + mS) - (hE * 60 + mE)) / 60;
+          }
+        });
+        return total;
+      };
+      
+      return calcularHoras(a.id) - calcularHoras(b.id); // Menos horas primero
+    });
   };
   
   // Obtener todas las habilidades únicas
@@ -606,6 +637,30 @@ Sistema de Gestión de Camareros
                         </Badge>
                       )}
                     </h3>
+                    
+                    {/* Buscador */}
+                    <div className="mb-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+                        <Input
+                          value={busquedaCamarero}
+                          onChange={(e) => setBusquedaCamarero(e.target.value)}
+                          placeholder="Buscar por nombre o código..."
+                          className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 h-9"
+                        />
+                        {busquedaCamarero && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-white/60 hover:text-white hover:bg-white/20"
+                            onClick={() => setBusquedaCamarero('')}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="flex gap-2 flex-wrap">
                       <Select value={filtroEspecialidad} onValueChange={setFiltroEspecialidad}>
                         <SelectTrigger className="w-40 h-9 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">

@@ -138,11 +138,13 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
       let score = 0;
       const razones = [];
 
-      // 1. Valoración (0-30 puntos)
+      // 1. Valoración (0-35 puntos) - INCREMENTADO para priorizar mejor
       const valoracionPromedio = camarero.valoracion_promedio || 0;
-      score += valoracionPromedio * 6;
+      score += valoracionPromedio * 7; // Aumentado de 6 a 7
       if (valoracionPromedio >= 4.5) {
         razones.push({ icon: Star, text: `Excelente valoración (${valoracionPromedio.toFixed(1)})`, color: 'text-amber-600' });
+      } else if (valoracionPromedio >= 4.0) {
+        razones.push({ icon: Star, text: `Buena valoración (${valoracionPromedio.toFixed(1)})`, color: 'text-amber-500' });
       }
 
       // 2. Especialidad (0-25 puntos)
@@ -179,15 +181,32 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
         }
       }
 
-      // 5. Carga de trabajo (0-20 puntos) - menos carga = más puntos
-      const asignacionesMes = asignaciones.filter(a => 
+      // 5. Carga de trabajo del DÍA (0-30 puntos) - menos horas trabajadas = más puntos
+      const asignacionesDia = asignaciones.filter(a => 
         a.camarero_id === camarero.id && 
-        a.fecha_pedido?.startsWith(pedido.dia?.substring(0, 7)) // mismo mes
-      ).length;
-      const cargaScore = Math.max(0, 20 - (asignacionesMes * 2));
+        a.fecha_pedido === pedido.dia
+      );
+      
+      // Calcular total de horas trabajadas ese día
+      let horasTrabajadas = 0;
+      for (const asig of asignacionesDia) {
+        if (asig.hora_entrada && asig.hora_salida) {
+          const [hE, mE] = asig.hora_entrada.split(':').map(Number);
+          const [hS, mS] = asig.hora_salida.split(':').map(Number);
+          const minutosEntrada = hE * 60 + mE;
+          const minutosSalida = hS * 60 + mS;
+          horasTrabajadas += (minutosSalida - minutosEntrada) / 60;
+        }
+      }
+      
+      // Bonus por baja carga: 30 puntos si 0 horas, -5 puntos por cada hora trabajada
+      const cargaScore = Math.max(0, 30 - (horasTrabajadas * 5));
       score += cargaScore;
-      if (asignacionesMes < 3) {
-        razones.push({ icon: TrendingUp, text: 'Baja carga de trabajo', color: 'text-emerald-600' });
+      
+      if (horasTrabajadas === 0) {
+        razones.push({ icon: TrendingUp, text: 'Disponible todo el día', color: 'text-emerald-600' });
+      } else if (horasTrabajadas < 4) {
+        razones.push({ icon: TrendingUp, text: `${horasTrabajadas.toFixed(1)}h trabajadas hoy`, color: 'text-blue-600' });
       }
 
       // 6. Proximidad (0-10 puntos) - si hay coordenadas
@@ -262,9 +281,12 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
       };
     }).filter(Boolean); // Eliminar nulos (descartados por reglas obligatorias)
 
-    // Ordenar por score y tomar top candidatos
+    // Ordenar por score, luego por valoración como desempate
     return scored
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return (b.camarero.valoracion_promedio || 0) - (a.camarero.valoracion_promedio || 0);
+      })
       .slice(0, 10);
   }, [pedido, camareros, asignaciones, disponibilidades, reglas]);
 
@@ -613,9 +635,25 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
                             <Badge variant="outline" className="font-medium">
                               {camarero.especialidad}
                             </Badge>
-                            <span className="text-xs">
-                              {asignacionesMes} servicios este mes
-                            </span>
+                            {(() => {
+                              const asignsDia = asignaciones.filter(a => 
+                                a.camarero_id === camarero.id && 
+                                a.fecha_pedido === pedido.dia
+                              );
+                              let horas = 0;
+                              asignsDia.forEach(a => {
+                                if (a.hora_entrada && a.hora_salida) {
+                                  const [hE, mE] = a.hora_entrada.split(':').map(Number);
+                                  const [hS, mS] = a.hora_salida.split(':').map(Number);
+                                  horas += ((hS * 60 + mS) - (hE * 60 + mE)) / 60;
+                                }
+                              });
+                              return (
+                                <span className={`text-xs font-medium ${horas === 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
+                                  {horas === 0 ? '✓ Libre hoy' : `${horas.toFixed(1)}h trabajadas hoy`}
+                                </span>
+                              );
+                            })()}
                           </div>
 
                           {/* Razones destacadas */}
