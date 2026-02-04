@@ -18,6 +18,7 @@ export default function Coordinadores() {
   const [editingCoord, setEditingCoord] = useState(null);
   const [mostrarRecordatorios, setMostrarRecordatorios] = useState(false);
   const [formData, setFormData] = useState({
+    codigo: '',
     nombre: '',
     email: '',
     telefono: '',
@@ -62,6 +63,7 @@ export default function Coordinadores() {
     setShowForm(false);
     setEditingCoord(null);
     setFormData({
+      codigo: '',
       nombre: '',
       email: '',
       telefono: '',
@@ -73,6 +75,7 @@ export default function Coordinadores() {
   const handleEdit = (coord) => {
     setEditingCoord(coord);
     setFormData({
+      codigo: coord.codigo || '',
       nombre: coord.nombre || '',
       email: coord.email || '',
       telefono: coord.telefono || '',
@@ -153,7 +156,17 @@ export default function Coordinadores() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="codigo">Código</Label>
+                      <Input
+                        id="codigo"
+                        value={formData.codigo}
+                        onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
+                        placeholder="C001"
+                        required
+                      />
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="nombre">Nombre</Label>
                       <Input
@@ -230,6 +243,7 @@ export default function Coordinadores() {
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50/80">
+                <TableHead className="font-semibold text-slate-700">Código</TableHead>
                 <TableHead className="font-semibold text-slate-700">Nombre</TableHead>
                 <TableHead className="font-semibold text-slate-700">Email</TableHead>
                 <TableHead className="font-semibold text-slate-700">Teléfono</TableHead>
@@ -256,6 +270,7 @@ export default function Coordinadores() {
               ) : (
                 coordinadores.map((coord) => (
                   <TableRow key={coord.id} className="hover:bg-slate-50/50">
+                    <TableCell className="font-mono text-sm font-semibold text-[#1e3a5f]">{coord.codigo}</TableCell>
                     <TableCell className="font-medium text-slate-800">{coord.nombre}</TableCell>
                     <TableCell className="text-slate-600">
                       <div className="flex items-center gap-2">
