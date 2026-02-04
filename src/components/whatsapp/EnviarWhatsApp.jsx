@@ -529,8 +529,18 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
             Cancelar
           </Button>
           <Button
-            onClick={() => enviarMutation.mutate()}
-            disabled={selectedCamareros.length === 0 || !coordinadorId || enviarMutation.isPending}
+            onClick={() => {
+              if (!coordinadorId) {
+                toast.error('Por favor, selecciona un coordinador');
+                return;
+              }
+              if (selectedCamareros.length === 0) {
+                toast.error('Por favor, selecciona al menos un camarero');
+                return;
+              }
+              enviarMutation.mutate();
+            }}
+            disabled={enviarMutation.isPending}
             className="bg-green-600 hover:bg-green-700"
           >
             {enviarMutation.isPending ? (
