@@ -248,7 +248,9 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
             console.log(`✅ Mensaje enviado directamente a ${camarero.nombre}`);
           } else if (resultado.whatsapp_url) {
             enviadosPorWeb++;
-            // Ya no abrir WhatsApp Web, solo registrar
+            // Abrir WhatsApp Web como fallback
+            window.open(resultado.whatsapp_url, '_blank');
+            await new Promise(resolve => setTimeout(resolve, 1500));
           }
         } catch (error) {
           console.error(`Error enviando WhatsApp a ${camarero.nombre}:`, error);

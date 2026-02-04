@@ -54,14 +54,15 @@ export default function EnvioMasivoWhatsApp({ pedidoId, camarerosPredefinidos = 
       
       // Contar mensajes enviados directamente vs por web
       const directos = data.detalles?.filter(d => d.enviado_por_api).length || 0;
-      const porWeb = data.detalles?.filter(d => !d.enviado_por_api && d.whatsapp_url).length || 0;
+      const porWeb = data.detalles?.filter(d => !d.enviado_por_api).length || 0;
       
+      // Si hay mensajes enviados directamente por API, mostrar mensaje especial
       if (directos > 0 && porWeb === 0) {
         toast.success(`✅ ${directos} mensaje${directos !== 1 ? 's' : ''} enviado${directos !== 1 ? 's' : ''} directamente por WhatsApp`);
       } else if (directos > 0 && porWeb > 0) {
-        toast.success(`✅ ${directos} enviados directamente`);
+        toast.success(`✅ ${directos} enviados directamente por API. Revisa las ventanas de WhatsApp Web para ${porWeb} adicionales.`);
       } else if (data.exitosos > 0) {
-        toast.success(`${data.exitosos} mensajes procesados`);
+        toast.success(`${data.exitosos} mensajes enviados. Revisa las ventanas de WhatsApp Web.`);
       }
       
       if (data.fallidos > 0) {
