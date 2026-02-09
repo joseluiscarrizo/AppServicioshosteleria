@@ -18,7 +18,10 @@ const tiposRegla = [
   { value: 'valoracion_minima', label: 'Valoración Mínima', icon: Star, description: 'Requiere valoración mínima' },
   { value: 'distancia_maxima', label: 'Distancia Máxima', icon: MapPin, description: 'Limita distancia al evento' },
   { value: 'especialidad_obligatoria', label: 'Especialidad Obligatoria', icon: Award, description: 'Requiere especialidad específica' },
-  { value: 'experiencia_minima', label: 'Experiencia Mínima', icon: TrendingUp, description: 'Años mínimos de experiencia' }
+  { value: 'experiencia_minima', label: 'Experiencia Mínima', icon: TrendingUp, description: 'Años mínimos de experiencia' },
+  { value: 'evitar_eventos_consecutivos', label: 'Evitar Eventos Consecutivos', icon: Shield, description: 'Requiere descanso mínimo entre eventos' },
+  { value: 'limite_eventos_mes', label: 'Límite Eventos/Mes', icon: Shield, description: 'Máximo eventos por mes' },
+  { value: 'historial_rendimiento', label: 'Historial de Rendimiento', icon: TrendingUp, description: 'Rendimiento mínimo en últimos eventos' }
 ];
 
 export default function ReglasAsignacion() {
@@ -214,12 +217,19 @@ function FormularioRegla({ open, onClose, regla, clientes, camareros, onSubmit }
     prioridad: 5,
     es_obligatoria: false,
     bonus_puntos: 10,
+    penalizacion_puntos: 0,
     cliente_id: '',
     camareros_preferidos: [],
+    camareros_excluidos: [],
     valoracion_minima: 4.0,
     distancia_maxima_km: 20,
     especialidades_requeridas: [],
     experiencia_minima_anios: 2,
+    horas_descanso_entre_eventos: 8,
+    max_eventos_por_mes: 20,
+    puntuacion_minima_ultimos_eventos: 4.0,
+    cantidad_eventos_historial: 5,
+    aplicar_solo_cliente_id: '',
     descripcion: ''
   });
 
@@ -369,6 +379,89 @@ function FormularioRegla({ open, onClose, regla, clientes, camareros, onSubmit }
                 />
               </div>
             )}
+
+            {formData.tipo_regla === 'evitar_eventos_consecutivos' && (
+              <div>
+                <Label>Horas Mínimas de Descanso</Label>
+                <Input
+                  type="number"
+                  min="4"
+                  max="48"
+                  value={formData.horas_descanso_entre_eventos}
+                  onChange={(e) => setFormData({ ...formData, horas_descanso_entre_eventos: parseInt(e.target.value) })}
+                />
+                <p className="text-xs text-slate-500 mt-1">Horas mínimas entre eventos consecutivos</p>
+              </div>
+            )}
+
+            {formData.tipo_regla === 'limite_eventos_mes' && (
+              <div>
+                <Label>Máximo Eventos por Mes</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={formData.max_eventos_por_mes}
+                  onChange={(e) => setFormData({ ...formData, max_eventos_por_mes: parseInt(e.target.value) })}
+                />
+              </div>
+            )}
+
+            {formData.tipo_regla === 'historial_rendimiento' && (
+              <>
+                <div>
+                  <Label>Puntuación Mínima Promedio</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    max="5"
+                    value={formData.puntuacion_minima_ultimos_eventos}
+                    onChange={(e) => setFormData({ ...formData, puntuacion_minima_ultimos_eventos: parseFloat(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <Label>Eventos a Considerar</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={formData.cantidad_eventos_historial}
+                    onChange={(e) => setFormData({ ...formData, cantidad_eventos_historial: parseInt(e.target.value) })}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Últimos N eventos para calcular promedio</p>
+                </div>
+              </>
+            )}
+
+            <div>
+              <Label>Penalización de Puntos</Label>
+              <Input
+                type="number"
+                min="0"
+                value={formData.penalizacion_puntos}
+                onChange={(e) => setFormData({ ...formData, penalizacion_puntos: parseInt(e.target.value) })}
+              />
+              <p className="text-xs text-slate-500 mt-1">Puntos a restar si no cumple (para reglas opcionales)</p>
+            </div>
+
+            <div className="col-span-2">
+              <Label>Aplicar Solo a Cliente</Label>
+              <Select 
+                value={formData.aplicar_solo_cliente_id || 'todos'} 
+                onValueChange={(v) => setFormData({ ...formData, aplicar_solo_cliente_id: v === 'todos' ? '' : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los clientes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos los clientes</SelectItem>
+                  {clientes.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.nombre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="col-span-2">
               <Label>Descripción</Label>

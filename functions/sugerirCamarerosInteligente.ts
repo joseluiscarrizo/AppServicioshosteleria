@@ -53,8 +53,11 @@ Deno.serve(async (req) => {
       pedidosClienteIds.includes(a.pedido_id)
     );
 
-    // Obtener asignaciones del día del evento
+    // Obtener asignaciones del día del evento y días cercanos
     const asignacionesDia = asignacionesPrevias.filter(a => a.fecha_pedido === pedido.dia);
+    
+    // Obtener reglas de asignación activas
+    const reglasAsignacion = await base44.asServiceRole.entities.ReglaAsignacion.filter({ activa: true });
 
     // Preparar datos para IA
     const datosPedido = {
@@ -88,8 +91,37 @@ Deno.serve(async (req) => {
       // Asignaciones previas con este cliente
       const trabajosCliente = asignacionesCliente.filter(a => a.camarero_id === cam.id);
 
-      // Conflictos de horario
+      // Conflictos de horario y eventos consecutivos
       const asigDia = asignacionesDia.filter(a => a.camarero_id === cam.id);
+      
+      // Calcular eventos del mes
+      const fechaPedido = new Date(pedido.dia);
+      const inicioMes = new Date(fechaPedido.getFullYear(), fechaPedido.getMonth(), 1);
+      const finMes = new Date(fechaPedido.getFullYear(), fechaPedido.getMonth() + 1, 0);
+      const eventosMes = asignacionesPrevias.filter(a => {
+        const fechaAsig = new Date(a.fecha_pedido);
+        return a.camarero_id === cam.id && 
+               fechaAsig >= inicioMes && 
+               fechaAsig <= finMes &&
+               (a.estado === 'confirmado' || a.estado === 'alta');
+      }).length;
+      
+      // Eventos próximos (24-48h antes/después)
+      const fechaEvento = new Date(pedido.dia);
+      const eventosProximos = asignacionesPrevias.filter(a => {
+        if (a.camarero_id !== cam.id) return false;
+        const fechaAsig = new Date(a.fecha_pedido);
+        const diferenciaDias = Math.abs((fechaAsig - fechaEvento) / (1000 * 60 * 60 * 24));
+        return diferenciaDias < 2 && diferenciaDias > 0;
+      });
+      
+      // Historial de rendimiento reciente (últimos 5 eventos)
+      const valoracionesRecientes = valorsCam
+        .sort((a, b) => new Date(b.fecha_evento) - new Date(a.fecha_evento))
+        .slice(0, 5);
+      const rendimientoReciente = valoracionesRecientes.length > 0
+        ? valoracionesRecientes.reduce((sum, v) => sum + (v.puntuacion || 0), 0) / valoracionesRecientes.length
+        : null;
 
       // Calcular distancia si hay coordenadas
       let distanciaKm = null;
@@ -127,9 +159,37 @@ Deno.serve(async (req) => {
         conflictos_horario: asigDia.map(a => ({
           hora_entrada: a.hora_entrada,
           hora_salida: a.hora_salida
-        }))
+        })),
+        eventos_mes_actual: eventosMes,
+        tiene_eventos_proximos: eventosProximos.length > 0,
+        eventos_proximos_detalles: eventosProximos.map(e => ({
+          fecha: e.fecha_pedido,
+          diferencia_dias: Math.abs((new Date(e.fecha_pedido) - fechaEvento) / (1000 * 60 * 60 * 24))
+        })),
+        rendimiento_reciente: rendimientoReciente,
+        valoraciones_recientes_count: valoracionesRecientes.length,
+        preferencias_horarias: cam.preferencias_horarias
       };
     });
+
+    // Preparar información de reglas para la IA
+    const reglasInfo = reglasAsignacion.map(r => ({
+      nombre: r.nombre,
+      tipo: r.tipo_regla,
+      prioridad: r.prioridad,
+      es_obligatoria: r.es_obligatoria,
+      bonus_puntos: r.bonus_puntos,
+      cliente_aplicable: r.aplicar_solo_cliente_id || r.cliente_id,
+      criterios: {
+        valoracion_minima: r.valoracion_minima,
+        distancia_maxima_km: r.distancia_maxima_km,
+        experiencia_minima_anios: r.experiencia_minima_anios,
+        horas_descanso_entre_eventos: r.horas_descanso_entre_eventos,
+        max_eventos_por_mes: r.max_eventos_por_mes,
+        puntuacion_minima_ultimos_eventos: r.puntuacion_minima_ultimos_eventos,
+        cantidad_eventos_historial: r.cantidad_eventos_historial
+      }
+    }));
 
     // Usar IA para analizar y rankear camareros
     const analisisIA = await base44.asServiceRole.integrations.Core.InvokeLLM({
@@ -137,12 +197,40 @@ Deno.serve(async (req) => {
 
 Analiza el siguiente evento y la lista de camareros disponibles. Debes generar un ranking inteligente de los mejores camareros para este trabajo, considerando:
 
-1. **Disponibilidad**: Prioritario - no asignar si no está disponible o tiene conflictos de horario
-2. **Experiencia y valoraciones**: Camareros con mejor historial y puntuaciones
-3. **Especialización**: Match con tipo de evento y habilidades requeridas
-4. **Historial con el cliente**: Preferir camareros que ya trabajaron bien con este cliente
-5. **Proximidad geográfica**: Considerar distancia y radio de trabajo
-6. **Preferencias horarias**: Match con horarios preferidos del camarero
+**CRITERIOS PRINCIPALES (Orden de importancia):**
+
+1. **Disponibilidad y Conflictos**: ⚠️ PRIORITARIO
+   - No asignar si está explícitamente no disponible
+   - Verificar conflictos de horario el mismo día
+   - Considerar eventos consecutivos (menos de 8h de descanso)
+   - Penalizar si tiene muchos eventos este mes
+
+2. **Historial de Rendimiento**: ⭐ MUY IMPORTANTE
+   - Valoración promedio general
+   - Tendencia en últimas 5 valoraciones (rendimiento_reciente)
+   - Consistencia en el desempeño
+   - Historial específico con este cliente si existe
+
+3. **Especialización y Habilidades**: 🎯 IMPORTANTE
+   - Match con especialidad requerida del evento
+   - Habilidades específicas necesarias
+   - Idiomas requeridos
+   - Experiencia en años
+
+4. **Proximidad Geográfica**: 📍 IMPORTANTE
+   - Distancia al evento en km
+   - Dentro de su radio de trabajo preferido
+   - Coste de transporte implícito
+
+5. **Preferencias y Bienestar**: 💚 MODERADO
+   - Preferencias horarias del camarero
+   - Carga de trabajo actual (eventos_mes_actual)
+   - Balance vida-trabajo
+
+**REGLAS DE ASIGNACIÓN CONFIGURADAS:**
+${reglasInfo.length > 0 ? JSON.stringify(reglasInfo, null, 2) : 'Ninguna regla personalizada configurada'}
+
+**IMPORTANTE:** Aplica las reglas obligatorias estrictamente. Las reglas no obligatorias otorgan bonus/penalizaciones al score.
 
 EVENTO:
 ${JSON.stringify(datosPedido, null, 2)}
@@ -152,11 +240,16 @@ ${JSON.stringify(datosCamareros, null, 2)}
 
 Genera un ranking de los mejores ${limite} camareros ordenados por idoneidad. Para cada uno:
 - Calcula un score de 0-100 (100 = perfecto)
+- Aplica las reglas de asignación configuradas
 - Identifica fortalezas específicas
-- Señala cualquier consideración o limitación
-- Proporciona una recomendación clara
+- Señala cualquier consideración, limitación o alerta
+- Proporciona una recomendación clara y justificada
 
-Prioriza SIEMPRE la disponibilidad real - no sugieras camareros que estén explícitamente no disponibles o con conflictos graves de horario.`,
+⚠️ NO SUGIERAS camareros que:
+- Estén explícitamente no disponibles
+- Tengan conflictos graves de horario
+- No cumplan reglas obligatorias
+- Tengan eventos a menos de 8h de distancia (sin descanso suficiente)`,
       response_json_schema: {
         type: "object",
         properties: {
