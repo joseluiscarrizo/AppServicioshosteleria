@@ -493,37 +493,10 @@ export default function CalendarioAsignacionRapida() {
           </DialogHeader>
 
           <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 h-[75vh]">
-            {/* Info del evento seleccionado y camareros disponibles - IZQUIERDA */}
+            {/* Camareros disponibles - IZQUIERDA */}
             <div className="border-r border-slate-200 pr-6 flex flex-col h-full">
               {selectedPedidoAsignacion ? (
                 <>
-                  {/* Info del evento seleccionado */}
-                  <div className="mb-4 flex-shrink-0">
-                    <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2d5a8f] text-white rounded-lg p-4 shadow-lg">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-bold text-base">{selectedPedidoAsignacion.cliente}</h3>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => setSelectedPedidoAsignacion(null)}
-                          className="text-white hover:bg-white/20 h-7 w-7"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 flex-shrink-0 opacity-80" />
-                          <span className="truncate">{selectedPedidoAsignacion.lugar_evento || 'Sin ubicación'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 flex-shrink-0 opacity-80" />
-                          <span>{selectedPedidoAsignacion.entrada} - {selectedPedidoAsignacion.salida}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Asignaciones Actuales */}
                   {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).length > 0 && (
                     <div className="mb-4 flex-shrink-0">
@@ -671,13 +644,44 @@ export default function CalendarioAsignacionRapida() {
               )}
             </div>
 
-            {/* Lista de Eventos - DERECHA */}
-            <div className="flex flex-col h-full">
-              <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <CalendarIcon className="w-5 h-5 text-[#1e3a5f]" />
-                Eventos del Día ({pedidosDelDia.length})
-              </h4>
-              <ScrollArea className="flex-1 pr-2">
+            {/* Panel derecho - Info del evento y lista de eventos */}
+            <div className="flex flex-col h-full gap-4">
+              {/* Info del evento seleccionado - ARRIBA DERECHA */}
+              {selectedPedidoAsignacion && (
+                <div className="flex-shrink-0">
+                  <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2d5a8f] text-white rounded-lg p-4 shadow-lg">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="font-bold text-base">{selectedPedidoAsignacion.cliente}</h3>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => setSelectedPedidoAsignacion(null)}
+                        className="text-white hover:bg-white/20 h-7 w-7"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 flex-shrink-0 opacity-80" />
+                        <span className="truncate">{selectedPedidoAsignacion.lugar_evento || 'Sin ubicación'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 flex-shrink-0 opacity-80" />
+                        <span>{selectedPedidoAsignacion.entrada} - {selectedPedidoAsignacion.salida}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Lista de Eventos - ABAJO DERECHA */}
+              <div className="flex-1 min-h-0 flex flex-col">
+                <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <CalendarIcon className="w-5 h-5 text-[#1e3a5f]" />
+                  Eventos del Día ({pedidosDelDia.length})
+                </h4>
+                <ScrollArea className="flex-1 pr-2">
                 <div className="space-y-3">
                 {pedidosDelDia.map(pedido => {
                   const asigsPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
@@ -754,6 +758,7 @@ export default function CalendarioAsignacionRapida() {
                 })}
                 </div>
               </ScrollArea>
+              </div>
             </div>
           </div>
         </DialogContent>
