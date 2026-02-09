@@ -33,7 +33,7 @@ export default function ConfirmarServicio() {
     }
   }, []);
 
-  const { data: asignacion, isLoading: loadingAsignacion, error: asignacionError } = useQuery({
+  const { data: asignacion, isLoading: loadingAsignacion } = useQuery({
     queryKey: ['asignacion', asignacionId],
     queryFn: async () => {
       const asignaciones = await base44.entities.AsignacionCamarero.filter({ id: asignacionId });
@@ -43,7 +43,7 @@ export default function ConfirmarServicio() {
     retry: 1
   });
 
-  const { data: pedido, error: pedidoError } = useQuery({
+  const { data: pedido } = useQuery({
     queryKey: ['pedido', asignacion?.pedido_id],
     queryFn: async () => {
       const pedidos = await base44.entities.Pedido.filter({ id: asignacion.pedido_id });
