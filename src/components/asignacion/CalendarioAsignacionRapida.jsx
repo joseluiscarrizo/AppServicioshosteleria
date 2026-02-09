@@ -492,16 +492,101 @@ export default function CalendarioAsignacionRapida() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6 h-[75vh]">
-            {/* Panel de Camareros Disponibles - IZQUIERDA */}
-            <div className="border-r border-slate-200 pr-6 flex flex-col h-full">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 h-[75vh]">
+            {/* Lista de Eventos - IZQUIERDA */}
+            <div className="flex flex-col h-full">
+              <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <CalendarIcon className="w-5 h-5 text-[#1e3a5f]" />
+                Eventos del Día ({pedidosDelDia.length})
+              </h4>
+              <ScrollArea className="flex-1 pr-2">
+                <div className="space-y-3">
+                {pedidosDelDia.map(pedido => {
+                  const asigsPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
+                  const totalNeeded = pedido.turnos?.length > 0 
+                    ? pedido.turnos.reduce((s, t) => s + (t.cantidad_camareros || 0), 0)
+                    : (pedido.cantidad_camareros || 0);
+                  const porcentaje = totalNeeded > 0 ? Math.round((asigsPedido.length / totalNeeded) * 100) : 0;
+
+                  return (
+                    <Card 
+                      key={pedido.id}
+                      className={`p-4 cursor-pointer transition-all hover:shadow-md ${
+                        selectedPedidoAsignacion?.id === pedido.id 
+                          ? 'border-[#1e3a5f] border-2 shadow-lg bg-[#1e3a5f]/5' 
+                          : 'hover:border-[#1e3a5f]/50'
+                      }`}
+                      onClick={() => setSelectedPedidoAsignacion(pedido)}
+                    >
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-slate-800 text-base mb-1 truncate">{pedido.cliente}</h4>
+                          <div className="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
+                            <span className="flex items-center gap-1.5">
+                              <MapPin className="w-3.5 h-3.5 text-[#1e3a5f]" />
+                              <span className="truncate">{pedido.lugar_evento || 'Sin ubicación'}</span>
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-[#1e3a5f]" />
+                              {pedido.entrada} - {pedido.salida}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                          <Badge className={`text-sm font-semibold px-3 py-1 ${
+                            porcentaje === 100 ? 'bg-emerald-500 text-white' :
+                            porcentaje > 0 ? 'bg-amber-500 text-white' :
+                            'bg-red-500 text-white'
+                          }`}>
+                            {asigsPedido.length}/{totalNeeded}
+                          </Badge>
+                          {porcentaje > 0 && porcentaje < 100 && (
+                            <span className="text-xs text-amber-600 font-medium">
+                              {porcentaje}% completo
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {asigsPedido.length > 0 && (
+                        <div className="pt-3 border-t border-slate-200">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Users className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="text-xs font-semibold text-emerald-700">Asignados:</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {asigsPedido.map(asig => (
+                              <Badge 
+                                key={asig.id} 
+                                variant="outline" 
+                                className={`text-xs ${
+                                  asig.estado === 'confirmado' ? 'border-green-500 text-green-700 bg-green-50' :
+                                  asig.estado === 'enviado' ? 'border-orange-500 text-orange-700 bg-orange-50' :
+                                  'border-slate-400 text-slate-700 bg-slate-50'
+                                }`}
+                              >
+                                {asig.camarero_nombre}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Panel de Camareros Disponibles - DERECHA */}
+            <div className="border-l border-slate-200 pl-6 flex flex-col h-full">
               {selectedPedidoAsignacion ? (
                 <>
                   {/* Info del evento seleccionado */}
                   <div className="mb-4 flex-shrink-0">
                     <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2d5a8f] text-white rounded-lg p-4 shadow-lg">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-bold text-lg">{selectedPedidoAsignacion.cliente}</h3>
+                        <h3 className="font-bold text-base">{selectedPedidoAsignacion.cliente}</h3>
                         <Button 
                           variant="ghost" 
                           size="icon"
@@ -537,7 +622,7 @@ export default function CalendarioAsignacionRapida() {
                         </h5>
                         <span className="text-xs text-emerald-600">Ver todos →</span>
                       </div>
-                      <ScrollArea className="max-h-32">
+                      <ScrollArea className="max-h-28">
                         <div className="space-y-1.5 pr-2">
                           {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).slice(0, 3).map(asig => (
                             <div key={asig.id} className="flex items-center justify-between text-sm p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
@@ -557,9 +642,9 @@ export default function CalendarioAsignacionRapida() {
                     </div>
                   )}
 
-                  {/* Búsqueda de Camareros */}
-                  <div className="mb-3 flex-shrink-0">
-                    <div className="flex items-center justify-between mb-2">
+                  {/* Búsqueda y Acciones */}
+                  <div className="mb-3 flex-shrink-0 space-y-2">
+                    <div className="flex items-center justify-between">
                       <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                         <Users className="w-4 h-4 text-[#1e3a5f]" />
                         <button
@@ -667,91 +752,6 @@ export default function CalendarioAsignacionRapida() {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Lista de Eventos - DERECHA */}
-            <div className="flex flex-col h-full">
-              <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <CalendarIcon className="w-5 h-5 text-[#1e3a5f]" />
-                Eventos del Día ({pedidosDelDia.length})
-              </h4>
-              <ScrollArea className="flex-1 pr-2">
-                <div className="space-y-3">
-                {pedidosDelDia.map(pedido => {
-                  const asigsPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
-                  const totalNeeded = pedido.turnos?.length > 0 
-                    ? pedido.turnos.reduce((s, t) => s + (t.cantidad_camareros || 0), 0)
-                    : (pedido.cantidad_camareros || 0);
-                  const porcentaje = totalNeeded > 0 ? Math.round((asigsPedido.length / totalNeeded) * 100) : 0;
-
-                  return (
-                    <Card 
-                      key={pedido.id}
-                      className={`p-4 cursor-pointer transition-all hover:shadow-md ${
-                        selectedPedidoAsignacion?.id === pedido.id 
-                          ? 'border-[#1e3a5f] border-2 shadow-lg bg-[#1e3a5f]/5' 
-                          : 'hover:border-[#1e3a5f]/50'
-                      }`}
-                      onClick={() => setSelectedPedidoAsignacion(pedido)}
-                    >
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-slate-800 text-base mb-1 truncate">{pedido.cliente}</h4>
-                          <div className="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
-                            <span className="flex items-center gap-1.5">
-                              <MapPin className="w-3.5 h-3.5 text-[#1e3a5f]" />
-                              <span className="truncate">{pedido.lugar_evento || 'Sin ubicación'}</span>
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-[#1e3a5f]" />
-                              {pedido.entrada} - {pedido.salida}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                          <Badge className={`text-sm font-semibold px-3 py-1 ${
-                            porcentaje === 100 ? 'bg-emerald-500 text-white' :
-                            porcentaje > 0 ? 'bg-amber-500 text-white' :
-                            'bg-red-500 text-white'
-                          }`}>
-                            {asigsPedido.length}/{totalNeeded}
-                          </Badge>
-                          {porcentaje > 0 && porcentaje < 100 && (
-                            <span className="text-xs text-amber-600 font-medium">
-                              {porcentaje}% completo
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {asigsPedido.length > 0 && (
-                        <div className="pt-3 border-t border-slate-200">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Users className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="text-xs font-semibold text-emerald-700">Asignados:</span>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {asigsPedido.map(asig => (
-                              <Badge 
-                                key={asig.id} 
-                                variant="outline" 
-                                className={`text-xs ${
-                                  asig.estado === 'confirmado' ? 'border-green-500 text-green-700 bg-green-50' :
-                                  asig.estado === 'enviado' ? 'border-orange-500 text-orange-700 bg-orange-50' :
-                                  'border-slate-400 text-slate-700 bg-slate-50'
-                                }`}
-                              >
-                                {asig.camarero_nombre}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </Card>
-                  );
-                })}
-                </div>
-              </ScrollArea>
             </div>
           </div>
         </DialogContent>
