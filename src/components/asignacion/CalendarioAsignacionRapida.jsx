@@ -622,23 +622,25 @@ export default function CalendarioAsignacionRapida() {
                         </h5>
                         <span className="text-xs text-emerald-600">Ver todos →</span>
                       </div>
-                      <ScrollArea className="max-h-28">
-                        <div className="space-y-1.5 pr-2">
-                          {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).slice(0, 3).map(asig => (
-                            <div key={asig.id} className="flex items-center justify-between text-sm p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
-                              <span className="text-slate-800 font-medium text-xs truncate flex-1">{asig.camarero_nombre}</span>
-                              <Badge className={`text-xs ml-2 ${
-                                asig.estado === 'confirmado' ? 'bg-green-500' :
-                                asig.estado === 'enviado' ? 'bg-orange-500' :
-                                'bg-slate-400'
-                              }`}>
-                                {asig.estado === 'confirmado' ? '✓' : 
-                                 asig.estado === 'enviado' ? '→' : '·'}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
+                      <div className="border border-slate-200 rounded-lg overflow-hidden">
+                        <ScrollArea className="h-32">
+                          <div className="space-y-1.5 p-2">
+                            {asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id).map(asig => (
+                              <div key={asig.id} className="flex items-center justify-between text-sm p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                <span className="text-slate-800 font-medium text-xs truncate flex-1">{asig.camarero_nombre}</span>
+                                <Badge className={`text-xs ml-2 ${
+                                  asig.estado === 'confirmado' ? 'bg-green-500' :
+                                  asig.estado === 'enviado' ? 'bg-orange-500' :
+                                  'bg-slate-400'
+                                }`}>
+                                  {asig.estado === 'confirmado' ? '✓' : 
+                                   asig.estado === 'enviado' ? '→' : '·'}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
                     </div>
                   )}
 
@@ -684,9 +686,9 @@ export default function CalendarioAsignacionRapida() {
                   </div>
 
                   {/* Lista de Camareros Disponibles */}
-                  <div className="flex-1 min-h-0">
+                  <div className="flex-1 min-h-0 border border-slate-200 rounded-lg overflow-hidden">
                     <ScrollArea className="h-full">
-                      <div className="space-y-2 pr-2">
+                      <div className="space-y-2 p-2">
                         {getCamarerosDisponibles(selectedPedidoAsignacion)
                           .filter(c => 
                             !busquedaCamarero || 
