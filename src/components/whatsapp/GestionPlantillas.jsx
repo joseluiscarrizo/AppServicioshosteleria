@@ -8,7 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, Plus, Trash2, Edit, Star } from 'lucide-react';
+import { FileText, Plus, Trash2, Edit, Star, Copy } from 'lucide-react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -122,46 +125,59 @@ export default function GestionPlantillas() {
             ) : null}
 
             {!editando && plantillas.length > 0 ? (
-              <ScrollArea className="h-[500px]">
-                <div className="space-y-3 pr-4">
-                  {plantillas.map(plantilla => (
-                    <Card key={plantilla.id} className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{plantilla.nombre}</h4>
-                            {plantilla.es_predeterminada && (
-                              <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                            )}
-                          </div>
-                          {plantilla.descripcion && (
-                            <p className="text-sm text-slate-500 mt-1">{plantilla.descripcion}</p>
+            <ScrollArea className="h-[500px]">
+              <div className="space-y-3 pr-4">
+                {plantillas.map(plantilla => (
+                  <Card key={plantilla.id} className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium">{plantilla.nombre}</h4>
+                          {plantilla.es_predeterminada && (
+                            <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
                           )}
-                          <p className="text-xs text-slate-400 mt-2 line-clamp-2 bg-slate-50 p-2 rounded">
+                          <Badge variant="outline" className="text-xs">
+                            {plantilla.tipo}
+                          </Badge>
+                        </div>
+                        {plantilla.descripcion && (
+                          <p className="text-sm text-slate-500 mt-1">{plantilla.descripcion}</p>
+                        )}
+                        <div className="mt-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                          <p className="text-xs text-slate-600 whitespace-pre-wrap line-clamp-3">
                             {plantilla.contenido}
                           </p>
                         </div>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleEditar(plantilla)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => {
-                              if (confirm('¿Eliminar esta plantilla?')) {
-                                eliminarMutation.mutate(plantilla.id);
-                              }
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </Button>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
+                          <span>Creada: {format(new Date(plantilla.created_date), 'dd/MM/yyyy', { locale: es })}</span>
+                          {plantilla.activa ? (
+                            <Badge className="bg-green-100 text-green-800 text-xs">Activa</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">Inactiva</Badge>
+                          )}
                         </div>
                       </div>
-                    </Card>
-                  ))}
-                </div>
-              </ScrollArea>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditar(plantilla)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            if (confirm('¿Eliminar esta plantilla?')) {
+                              eliminarMutation.mutate(plantilla.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
             ) : null}
 
             {(editando || plantillas.length === 0) && (
@@ -213,14 +229,25 @@ export default function GestionPlantillas() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={form.es_predeterminada}
-                    onChange={(e) => setForm({ ...form, es_predeterminada: e.target.checked })}
-                    id="predeterminada"
-                  />
-                  <Label htmlFor="predeterminada">Usar como plantilla predeterminada</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.es_predeterminada}
+                      onChange={(e) => setForm({ ...form, es_predeterminada: e.target.checked })}
+                      id="predeterminada"
+                    />
+                    <Label htmlFor="predeterminada">Usar como plantilla predeterminada</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.activa !== false}
+                      onChange={(e) => setForm({ ...form, activa: e.target.checked })}
+                      id="activa"
+                    />
+                    <Label htmlFor="activa">Plantilla activa</Label>
+                  </div>
                 </div>
               </div>
             )}
