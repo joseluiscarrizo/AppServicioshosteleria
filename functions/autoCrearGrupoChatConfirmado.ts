@@ -35,18 +35,31 @@ Deno.serve(async (req) => {
       grupo = gruposExistentes[0];
       console.log(`✅ Grupo existente encontrado: ${grupo.nombre}`);
     } else {
-      // Crear nuevo grupo de chat
-      const asignacionesConfirmadas = await base44.asServiceRole.entities.AsignacionCamarero.filter({
-        pedido_id: pedidoId,
-        estado: 'confirmado'
+      // Obtener TODAS las asignaciones del pedido (confirmadas y no confirmadas)
+      const todasAsignaciones = await base44.asServiceRole.entities.AsignacionCamarero.filter({
+        pedido_id: pedidoId
       });
 
-      if (asignacionesConfirmadas.length === 0) {
+      const asignacionesConfirmadas = todasAsignaciones.filter(a => a.estado === 'confirmado');
+
+      if (todasAsignaciones.length === 0) {
         return Response.json({ 
           skipped: true, 
-          reason: 'No hay asignaciones confirmadas aún' 
+          reason: 'No hay asignaciones para este pedido' 
         });
       }
+
+      // SOLO CREAR GRUPO SI TODOS LOS CAMAREROS ESTÁN CONFIRMADOS
+      if (asignacionesConfirmadas.length !== todasAsignaciones.length) {
+        return Response.json({ 
+          skipped: true, 
+          reason: `Solo ${asignacionesConfirmadas.length}/${todasAsignaciones.length} camareros confirmados. Se necesita confirmación total.`,
+          confirmados: asignacionesConfirmadas.length,
+          total: todasAsignaciones.length
+        });
+      }
+
+      console.log(`✅ Todos los camareros confirmados (${asignacionesConfirmadas.length}/${todasAsignaciones.length}). Creando grupo...`);
 
       // Obtener datos de camareros y coordinadores
       const camareros = await base44.asServiceRole.entities.Camarero.list();
@@ -82,13 +95,13 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Calcular fecha de eliminación (24h después del evento)
+      // Calcular fecha de eliminación (6 horas después de terminar el evento)
       let fechaEliminacion = null;
       if (pedido.dia) {
         const fechaEvento = new Date(pedido.dia);
         const horaSalida = pedido.salida || pedido.turnos?.[0]?.salida || '23:59';
         const [horas, minutos] = horaSalida.split(':').map(Number);
-        fechaEvento.setHours(horas + 24, minutos, 0, 0);
+        fechaEvento.setHours(horas + 6, minutos, 0, 0); // 6 horas después de la salida
         fechaEliminacion = fechaEvento.toISOString();
       }
 
