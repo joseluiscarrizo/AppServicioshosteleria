@@ -180,14 +180,19 @@ export default function CalendarioAsignacionRapida() {
   };
 
   const handleAsignacionMasiva = async () => {
-    if (!selectedPedidoAsignacion || camarerosSeleccionados.length === 0) {
+    if (!selectedPedidoAsignacion) {
+      toast.error('Selecciona un evento primero');
+      return;
+    }
+    
+    if (camarerosSeleccionados.length === 0) {
       toast.error('Selecciona al menos un camarero');
       return;
     }
 
-    const asignacionesActuales = asignaciones.filter(a => a.pedido_id === selectedPedidoAsignacion.id);
+    const asignacionesActuales = asignaciones?.filter(a => a.pedido_id === selectedPedidoAsignacion.id) || [];
     const cantidadNecesaria = selectedPedidoAsignacion.turnos?.length > 0 
-      ? selectedPedidoAsignacion.turnos.reduce((sum, t) => sum + (t.cantidad_camareros || 0), 0)
+      ? selectedPedidoAsignacion.turnos.reduce((sum, t) => sum + (t?.cantidad_camareros || 0), 0)
       : (selectedPedidoAsignacion.cantidad_camareros || 0);
     
     const espaciosDisponibles = cantidadNecesaria - asignacionesActuales.length;
@@ -559,16 +564,18 @@ export default function CalendarioAsignacionRapida() {
                         <Users className="w-4 h-4 text-[#1e3a5f]" />
                         <button
                           onClick={() => {
-                            setShowAsignacionMasiva(true);
-                            setCamarerosSeleccionados([]);
+                            if (selectedPedidoAsignacion) {
+                              setShowAsignacionMasiva(true);
+                              setCamarerosSeleccionados([]);
+                            }
                           }}
                           className="text-[#1e3a5f] hover:underline cursor-pointer"
                         >
-                          Disponibles ({getCamarerosDisponibles(selectedPedidoAsignacion).filter(c => 
+                          Disponibles ({selectedPedidoAsignacion ? getCamarerosDisponibles(selectedPedidoAsignacion).filter(c => 
                             !busquedaCamarero || 
                             c.nombre.toLowerCase().includes(busquedaCamarero.toLowerCase()) ||
                             c.codigo.toLowerCase().includes(busquedaCamarero.toLowerCase())
-                          ).length})
+                          ).length : 0})
                         </button>
                       </h4>
                       <Button
