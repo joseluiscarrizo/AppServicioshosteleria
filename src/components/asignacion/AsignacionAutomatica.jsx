@@ -177,7 +177,7 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
         const porcentajeIdiomas = idiomasCumplidos / pedido.idiomas_requeridos.length;
         score += porcentajeIdiomas * 15;
         if (porcentajeIdiomas === 1) {
-          razones.push({ icon: Languages, text: 'Idiomas requeridos', color: 'text-green-600' });
+          razones.push({ icon: Award, text: 'Idiomas requeridos', color: 'text-green-600' });
         }
       }
 
@@ -276,8 +276,7 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
       return {
         camarero,
         score: Math.round(score),
-        razones,
-        asignacionesMes
+        razones
       };
     }).filter(Boolean); // Eliminar nulos (descartados por reglas obligatorias)
 
@@ -570,7 +569,7 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
             {/* Lista de candidatos */}
             <ScrollArea className="flex-1 pr-2">
               <div className="space-y-3 pb-2">
-                {sugerencias.map(({ camarero, score, razones, asignacionesMes }, index) => {
+                {sugerencias.map(({ camarero, score, razones }, index) => {
                   const yaAsignado = sugerenciasAceptadas.has(camarero.id);
                   const maxScore = 100;
                   const porcentaje = Math.round((score / maxScore) * 100);
@@ -594,7 +593,7 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
                             index === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' :
                             index === 2 ? 'bg-gradient-to-br from-orange-300 to-orange-400 text-white' :
                             'bg-gradient-to-br from-purple-100 to-blue-100 text-purple-700'
-                          }`}>
+                          }`}>  
                             #{index + 1}
                           </div>
                         </div>
@@ -649,7 +648,7 @@ export default function AsignacionAutomatica({ open, onClose, pedido }) {
                                 }
                               });
                               return (
-                                <span className={`text-xs font-medium ${horas === 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
+                                <span className={`text-xs font-medium ${horas === 0 ? 'text-emerald-600' : 'text-slate-500'}`}> 
                                   {horas === 0 ? '✓ Libre hoy' : `${horas.toFixed(1)}h trabajadas hoy`}
                                 </span>
                               );
