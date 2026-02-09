@@ -18,6 +18,7 @@ const navItems = [
   { name: 'Camareros', page: 'Camareros', icon: UserPlus },
   { name: 'Asignación', page: 'Asignacion', icon: UserCog },
   { name: 'Chat', page: 'Chat', icon: MessageCircle },
+  { name: 'WhatsApp', page: 'HistorialMensajes', icon: MessageCircle },
   { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
   { name: 'Informes', page: 'Informes', icon: FileText },
   { name: 'Notificaciones', page: 'PreferenciasNotificaciones', icon: Bell }
