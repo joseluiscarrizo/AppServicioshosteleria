@@ -686,7 +686,7 @@ export default function CalendarioAsignacionRapida() {
                   </div>
 
                   {/* Lista de Camareros Disponibles */}
-                  <div className="flex-1 min-h-0 border border-slate-200 rounded-lg overflow-hidden">
+                  <div className="flex-1 min-h-0 border border-slate-200 rounded-lg bg-slate-50/50">
                     <ScrollArea className="h-full">
                       <div className="space-y-2 p-2">
                         {getCamarerosDisponibles(selectedPedidoAsignacion)
@@ -698,7 +698,7 @@ export default function CalendarioAsignacionRapida() {
                           .map(camarero => (
                           <div
                             key={camarero.id}
-                            className="group p-3 border-2 border-slate-200 rounded-lg hover:border-[#1e3a5f] hover:bg-[#1e3a5f]/5 hover:shadow-md transition-all cursor-pointer"
+                            className="group p-3 border-2 border-slate-200 bg-white rounded-lg hover:border-[#1e3a5f] hover:bg-[#1e3a5f]/5 hover:shadow-md transition-all cursor-pointer"
                             onClick={() => handleAsignarCamarero(selectedPedidoAsignacion, camarero)}
                           >
                             <div className="flex items-center gap-2">
