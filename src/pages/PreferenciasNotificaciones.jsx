@@ -5,8 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Bell, BellOff, Mail, Volume2, Vibrate, MessageSquare, Calendar, Users, Clock } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Bell, BellOff, Mail, Volume2, Vibrate, MessageSquare, Calendar, Users, Clock, Moon, History } from 'lucide-react';
 import { toast } from 'sonner';
+import HistorialNotificaciones from '../components/notificaciones/HistorialNotificaciones';
 
 export default function PreferenciasNotificaciones() {
   const queryClient = useQueryClient();
@@ -65,6 +68,28 @@ export default function PreferenciasNotificaciones() {
   }
 
   const prefs = preferencias || {};
+
+  const diasSemana = [
+    { value: 0, label: 'Dom' },
+    { value: 1, label: 'Lun' },
+    { value: 2, label: 'Mar' },
+    { value: 3, label: 'Mié' },
+    { value: 4, label: 'Jue' },
+    { value: 5, label: 'Vie' },
+    { value: 6, label: 'Sáb' }
+  ];
+
+  const toggleDia = (dia) => {
+    const dias = prefs.no_molestar_dias || [0, 1, 2, 3, 4, 5, 6];
+    const newDias = dias.includes(dia) 
+      ? dias.filter(d => d !== dia)
+      : [...dias, dia];
+    handleToggle('no_molestar_dias', newDias);
+  };
+
+  const handleToggleDirect = (field, value) => {
+    updateMutation.mutate({ [field]: value });
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -234,6 +259,154 @@ export default function PreferenciasNotificaciones() {
                   onCheckedChange={() => handleToggle('vibrar_habilitado')}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Sonidos Personalizables */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Volume2 className="w-5 h-5 text-[#1e3a5f]" />
+                Sonidos de Notificación
+              </CardTitle>
+              <CardDescription>
+                Personaliza el sonido de tus notificaciones
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="tipo_sonido">Tipo de Sonido</Label>
+                <Select 
+                  value={prefs.tipo_sonido || 'default'} 
+                  onValueChange={(v) => handleToggleDirect('tipo_sonido', v)}
+                >
+                  <SelectTrigger id="tipo_sonido">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Predeterminado</SelectItem>
+                    <SelectItem value="suave">Suave</SelectItem>
+                    <SelectItem value="alerta">Alerta</SelectItem>
+                    <SelectItem value="campana">Campana</SelectItem>
+                    <SelectItem value="silencioso">Silencioso</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="volumen">Volumen: {Math.round((prefs.volumen_sonido ?? 0.5) * 100)}%</Label>
+                <Input
+                  id="volumen"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={prefs.volumen_sonido ?? 0.5}
+                  onChange={(e) => handleToggleDirect('volumen_sonido', parseFloat(e.target.value))}
+                  className="cursor-pointer"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Modo No Molestar */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Moon className="w-5 h-5 text-[#1e3a5f]" />
+                Modo No Molestar
+              </CardTitle>
+              <CardDescription>
+                Silencia notificaciones en horarios específicos
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Moon className="w-5 h-5 text-slate-600" />
+                  <Label htmlFor="no_molestar">Habilitar No Molestar</Label>
+                </div>
+                <Switch
+                  id="no_molestar"
+                  checked={prefs.no_molestar_habilitado ?? false}
+                  onCheckedChange={() => handleToggle('no_molestar_habilitado')}
+                />
+              </div>
+
+              {prefs.no_molestar_habilitado && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="hora_inicio">Hora de Inicio</Label>
+                      <Input
+                        id="hora_inicio"
+                        type="time"
+                        value={prefs.no_molestar_inicio || '22:00'}
+                        onChange={(e) => handleToggleDirect('no_molestar_inicio', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="hora_fin">Hora de Fin</Label>
+                      <Input
+                        id="hora_fin"
+                        type="time"
+                        value={prefs.no_molestar_fin || '08:00'}
+                        onChange={(e) => handleToggleDirect('no_molestar_fin', e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Días Activos</Label>
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {diasSemana.map(dia => (
+                        <Button
+                          key={dia.value}
+                          type="button"
+                          variant={(prefs.no_molestar_dias || [0,1,2,3,4,5,6]).includes(dia.value) ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => toggleDia(dia.value)}
+                          className={
+                            (prefs.no_molestar_dias || [0,1,2,3,4,5,6]).includes(dia.value)
+                              ? 'bg-[#1e3a5f]'
+                              : ''
+                          }
+                        >
+                          {dia.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="flex items-center gap-3">
+                      <Bell className="w-5 h-5 text-amber-500" />
+                      <Label htmlFor="permitir_urgentes">Permitir notificaciones urgentes</Label>
+                    </div>
+                    <Switch
+                      id="permitir_urgentes"
+                      checked={prefs.permitir_urgentes_no_molestar ?? true}
+                      onCheckedChange={() => handleToggle('permitir_urgentes_no_molestar')}
+                    />
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Historial de Notificaciones */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="w-5 h-5 text-[#1e3a5f]" />
+                Historial de Notificaciones
+              </CardTitle>
+              <CardDescription>
+                Revisa todas tus notificaciones recientes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HistorialNotificaciones />
             </CardContent>
           </Card>
         </div>
