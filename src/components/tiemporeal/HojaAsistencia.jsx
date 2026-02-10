@@ -83,32 +83,13 @@ export default function HojaAsistencia({ pedido, asignaciones, camareros }) {
 
   const enviarEmailMutation = useMutation({
     mutationFn: async () => {
-      const hojaHTML = generarHojaHTML();
-      
-      // Obtener emails del pedido o del cliente
-      let emails = [
-        pedido.cliente_email_1,
-        pedido.cliente_email_2
-      ].filter(Boolean);
-
-      // Si el pedido no tiene emails, buscar en el cliente
-      if (emails.length === 0 && pedido.cliente_id) {
-        const cliente = await base44.entities.Cliente.get(pedido.cliente_id);
-        emails = [cliente.email_1, cliente.email_2].filter(Boolean);
-      }
-
-      if (emails.length === 0) {
-        throw new Error('No hay emails configurados para este cliente');
-      }
-      
-      await base44.integrations.Core.SendEmail({
-        to: emails.join(','),
-        subject: `Hoja de Asistencia - ${pedido.cliente} - ${pedido.dia}`,
-        body: hojaHTML
+      const response = await base44.functions.invoke('enviarHojaAsistenciaGmail', {
+        pedido_id: pedido.id
       });
+      return response.data;
     },
-    onSuccess: () => {
-      toast.success('Hoja de asistencia enviada por email');
+    onSuccess: (data) => {
+      toast.success(`Hoja de asistencia enviada a ${data.destinatario}`);
     },
     onError: (error) => {
       toast.error('Error al enviar la hoja de asistencia');
