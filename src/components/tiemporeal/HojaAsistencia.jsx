@@ -1,7 +1,7 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
-import { Mail, Loader2 } from 'lucide-react';
+import { Mail, Loader2, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation } from '@tanstack/react-query';
 
@@ -97,18 +97,50 @@ export default function HojaAsistencia({ pedido, asignaciones, camareros }) {
     }
   });
 
+  const exportarSheetsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await base44.functions.invoke('exportarAsistenciaSheets', {
+        pedido_id: pedido.id
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      toast.success('Hoja exportada a Google Sheets');
+      window.open(data.url, '_blank');
+    },
+    onError: (error) => {
+      toast.error('Error al exportar a Google Sheets');
+      console.error(error);
+    }
+  });
+
   return (
-    <Button
-      onClick={() => enviarEmailMutation.mutate()}
-      disabled={enviarEmailMutation.isPending}
-      className="bg-blue-600 hover:bg-blue-700"
-    >
-      {enviarEmailMutation.isPending ? (
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-      ) : (
-        <Mail className="w-4 h-4 mr-2" />
-      )}
-      Enviar Hoja de Asistencia
-    </Button>
+    <div className="flex gap-2">
+      <Button
+        onClick={() => enviarEmailMutation.mutate()}
+        disabled={enviarEmailMutation.isPending}
+        className="bg-blue-600 hover:bg-blue-700"
+      >
+        {enviarEmailMutation.isPending ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <Mail className="w-4 h-4 mr-2" />
+        )}
+        Enviar por Email
+      </Button>
+      
+      <Button
+        onClick={() => exportarSheetsMutation.mutate()}
+        disabled={exportarSheetsMutation.isPending}
+        className="bg-green-600 hover:bg-green-700"
+      >
+        {exportarSheetsMutation.isPending ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <FileSpreadsheet className="w-4 h-4 mr-2" />
+        )}
+        Exportar a Sheets
+      </Button>
+    </div>
   );
 }
