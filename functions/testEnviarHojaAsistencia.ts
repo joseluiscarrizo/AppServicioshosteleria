@@ -88,35 +88,36 @@ Deno.serve(async (req) => {
       </html>
     `;
     
-    // Obtener emails
-    const emails = [cliente.email_1, cliente.email_2].filter(Boolean);
+    // Para pruebas, enviamos al coordinador (usuario autenticado)
+    const usuario = await base44.asServiceRole.entities.User.list();
+    const coordinador = usuario.find(u => u.role === 'coordinador' || u.role === 'admin');
     
-    if (emails.length === 0) {
+    if (!coordinador) {
       return Response.json({ 
-        error: 'No hay emails configurados para este cliente',
-        cliente: cliente.nombre,
-        pedido_id: pedido.id
+        error: 'No se encontró un coordinador para enviar la prueba',
+        usuarios_count: usuario.length
       }, { status: 400 });
     }
     
     // Enviar email
-    console.log('📧 Enviando hoja de asistencia a:', emails.join(', '));
+    console.log('📧 Enviando hoja de asistencia (TEST) a:', coordinador.email);
     
     await base44.asServiceRole.integrations.Core.SendEmail({
-      to: emails.join(','),
-      subject: `Hoja de Asistencia - ${pedido.cliente} - ${pedido.dia}`,
+      to: coordinador.email,
+      subject: `[TEST] Hoja de Asistencia - ${pedido.cliente} - ${pedido.dia}`,
       body: hojaHTML
     });
     
     return Response.json({
       success: true,
+      message: '✅ Hoja de asistencia enviada exitosamente',
       pedido: {
         id: pedido.id,
         cliente: pedido.cliente,
         fecha: pedido.dia,
         lugar: pedido.lugar_evento
       },
-      emails_enviados: emails,
+      email_enviado_a: coordinador.email,
       camareros_incluidos: camarerosList.map(c => c.nombre),
       asignaciones_count: asignaciones.length
     });
