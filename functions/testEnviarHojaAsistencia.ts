@@ -1,17 +1,25 @@
-import React from 'react';
-import { base44 } from '@/api/base44Client';
-import { Button } from "@/components/ui/button";
-import { Mail, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { useMutation } from '@tanstack/react-query';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
-export default function HojaAsistencia({ pedido, asignaciones, camareros }) {
-  const generarHojaHTML = () => {
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    
+    // Obtener un pedido con asignaciones confirmadas (Grupo Valera - 14/02)
+    const pedido = await base44.asServiceRole.entities.Pedido.get('6989c6136b2403e88b6af96f');
+    const asignaciones = await base44.asServiceRole.entities.AsignacionCamarero.filter({
+      pedido_id: pedido.id
+    });
+    const camareros = await base44.asServiceRole.entities.Camarero.list();
+    
+    // Obtener cliente para emails
+    const cliente = await base44.asServiceRole.entities.Cliente.get(pedido.cliente_id);
+    
+    // Generar HTML de la hoja
     const camarerosList = asignaciones
       .map(a => camareros.find(c => c.id === a.camarero_id))
       .filter(Boolean);
 
-    return `
+    const hojaHTML = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -43,7 +51,7 @@ export default function HojaAsistencia({ pedido, asignaciones, camareros }) {
           </div>
           <div style="text-align: right;">
             <strong>Evento:</strong> ${pedido.lugar_evento || 'No especificado'}<br>
-            <strong>Horario:</strong> ${pedido.entrada} - ${pedido.salida}
+            <strong>Horario:</strong> ${pedido.entrada} - ${pedido.salida || 'Por confirmar'}
           </div>
         </div>
 
@@ -79,55 +87,45 @@ export default function HojaAsistencia({ pedido, asignaciones, camareros }) {
       </body>
       </html>
     `;
-  };
-
-  const enviarEmailMutation = useMutation({
-    mutationFn: async () => {
-      const hojaHTML = generarHojaHTML();
-      
-      // Obtener emails del pedido o del cliente
-      let emails = [
-        pedido.cliente_email_1,
-        pedido.cliente_email_2
-      ].filter(Boolean);
-
-      // Si el pedido no tiene emails, buscar en el cliente
-      if (emails.length === 0 && pedido.cliente_id) {
-        const cliente = await base44.entities.Cliente.get(pedido.cliente_id);
-        emails = [cliente.email_1, cliente.email_2].filter(Boolean);
-      }
-
-      if (emails.length === 0) {
-        throw new Error('No hay emails configurados para este cliente');
-      }
-      
-      await base44.integrations.Core.SendEmail({
-        to: emails.join(','),
-        subject: `Hoja de Asistencia - ${pedido.cliente} - ${pedido.dia}`,
-        body: hojaHTML
-      });
-    },
-    onSuccess: () => {
-      toast.success('Hoja de asistencia enviada por email');
-    },
-    onError: (error) => {
-      toast.error('Error al enviar la hoja de asistencia');
-      console.error(error);
+    
+    // Obtener emails
+    const emails = [cliente.email_1, cliente.email_2].filter(Boolean);
+    
+    if (emails.length === 0) {
+      return Response.json({ 
+        error: 'No hay emails configurados para este cliente',
+        cliente: cliente.nombre,
+        pedido_id: pedido.id
+      }, { status: 400 });
     }
-  });
-
-  return (
-    <Button
-      onClick={() => enviarEmailMutation.mutate()}
-      disabled={enviarEmailMutation.isPending}
-      className="bg-blue-600 hover:bg-blue-700"
-    >
-      {enviarEmailMutation.isPending ? (
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-      ) : (
-        <Mail className="w-4 h-4 mr-2" />
-      )}
-      Enviar Hoja de Asistencia
-    </Button>
-  );
-}
+    
+    // Enviar email
+    console.log('📧 Enviando hoja de asistencia a:', emails.join(', '));
+    
+    await base44.asServiceRole.integrations.Core.SendEmail({
+      to: emails.join(','),
+      subject: `Hoja de Asistencia - ${pedido.cliente} - ${pedido.dia}`,
+      body: hojaHTML
+    });
+    
+    return Response.json({
+      success: true,
+      pedido: {
+        id: pedido.id,
+        cliente: pedido.cliente,
+        fecha: pedido.dia,
+        lugar: pedido.lugar_evento
+      },
+      emails_enviados: emails,
+      camareros_incluidos: camarerosList.map(c => c.nombre),
+      asignaciones_count: asignaciones.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Error enviando hoja:', error);
+    return Response.json({ 
+      error: error.message,
+      stack: error.stack
+    }, { status: 500 });
+  }
+});
