@@ -61,7 +61,6 @@ import Home from './pages/Home';
 import Informes from './pages/Informes';
 import Pedidos from './pages/Pedidos';
 import PerfilCamarero from './pages/PerfilCamarero';
-import PreferenciasNotificaciones from './pages/PreferenciasNotificaciones';
 import TableroEventos from './pages/TableroEventos';
 import TiempoReal from './pages/TiempoReal';
 import VistaMovil from './pages/VistaMovil';
@@ -83,7 +82,6 @@ export const PAGES = {
     "Informes": Informes,
     "Pedidos": Pedidos,
     "PerfilCamarero": PerfilCamarero,
-    "PreferenciasNotificaciones": PreferenciasNotificaciones,
     "TableroEventos": TableroEventos,
     "TiempoReal": TiempoReal,
     "VistaMovil": VistaMovil,
