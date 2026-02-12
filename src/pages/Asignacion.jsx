@@ -16,7 +16,6 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import TareasService from '../components/camareros/TareasService';
 import CalendarioAsignaciones from '../components/asignacion/CalendarioAsignaciones';
-import CalendarioAsignacionRapida from '../components/asignacion/CalendarioAsignacionRapida';
 import CargaCamareros from '../components/asignacion/CargaCamareros';
 import CargaTrabajoCamareros from '../components/asignacion/CargaTrabajoCamareros';
 import AsignacionAutomatica from '../components/asignacion/AsignacionAutomatica';
@@ -570,7 +569,9 @@ Sistema de Gestión de Camareros
 
         {/* Vista Calendario Avanzado con Asignación Rápida */}
         {vistaCalendario === 'avanzado' && (
-          <CalendarioAsignacionRapida />
+          <div className="text-center py-12 text-slate-500">
+            Vista en desarrollo
+          </div>
         )}
 
         {/* Vista de Reglas */}
