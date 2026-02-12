@@ -1,10 +1,17 @@
-// Note: sample code for illustration purposes.
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-// Update your logic here
-
-// Use _error instead of error to avoid unused variable warning
-try {
-    // your code here
-} catch (_error) {
-    // handle error
+export default function AsignacionAutomatica({ open, onClose, pedido }) {
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Asignación Automática</DialogTitle>
+        </DialogHeader>
+        <div className="text-center py-8 text-slate-500">
+          Función en desarrollo
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
