@@ -9,31 +9,36 @@ import { Label } from "@/components/ui/label";
 import { Star } from 'lucide-react';
 import { toast } from 'sonner';
 
-const StarRating = ({ value, onChange, label }) => (
-  <div className="space-y-1">
-    <Label className="text-sm text-slate-600">{label}</Label>
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map(star => (
-        <button
-          key={star}
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onChange(star);
-          }}
-          className="focus:outline-none hover:scale-110 transition-transform"
-        >
-          <Star
-            className={`w-6 h-6 transition-colors ${
-              star <= value ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
-            }`}
-          />
-        </button>
-      ))}
+const StarRating = ({ value, onChange, label }) => {
+  const handleClick = (star) => {
+    onChange(star);
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium text-slate-700">{label}</Label>
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map(star => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => handleClick(star)}
+            className="focus:outline-none hover:scale-110 transition-transform p-1 rounded"
+          >
+            <Star
+              className={`w-7 h-7 transition-colors cursor-pointer ${
+                star <= value ? 'fill-amber-400 text-amber-400' : 'text-slate-300 hover:text-slate-400'
+              }`}
+            />
+          </button>
+        ))}
+        <span className="ml-2 text-sm text-slate-600 self-center">
+          {value}/5
+        </span>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default function ValoracionCamarero({ open, onClose, camarero, pedido }) {
   const [puntuacion, setPuntuacion] = useState(5);
