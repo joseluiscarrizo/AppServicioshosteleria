@@ -129,12 +129,26 @@ export default function ValoracionCamarero({ open, onClose, camarero, pedido }) 
             />
           </div>
 
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }}
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={valorarMutation.isPending}>
-              Guardar Valoración
+            <Button 
+              type="submit" 
+              disabled={valorarMutation.isPending}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              {valorarMutation.isPending ? 'Guardando...' : 'Guardar Valoración'}
             </Button>
           </div>
         </form>
