@@ -93,11 +93,11 @@ export default function ValoracionCamarero({ open, onClose, camarero, pedido }) 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Valorar a {camarero?.nombre}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" onClick={(e) => e.stopPropagation()}>
           <div className="bg-slate-50 p-3 rounded-lg text-sm">
             <p><strong>Evento:</strong> {pedido?.cliente}</p>
             <p><strong>Fecha:</strong> {pedido?.dia}</p>
