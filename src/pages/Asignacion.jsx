@@ -569,8 +569,151 @@ Sistema de Gestión de Camareros
 
         {/* Vista Calendario Avanzado con Asignación Rápida */}
         {vistaCalendario === 'avanzado' && (
-          <div className="text-center py-12 text-slate-500">
-            Vista en desarrollo
+          <div className="space-y-6">
+            {/* Calendario */}
+            <CalendarioAsignaciones onSelectPedido={setSelectedPedido} />
+
+            {/* Panel de Asignación Rápida */}
+            {selectedPedido && (
+              <Card className="shadow-xl border-2">
+                <div className="p-4 border-b bg-gradient-to-r from-emerald-600 to-teal-600">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-white text-lg">
+                        {selectedPedido.cliente}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1 text-white/90 text-sm">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>{selectedPedido.lugar_evento}</span>
+                        <span>•</span>
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>{selectedPedido.dia ? format(new Date(selectedPedido.dia), 'dd MMM yyyy', { locale: es }) : ''}</span>
+                      </div>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => setSelectedPedido(null)}
+                      className="text-white hover:bg-white/20"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="p-4">
+                  {/* Filtros y búsqueda */}
+                  <div className="mb-4 flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Input
+                        value={busquedaCamarero}
+                        onChange={(e) => setBusquedaCamarero(e.target.value)}
+                        placeholder="Buscar camarero..."
+                        className="pl-10"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Select value={filtroEspecialidad} onValueChange={setFiltroEspecialidad}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Especialidad" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={null}>Todas</SelectItem>
+                          <SelectItem value="general">General</SelectItem>
+                          <SelectItem value="cocteleria">Coctelería</SelectItem>
+                          <SelectItem value="banquetes">Banquetes</SelectItem>
+                          <SelectItem value="eventos_vip">Eventos VIP</SelectItem>
+                          <SelectItem value="buffet">Buffet</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <SugerenciasInteligentes 
+                        pedido={selectedPedido} 
+                        onAsignar={(camarero) => handleAsignarCamarero(selectedPedido, camarero)} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Lista de camareros disponibles con botón de asignación rápida */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                    {getCamarerosDisponibles(selectedPedido).map((camarero) => (
+                      <Card key={camarero.id} className="p-4 hover:shadow-lg transition-all border-2 hover:border-[#1e3a5f]">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <div className="font-semibold text-slate-800">{camarero.nombre}</div>
+                            <div className="text-xs text-slate-500 font-mono">#{camarero.codigo}</div>
+                          </div>
+                          {camarero.valoracion_promedio > 0 && (
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200">
+                              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                              <span className="text-xs font-bold text-amber-700">{camarero.valoracion_promedio.toFixed(1)}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex gap-1 flex-wrap mb-3">
+                          {camarero.especialidad && (
+                            <Badge variant="outline" className="text-xs">{camarero.especialidad}</Badge>
+                          )}
+                          {camarero.experiencia_anios > 0 && (
+                            <Badge variant="outline" className="text-xs">✨ {camarero.experiencia_anios}a</Badge>
+                          )}
+                        </div>
+
+                        <Button 
+                          onClick={() => handleAsignarCamarero(selectedPedido, camarero)}
+                          className="w-full bg-[#1e3a5f] hover:bg-[#152a45]"
+                          size="sm"
+                        >
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Asignar
+                        </Button>
+                      </Card>
+                    ))}
+
+                    {getCamarerosDisponibles(selectedPedido).length === 0 && (
+                      <div className="col-span-full text-center py-12 text-slate-400">
+                        <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                        <p className="font-medium">No hay camareros disponibles</p>
+                        <p className="text-xs mt-1">Ajusta los filtros o verifica disponibilidad</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Camareros ya asignados */}
+                  {getAsignacionesPedido(selectedPedido.id).length > 0 && (
+                    <div className="mt-6 pt-6 border-t">
+                      <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Camareros Asignados ({getAsignacionesPedido(selectedPedido.id).length})
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {getAsignacionesPedido(selectedPedido.id).map((asignacion) => (
+                          <Card key={asignacion.id} className={`p-3 ${estadoBgColors[asignacion.estado]}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="font-medium text-slate-800">{asignacion.camarero_nombre}</div>
+                                <Badge className={`text-xs mt-1 ${estadoColors[asignacion.estado]}`}>
+                                  {asignacion.estado}
+                                </Badge>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                onClick={() => deleteAsignacionMutation.mutate(asignacion)}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
           </div>
         )}
 
