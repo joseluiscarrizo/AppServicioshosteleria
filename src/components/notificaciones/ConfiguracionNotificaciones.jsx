@@ -196,43 +196,57 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
 
               {/* Instrucciones si está bloqueado */}
               {permissionState === 'denied' && (
-                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-lg space-y-3">
+                <div className="p-4 bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-lg space-y-3">
                   <div className="flex items-start gap-3">
-                    <div className="bg-amber-500 rounded-full p-2 shrink-0">
+                    <div className="bg-red-500 rounded-full p-2 shrink-0">
                       <AlertTriangle className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-bold text-amber-900 mb-2 text-base">🔒 Notificaciones bloqueadas</p>
-                      <p className="text-amber-800 text-sm mb-3 font-medium">
-                        Sigue estos pasos para desbloquear:
+                      <p className="font-bold text-red-900 mb-2 text-base">🔒 Notificaciones bloqueadas</p>
+                      <p className="text-red-800 text-sm mb-3 font-medium">
+                        Para desbloquear, sigue estos pasos EXACTAMENTE:
                       </p>
-                      <div className="bg-white/70 p-3 rounded-lg mb-3">
-                        <ol className="text-sm text-amber-900 space-y-2 ml-1">
+                      <div className="bg-white/80 p-3 rounded-lg mb-3 border border-red-200">
+                        <ol className="text-sm text-red-900 space-y-2.5 ml-1">
                           <li className="flex items-start gap-2">
-                            <span className="font-bold">1.</span>
-                            <span>Haz clic en el <strong>icono de candado 🔒</strong> o <strong>info ⓘ</strong> que aparece en la barra de direcciones (arriba, junto a la URL)</span>
+                            <span className="font-bold bg-red-100 px-2 py-0.5 rounded">1</span>
+                            <span>Haz clic en el <strong className="text-red-700">icono de candado 🔒</strong> o <strong className="text-red-700">info ⓘ</strong> en la barra de direcciones (arriba a la izquierda, junto a la URL)</span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <span className="font-bold">2.</span>
-                            <span>Busca <strong>"Notificaciones"</strong> en el menú desplegable</span>
+                            <span className="font-bold bg-red-100 px-2 py-0.5 rounded">2</span>
+                            <span>En el menú que aparece, busca <strong className="text-red-700">"Notificaciones"</strong></span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <span className="font-bold">3.</span>
-                            <span>Cambia de <strong>"Bloquear"</strong> a <strong>"Permitir"</strong></span>
+                            <span className="font-bold bg-red-100 px-2 py-0.5 rounded">3</span>
+                            <span>Cambia de <strong className="text-red-700">"Bloquear"</strong> a <strong className="text-green-700">"Permitir"</strong></span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <span className="font-bold">4.</span>
-                            <span>Haz clic en el botón de abajo para verificar</span>
+                            <span className="font-bold bg-red-100 px-2 py-0.5 rounded">4</span>
+                            <span><strong className="text-red-700">IMPORTANTE:</strong> Recarga la página completa (F5 o Ctrl+R)</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="font-bold bg-red-100 px-2 py-0.5 rounded">5</span>
+                            <span>Vuelve a abrir esta configuración y verifica</span>
                           </li>
                         </ol>
                       </div>
-                      <Button 
-                        onClick={verificarPermisos}
-                        size="sm"
-                        className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold"
-                      >
-                        🔄 Verificar si los permisos están activos
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={verificarPermisos}
+                          size="sm"
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold"
+                        >
+                          🔄 Verificar Permisos
+                        </Button>
+                        <Button 
+                          onClick={() => window.location.reload()}
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
+                        >
+                          🔄 Recargar Página
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
