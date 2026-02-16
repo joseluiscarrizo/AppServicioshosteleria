@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users, AlertTriangle, AlertCircle, Search, UserCheck } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Droppable } from '@hello-pangea/dnd';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function CalendarioAsignaciones({ onSelectPedido }) {
@@ -280,7 +279,6 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
           const esMesActual = dia.getMonth() === currentMonth.getMonth();
           const datos = getDatosDia(dia);
           const tieneEventos = datos.pedidos.length > 0;
-          const fechaStr = format(dia, 'yyyy-MM-dd');
           
           let colorFondo = 'bg-slate-50';
           let colorBorde = 'border-slate-200';
@@ -299,19 +297,16 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
           }
 
           return (
-            <Droppable key={dia.toString()} droppableId={`calendario-${fechaStr}`}>
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className={`
-                    ${vistaDetalle ? 'min-h-[160px]' : 'min-h-[100px]'} p-2 rounded-lg border transition-all
-                    ${esHoy ? 'border-[#1e3a5f] border-2 shadow-md' : colorBorde}
-                    ${!esMesActual ? 'opacity-40' : ''}
-                    ${snapshot.isDraggingOver ? 'bg-blue-100 border-blue-400 border-2 scale-[1.02]' : colorFondo}
-                    hover:shadow-sm cursor-pointer relative
-                  `}
-                >
+            <div
+              key={dia.toString()}
+              className={`
+                ${vistaDetalle ? 'min-h-[160px]' : 'min-h-[100px]'} p-2 rounded-lg border transition-all
+                ${esHoy ? 'border-[#1e3a5f] border-2 shadow-md' : colorBorde}
+                ${!esMesActual ? 'opacity-40' : ''}
+                ${colorFondo}
+                hover:shadow-sm cursor-pointer relative
+              `}
+            >
               <div className="flex items-center justify-between mb-1">
                 <span className={`text-sm font-medium ${esHoy ? 'text-[#1e3a5f]' : 'text-slate-700'}`}>
                   {format(dia, 'd')}
@@ -424,19 +419,7 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
                   )}
                 </div>
               )}
-              
-              {snapshot.isDraggingOver && (
-                <div className="absolute inset-0 flex items-center justify-center bg-blue-100/50 rounded-lg pointer-events-none">
-                  <div className="bg-white px-3 py-1.5 rounded-lg shadow-lg border-2 border-blue-400">
-                    <p className="text-sm font-semibold text-blue-600">Soltar para asignar</p>
-                  </div>
-                </div>
-              )}
-              
-              {provided.placeholder}
             </div>
-          )}
-        </Droppable>
           );
         })}
       </div>
