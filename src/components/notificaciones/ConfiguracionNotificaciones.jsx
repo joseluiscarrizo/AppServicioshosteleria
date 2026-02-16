@@ -92,6 +92,22 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
     }
   }, [open]);
 
+  const verificarPermisos = () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      const currentPermission = Notification.permission;
+      setPermissionState(currentPermission);
+      
+      if (currentPermission === 'granted') {
+        toast.success('✓ Los permisos están activos');
+        handleChange('habilitadas', true);
+      } else if (currentPermission === 'denied') {
+        toast.error('Los permisos están bloqueados en el navegador');
+      } else {
+        toast.info('Los permisos aún no se han otorgado');
+      }
+    }
+  };
+
   const requestNotificationPermission = async () => {
     if (!('Notification' in window)) {
       toast.error('Tu navegador no soporta notificaciones');
