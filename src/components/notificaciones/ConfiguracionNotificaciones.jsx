@@ -92,18 +92,26 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
     }
   }, [open]);
 
-  const verificarPermisos = () => {
+  const verificarPermisos = async () => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       const currentPermission = Notification.permission;
       setPermissionState(currentPermission);
       
       if (currentPermission === 'granted') {
-        toast.success('✓ Los permisos están activos');
+        toast.success('✓ Los permisos están activos ahora');
         handleChange('habilitadas', true);
+        
+        // Notificación de prueba
+        new Notification('¡Notificaciones activadas!', {
+          body: 'Ya puedes recibir notificaciones importantes',
+          icon: 'https://img.icons8.com/color/96/000000/bell.png'
+        });
       } else if (currentPermission === 'denied') {
-        toast.error('Los permisos están bloqueados en el navegador');
+        toast.error('Aún están bloqueados. Asegúrate de cambiar a "Permitir" en el navegador');
       } else {
-        toast.info('Los permisos aún no se han otorgado');
+        // Si está en 'default', intentar solicitar permisos
+        toast.info('Solicitando permisos...');
+        await requestNotificationPermission();
       }
     }
   };
