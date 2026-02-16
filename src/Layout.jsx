@@ -13,11 +13,8 @@ import RateLimitHandler from './components/notificaciones/RateLimitHandler';
 import RecordatoriosProactivos from './components/whatsapp/RecordatoriosProactivos';
 
 const navItems = [
-  { name: 'Dashboard', page: 'DashboardCoordinador', icon: LayoutDashboard },
   { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
   { name: 'Camareros', page: 'Camareros', icon: UserPlus },
-  { name: 'Chat', page: 'Chat', icon: MessageCircle },
-  { name: 'WhatsApp', page: 'HistorialMensajes', icon: MessageCircle },
   { name: 'Informes', page: 'Informes', icon: FileText },
   { name: 'Notificaciones', page: 'PreferenciasNotificaciones', icon: Bell }
 ];
@@ -26,6 +23,11 @@ const clientesSubmenu = [
   { name: 'Clientes', page: 'Clientes', icon: Users },
   { name: 'Pedidos', page: 'Pedidos', icon: ClipboardList },
   { name: 'Asignación', page: 'Asignacion', icon: UserCog }
+];
+
+const comunicacionSubmenu = [
+  { name: 'Chat', page: 'Chat', icon: MessageCircle },
+  { name: 'WhatsApp', page: 'HistorialMensajes', icon: MessageCircle }
 ];
 
 export default function Layout({ children, currentPageName }) {
@@ -133,6 +135,33 @@ export default function Layout({ children, currentPageName }) {
                 </Link>
               ))}
 
+              {/* Dropdown de Comunicación */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={['Chat', 'HistorialMensajes'].includes(currentPageName) ? 'default' : 'ghost'}
+                    className={['Chat', 'HistorialMensajes'].includes(currentPageName)
+                      ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
+                      : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
+                    }
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Comunicación
+                    <ChevronDown className="w-3 h-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {comunicacionSubmenu.map(item => (
+                    <Link key={item.page} to={createPageUrl(item.page)}>
+                      <DropdownMenuItem className="cursor-pointer">
+                        <item.icon className="w-4 h-4 mr-2" />
+                        {item.name}
+                      </DropdownMenuItem>
+                    </Link>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <div className="ml-2 border-l border-slate-200 pl-2 flex items-center gap-2">
                 {!isAllowed && typeof Notification !== 'undefined' && Notification.permission === 'default' && (
                   <Button
@@ -210,8 +239,27 @@ export default function Layout({ children, currentPageName }) {
                 </Button>
               </Link>
             ))}
-          </div>
-        )}
+
+            {/* Submenu de Comunicación en Mobile */}
+            <div className="mt-2 pt-2 border-t border-slate-100">
+              <div className="text-xs font-semibold text-slate-500 mb-2 px-3">COMUNICACIÓN</div>
+              {comunicacionSubmenu.map(item => (
+                <Link key={item.page} to={createPageUrl(item.page)} onClick={() => setMobileMenuOpen(false)}>
+                  <Button
+                    variant={currentPageName === item.page ? 'default' : 'ghost'}
+                    className={`w-full justify-start mb-1 ${currentPageName === item.page 
+                      ? 'bg-[#1e3a5f] text-white' 
+                      : 'text-slate-600'
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4 mr-2" />
+                    {item.name}
+                  </Button>
+                </Link>
+              ))}
+            </div>
+            </div>
+            )}
       </header>
 
       {/* Main Content */}
