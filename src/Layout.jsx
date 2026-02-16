@@ -76,20 +76,19 @@ export default function Layout({ children, currentPageName }) {
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-1">
-              {navItems.map(item => (
-                <Link key={item.page} to={createPageUrl(item.page)}>
-                  <Button
-                    variant={currentPageName === item.page ? 'default' : 'ghost'}
-                    className={currentPageName === item.page 
-                      ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
-                      : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
-                    }
-                  >
-                    <item.icon className="w-4 h-4 mr-2" />
-                    {item.name}
-                  </Button>
-                </Link>
-              ))}
+              {/* Dashboard */}
+              <Link to={createPageUrl('DashboardCoordinador')}>
+                <Button
+                  variant={currentPageName === 'DashboardCoordinador' ? 'default' : 'ghost'}
+                  className={currentPageName === 'DashboardCoordinador'
+                    ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
+                    : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
+                  }
+                >
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+              </Link>
 
               {/* Dropdown de Clientes */}
               <DropdownMenu>
@@ -117,6 +116,22 @@ export default function Layout({ children, currentPageName }) {
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* Resto de items */}
+              {navItems.map(item => (
+                <Link key={item.page} to={createPageUrl(item.page)}>
+                  <Button
+                    variant={currentPageName === item.page ? 'default' : 'ghost'}
+                    className={currentPageName === item.page 
+                      ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
+                      : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
+                    }
+                  >
+                    <item.icon className="w-4 h-4 mr-2" />
+                    {item.name}
+                  </Button>
+                </Link>
+              ))}
 
               <div className="ml-2 border-l border-slate-200 pl-2 flex items-center gap-2">
                 {!isAllowed && typeof Notification !== 'undefined' && Notification.permission === 'default' && (
@@ -147,20 +162,19 @@ export default function Layout({ children, currentPageName }) {
         {/* Mobile Nav */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-100 bg-white px-4 py-3">
-            {navItems.map(item => (
-              <Link key={item.page} to={createPageUrl(item.page)} onClick={() => setMobileMenuOpen(false)}>
-                <Button
-                  variant={currentPageName === item.page ? 'default' : 'ghost'}
-                  className={`w-full justify-start mb-1 ${currentPageName === item.page 
-                    ? 'bg-[#1e3a5f] text-white' 
-                    : 'text-slate-600'
-                  }`}
-                >
-                  <item.icon className="w-4 h-4 mr-2" />
-                  {item.name}
-                </Button>
-              </Link>
-            ))}
+            {/* Dashboard */}
+            <Link to={createPageUrl('DashboardCoordinador')} onClick={() => setMobileMenuOpen(false)}>
+              <Button
+                variant={currentPageName === 'DashboardCoordinador' ? 'default' : 'ghost'}
+                className={`w-full justify-start mb-1 ${currentPageName === 'DashboardCoordinador'
+                  ? 'bg-[#1e3a5f] text-white' 
+                  : 'text-slate-600'
+                }`}
+              >
+                <LayoutDashboard className="w-4 h-4 mr-2" />
+                Dashboard
+              </Button>
+            </Link>
 
             {/* Submenu de Clientes en Mobile */}
             <div className="mt-2 pt-2 border-t border-slate-100">
@@ -180,6 +194,22 @@ export default function Layout({ children, currentPageName }) {
                 </Link>
               ))}
             </div>
+
+            {/* Resto de items */}
+            {navItems.map(item => (
+              <Link key={item.page} to={createPageUrl(item.page)} onClick={() => setMobileMenuOpen(false)}>
+                <Button
+                  variant={currentPageName === item.page ? 'default' : 'ghost'}
+                  className={`w-full justify-start mb-1 ${currentPageName === item.page 
+                    ? 'bg-[#1e3a5f] text-white' 
+                    : 'text-slate-600'
+                  }`}
+                >
+                  <item.icon className="w-4 h-4 mr-2" />
+                  {item.name}
+                </Button>
+              </Link>
+            ))}
           </div>
         )}
       </header>
