@@ -5,14 +5,19 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users, AlertTriangle, AlertCircle, Search, UserCheck } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Droppable } from '@hello-pangea/dnd';
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function CalendarioAsignaciones({ onSelectPedido }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [filtroEstado, setFiltroEstado] = useState('todos');
-  const [vistaDetalle, setVistaDetalle] = useState(false);
+  const [vistaDetalle, setVistaDetalle] = useState(true);
+  const [filtroCamarero, setFiltroCamarero] = useState('');
+  const [busquedaCamarero, setBusquedaCamarero] = useState('');
 
   const { data: pedidos = [] } = useQuery({
     queryKey: ['pedidos'],
@@ -95,7 +100,27 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
       });
     }
     
-    const asignacionesDia = asignaciones.filter(a => a.fecha_pedido === fechaStr);
+    let asignacionesDia = asignaciones.filter(a => a.fecha_pedido === fechaStr);
+    
+    // Aplicar filtro por camarero
+    if (filtroCamarero) {
+      asignacionesDia = asignacionesDia.filter(a => a.camarero_id === filtroCamarero);
+      pedidosDia = pedidosDia.filter(p => 
+        asignacionesDia.some(a => a.pedido_id === p.id)
+      );
+    }
+    
+    // Aplicar búsqueda de camarero
+    if (busquedaCamarero) {
+      const busqueda = busquedaCamarero.toLowerCase();
+      asignacionesDia = asignacionesDia.filter(a => 
+        a.camarero_nombre?.toLowerCase().includes(busqueda) ||
+        a.camarero_codigo?.toLowerCase().includes(busqueda)
+      );
+      pedidosDia = pedidosDia.filter(p => 
+        asignacionesDia.some(a => a.pedido_id === p.id)
+      );
+    }
     
     const totalCamareros = pedidosDia.reduce((sum, p) => {
       if (p.turnos?.length > 0) {
@@ -160,8 +185,8 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
         </div>
 
         {/* Filtros y Vista */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <Select value={filtroEstado} onValueChange={setFiltroEstado}>
               <SelectTrigger className="w-48 h-9">
                 <SelectValue />
@@ -173,6 +198,30 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
                 <SelectItem value="sin_asignar">Sin asignar</SelectItem>
               </SelectContent>
             </Select>
+            
+            <Select value={filtroCamarero} onValueChange={setFiltroCamarero}>
+              <SelectTrigger className="w-48 h-9">
+                <SelectValue placeholder="Filtrar por camarero" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={null}>Todos los camareros</SelectItem>
+                {camareros.map(c => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.nombre} ({c.codigo})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                value={busquedaCamarero}
+                onChange={(e) => setBusquedaCamarero(e.target.value)}
+                placeholder="Buscar camarero..."
+                className="pl-8 h-9 w-48"
+              />
+            </div>
             
             <Button 
               variant={vistaDetalle ? "default" : "outline"} 
@@ -231,6 +280,7 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
           const esMesActual = dia.getMonth() === currentMonth.getMonth();
           const datos = getDatosDia(dia);
           const tieneEventos = datos.pedidos.length > 0;
+          const fechaStr = format(dia, 'yyyy-MM-dd');
           
           let colorFondo = 'bg-slate-50';
           let colorBorde = 'border-slate-200';
@@ -249,16 +299,19 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
           }
 
           return (
-            <div
-              key={dia.toString()}
-              className={`
-                ${vistaDetalle ? 'min-h-[140px]' : 'min-h-[100px]'} p-2 rounded-lg border transition-all
-                ${esHoy ? 'border-[#1e3a5f] border-2 shadow-md' : colorBorde}
-                ${!esMesActual ? 'opacity-40' : ''}
-                ${colorFondo}
-                hover:shadow-sm cursor-pointer
-              `}
-            >
+            <Droppable key={dia.toString()} droppableId={`calendario-${fechaStr}`}>
+              {(provided, snapshot) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className={`
+                    ${vistaDetalle ? 'min-h-[160px]' : 'min-h-[100px]'} p-2 rounded-lg border transition-all
+                    ${esHoy ? 'border-[#1e3a5f] border-2 shadow-md' : colorBorde}
+                    ${!esMesActual ? 'opacity-40' : ''}
+                    ${snapshot.isDraggingOver ? 'bg-blue-100 border-blue-400 border-2 scale-[1.02]' : colorFondo}
+                    hover:shadow-sm cursor-pointer relative
+                  `}
+                >
               <div className="flex items-center justify-between mb-1">
                 <span className={`text-sm font-medium ${esHoy ? 'text-[#1e3a5f]' : 'text-slate-700'}`}>
                   {format(dia, 'd')}
@@ -290,7 +343,7 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
                   )}
                   
                   {datos.pedidos.slice(0, vistaDetalle ? 3 : 2).map(pedido => {
-                    const asigsPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
+                    const asigsPedido = datos.asignaciones.filter(a => a.pedido_id === pedido.id);
                     const totalNeeded = pedido.turnos?.length > 0 
                       ? pedido.turnos.reduce((s, t) => s + (t.cantidad_camareros || 0), 0)
                       : (pedido.cantidad_camareros || 0);
@@ -303,16 +356,12 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
                           e.stopPropagation();
                           onSelectPedido?.(pedido);
                         }}
-                        className="text-xs bg-white rounded p-1 border border-slate-200 hover:bg-slate-50 hover:shadow transition-all cursor-pointer"
+                        className="text-xs bg-white rounded p-1.5 border border-slate-200 hover:bg-slate-50 hover:shadow-md transition-all cursor-pointer group"
                       >
-                        <p className="font-medium text-slate-700 truncate">{pedido.cliente}</p>
-                        <div className="flex items-center justify-between text-slate-500 mt-0.5">
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {asigsPedido.length}/{totalNeeded}
-                          </span>
+                        <div className="flex items-start justify-between mb-1">
+                          <p className="font-semibold text-slate-700 truncate flex-1">{pedido.cliente}</p>
                           {vistaDetalle && (
-                            <span className={`text-xs font-semibold ${
+                            <span className={`text-xs font-bold ml-1 ${
                               porcentaje === 100 ? 'text-emerald-600' :
                               porcentaje > 0 ? 'text-amber-600' :
                               'text-red-600'
@@ -321,6 +370,50 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
                             </span>
                           )}
                         </div>
+                        
+                        <div className="flex items-center justify-between text-slate-500">
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {asigsPedido.length}/{totalNeeded}
+                          </span>
+                          {pedido.entrada && (
+                            <span className="text-[10px] text-slate-400">
+                              {pedido.entrada}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Avatares de camareros asignados */}
+                        {vistaDetalle && asigsPedido.length > 0 && (
+                          <div className="flex items-center gap-0.5 mt-1.5 -ml-0.5">
+                            {asigsPedido.slice(0, 3).map((asig, idx) => (
+                              <div 
+                                key={idx} 
+                                className="relative group/avatar"
+                                title={asig.camarero_nombre}
+                              >
+                                <Avatar className="w-5 h-5 border border-white shadow-sm">
+                                  <AvatarFallback className={`text-[8px] font-semibold ${
+                                    asig.estado === 'confirmado' ? 'bg-emerald-100 text-emerald-700' :
+                                    asig.estado === 'alta' ? 'bg-blue-100 text-blue-700' :
+                                    asig.estado === 'enviado' ? 'bg-orange-100 text-orange-700' :
+                                    'bg-slate-100 text-slate-600'
+                                  }`}>
+                                    {asig.camarero_nombre?.substring(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                {asig.estado === 'confirmado' && (
+                                  <UserCheck className="w-2 h-2 text-emerald-600 absolute -bottom-0.5 -right-0.5 bg-white rounded-full" />
+                                )}
+                              </div>
+                            ))}
+                            {asigsPedido.length > 3 && (
+                              <div className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[8px] font-bold border border-white">
+                                +{asigsPedido.length - 3}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -331,7 +424,19 @@ export default function CalendarioAsignaciones({ onSelectPedido }) {
                   )}
                 </div>
               )}
+              
+              {snapshot.isDraggingOver && (
+                <div className="absolute inset-0 flex items-center justify-center bg-blue-100/50 rounded-lg pointer-events-none">
+                  <div className="bg-white px-3 py-1.5 rounded-lg shadow-lg border-2 border-blue-400">
+                    <p className="text-sm font-semibold text-blue-600">Soltar para asignar</p>
+                  </div>
+                </div>
+              )}
+              
+              {provided.placeholder}
             </div>
+          )}
+        </Droppable>
           );
         })}
       </div>
