@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users, LayoutDashboard, Bell, MessageCircle } from 'lucide-react';
+import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users, LayoutDashboard, Bell, MessageCircle, ChevronDown } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import NotificationBell from './components/notificaciones/NotificationBell';
 import NotificacionesAutomaticas from './components/notificaciones/NotificacionesAutomaticas';
 import { useWebPushNotifications } from './components/notificaciones/WebPushService';
@@ -13,15 +14,18 @@ import RecordatoriosProactivos from './components/whatsapp/RecordatoriosProactiv
 
 const navItems = [
   { name: 'Dashboard', page: 'DashboardCoordinador', icon: LayoutDashboard },
-  { name: 'Pedidos', page: 'Pedidos', icon: ClipboardList },
-  { name: 'Clientes', page: 'Clientes', icon: Users },
-  { name: 'Asignación', page: 'Asignacion', icon: UserCog },
   { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
   { name: 'Camareros', page: 'Camareros', icon: UserPlus },
   { name: 'Chat', page: 'Chat', icon: MessageCircle },
   { name: 'WhatsApp', page: 'HistorialMensajes', icon: MessageCircle },
   { name: 'Informes', page: 'Informes', icon: FileText },
   { name: 'Notificaciones', page: 'PreferenciasNotificaciones', icon: Bell }
+];
+
+const clientesSubmenu = [
+  { name: 'Clientes', page: 'Clientes', icon: Users },
+  { name: 'Pedidos', page: 'Pedidos', icon: ClipboardList },
+  { name: 'Asignación', page: 'Asignacion', icon: UserCog }
 ];
 
 export default function Layout({ children, currentPageName }) {
@@ -86,6 +90,34 @@ export default function Layout({ children, currentPageName }) {
                   </Button>
                 </Link>
               ))}
+
+              {/* Dropdown de Clientes */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={['Clientes', 'Pedidos', 'Asignacion'].includes(currentPageName) ? 'default' : 'ghost'}
+                    className={['Clientes', 'Pedidos', 'Asignacion'].includes(currentPageName)
+                      ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
+                      : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
+                    }
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Clientes
+                    <ChevronDown className="w-3 h-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {clientesSubmenu.map(item => (
+                    <Link key={item.page} to={createPageUrl(item.page)}>
+                      <DropdownMenuItem className="cursor-pointer">
+                        <item.icon className="w-4 h-4 mr-2" />
+                        {item.name}
+                      </DropdownMenuItem>
+                    </Link>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <div className="ml-2 border-l border-slate-200 pl-2 flex items-center gap-2">
                 {!isAllowed && typeof Notification !== 'undefined' && Notification.permission === 'default' && (
                   <Button
@@ -129,6 +161,25 @@ export default function Layout({ children, currentPageName }) {
                 </Button>
               </Link>
             ))}
+
+            {/* Submenu de Clientes en Mobile */}
+            <div className="mt-2 pt-2 border-t border-slate-100">
+              <div className="text-xs font-semibold text-slate-500 mb-2 px-3">CLIENTES</div>
+              {clientesSubmenu.map(item => (
+                <Link key={item.page} to={createPageUrl(item.page)} onClick={() => setMobileMenuOpen(false)}>
+                  <Button
+                    variant={currentPageName === item.page ? 'default' : 'ghost'}
+                    className={`w-full justify-start mb-1 ${currentPageName === item.page 
+                      ? 'bg-[#1e3a5f] text-white' 
+                      : 'text-slate-600'
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4 mr-2" />
+                    {item.name}
+                  </Button>
+                </Link>
+              ))}
+            </div>
           </div>
         )}
       </header>
