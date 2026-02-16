@@ -189,14 +189,24 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
 
               {/* Instrucciones si está bloqueado */}
               {permissionState === 'denied' && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
-                  <p className="font-medium text-amber-900 mb-2">⚠️ Permisos bloqueados</p>
-                  <p className="text-amber-800 text-xs mb-2">Para activar:</p>
-                  <ol className="text-xs text-amber-800 space-y-1 ml-4 list-decimal">
-                    <li>Clic en el icono de candado en la barra de direcciones</li>
-                    <li>Busca "Notificaciones" y cambia a "Permitir"</li>
-                    <li>Recarga la página</li>
-                  </ol>
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm space-y-3">
+                  <div>
+                    <p className="font-medium text-amber-900 mb-2">⚠️ Permisos bloqueados en el navegador</p>
+                    <p className="text-amber-800 text-xs mb-2">Para desbloquear:</p>
+                    <ol className="text-xs text-amber-800 space-y-1 ml-4 list-decimal">
+                      <li>Clic en el icono de candado 🔒 en la barra de direcciones (junto a la URL)</li>
+                      <li>Busca "Notificaciones" y cambia a "Permitir"</li>
+                      <li>Haz clic en el botón "Verificar Permisos" abajo</li>
+                    </ol>
+                  </div>
+                  <Button 
+                    onClick={verificarPermisos}
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                  >
+                    🔄 Verificar Permisos
+                  </Button>
                 </div>
               )}
             </div>
