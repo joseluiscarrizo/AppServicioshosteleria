@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, Calendar as CalendarIcon, RefreshCw, X, ChevronRight, Star, Filter, Award, GripVertical, Sparkles, Ban, Copy, Repeat, Pencil, Trash2 } from 'lucide-react';
+import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, Calendar as CalendarIcon, RefreshCw, X, ChevronRight, Star, Filter, Award, GripVertical, Sparkles, Ban, Copy, Repeat, Pencil, Trash2, FileSpreadsheet } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -56,6 +56,7 @@ export default function Asignacion() {
   const [editingSalida, setEditingSalida] = useState({ pedidoId: null, turnoIndex: null, camareroIndex: null });
   const [showForm, setShowForm] = useState(false);
   const [editingPedido, setEditingPedido] = useState(null);
+  const [exportandoExcel, setExportandoExcel] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -504,6 +505,26 @@ Sistema de Gestión de Camareros
     }
   };
 
+  const handleExportarExcel = async () => {
+    setExportandoExcel(true);
+    try {
+      const { data } = await base44.functions.invoke('exportarAsignacionesExcel', {});
+      
+      if (data.success) {
+        // Abrir en nueva pestaña
+        window.open(data.spreadsheetUrl, '_blank');
+        toast.success('Excel generado correctamente. Se abrió en una nueva pestaña.');
+      } else {
+        toast.error('Error al generar Excel');
+      }
+    } catch (error) {
+      console.error('Error exportando:', error);
+      toast.error('Error al exportar a Excel');
+    } finally {
+      setExportandoExcel(false);
+    }
+  };
+
   const handleDragEnd = (result) => {
     const { source, destination, draggableId } = result;
     
@@ -545,12 +566,22 @@ Sistema de Gestión de Camareros
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-[1800px] mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Header */}
-        <div className="mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-2 sm:gap-3">
-            <UserPlus className="w-6 h-6 sm:w-8 sm:h-8 text-[#1e3a5f]" />
-            Asignación de Camareros
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">Asigna camareros a los pedidos con recomendaciones inteligentes</p>
+        <div className="mb-4 sm:mb-6 flex items-start justify-between">
+          <div>
+            <h1 className="text-xl sm:text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-2 sm:gap-3">
+              <UserPlus className="w-6 h-6 sm:w-8 sm:h-8 text-[#1e3a5f]" />
+              Asignación de Camareros
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">Asigna camareros a los pedidos con recomendaciones inteligentes</p>
+          </div>
+          <Button 
+            onClick={handleExportarExcel}
+            disabled={exportandoExcel}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-2" />
+            {exportandoExcel ? 'Exportando...' : 'Exportar Excel'}
+          </Button>
         </div>
 
         {/* Selector de Vista */}
