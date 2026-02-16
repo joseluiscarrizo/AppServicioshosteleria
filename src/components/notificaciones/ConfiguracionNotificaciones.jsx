@@ -86,6 +86,12 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
       : 'default'
   );
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPermissionState(Notification.permission);
+    }
+  }, [open]);
+
   const requestNotificationPermission = async () => {
     if (!('Notification' in window)) {
       toast.error('Tu navegador no soporta notificaciones');
@@ -97,8 +103,14 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
       setPermissionState(permission);
       
       if (permission === 'granted') {
-        toast.success('Permisos de notificación otorgados');
+        toast.success('✓ Permisos de notificación otorgados');
         handleChange('habilitadas', true);
+        
+        // Mostrar notificación de prueba
+        new Notification('Notificaciones Activadas', {
+          body: 'Ahora recibirás notificaciones importantes',
+          icon: 'https://img.icons8.com/color/96/000000/bell.png'
+        });
       } else if (permission === 'denied') {
         toast.error('Permisos denegados. Actívalos en la configuración del navegador.');
         handleChange('habilitadas', false);
