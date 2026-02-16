@@ -188,9 +188,8 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
                     onClick={requestNotificationPermission} 
                     size="sm"
                     className="bg-[#1e3a5f] hover:bg-[#152a45]"
-                    disabled={permissionState === 'denied'}
                   >
-                    {permissionState === 'denied' ? 'Bloqueado' : 'Activar'}
+                    {permissionState === 'denied' ? '🔒 Bloqueado' : '🔔 Activar'}
                   </Button>
                 )}
               </div>
