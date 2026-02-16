@@ -189,24 +189,45 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
 
               {/* Instrucciones si está bloqueado */}
               {permissionState === 'denied' && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm space-y-3">
-                  <div>
-                    <p className="font-medium text-amber-900 mb-2">⚠️ Permisos bloqueados en el navegador</p>
-                    <p className="text-amber-800 text-xs mb-2">Para desbloquear:</p>
-                    <ol className="text-xs text-amber-800 space-y-1 ml-4 list-decimal">
-                      <li>Clic en el icono de candado 🔒 en la barra de direcciones (junto a la URL)</li>
-                      <li>Busca "Notificaciones" y cambia a "Permitir"</li>
-                      <li>Haz clic en el botón "Verificar Permisos" abajo</li>
-                    </ol>
+                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-lg space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-amber-500 rounded-full p-2 shrink-0">
+                      <AlertTriangle className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-amber-900 mb-2 text-base">🔒 Notificaciones bloqueadas</p>
+                      <p className="text-amber-800 text-sm mb-3 font-medium">
+                        Sigue estos pasos para desbloquear:
+                      </p>
+                      <div className="bg-white/70 p-3 rounded-lg mb-3">
+                        <ol className="text-sm text-amber-900 space-y-2 ml-1">
+                          <li className="flex items-start gap-2">
+                            <span className="font-bold">1.</span>
+                            <span>Haz clic en el <strong>icono de candado 🔒</strong> o <strong>info ⓘ</strong> que aparece en la barra de direcciones (arriba, junto a la URL)</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="font-bold">2.</span>
+                            <span>Busca <strong>"Notificaciones"</strong> en el menú desplegable</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="font-bold">3.</span>
+                            <span>Cambia de <strong>"Bloquear"</strong> a <strong>"Permitir"</strong></span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="font-bold">4.</span>
+                            <span>Haz clic en el botón de abajo para verificar</span>
+                          </li>
+                        </ol>
+                      </div>
+                      <Button 
+                        onClick={verificarPermisos}
+                        size="sm"
+                        className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+                      >
+                        🔄 Verificar si los permisos están activos
+                      </Button>
+                    </div>
                   </div>
-                  <Button 
-                    onClick={verificarPermisos}
-                    size="sm"
-                    variant="outline"
-                    className="w-full"
-                  >
-                    🔄 Verificar Permisos
-                  </Button>
                 </div>
               )}
             </div>
