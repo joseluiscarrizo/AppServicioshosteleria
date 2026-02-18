@@ -624,6 +624,10 @@ export default function TiempoReal() {
             </p>
           </Card>
         </div>
+
+          </TabsContent>
+        </Tabs>
+
       </div>
 
       {/* Modal de valoración */}
