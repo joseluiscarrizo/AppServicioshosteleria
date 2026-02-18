@@ -166,9 +166,9 @@ export default function TiempoReal() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
           <div>
             <h1 className="text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
               <Clock className="w-8 h-8 text-[#1e3a5f]" />
@@ -181,6 +181,28 @@ export default function TiempoReal() {
             Actualizando automáticamente
           </div>
         </div>
+
+        <Tabs defaultValue="asignaciones" className="w-full">
+          <TabsList className="mb-5 bg-white border border-slate-200 shadow-sm">
+            <TabsTrigger value="asignaciones" className="gap-2">
+              <Users className="w-4 h-4" />
+              Asignaciones
+            </TabsTrigger>
+            <TabsTrigger value="whatsapp" className="gap-2">
+              <MessageCircle className="w-4 h-4" />
+              WhatsApp
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="whatsapp">
+            <WhatsAppEventos
+              pedidos={pedidos}
+              asignaciones={asignaciones}
+              camareros={camareros}
+            />
+          </TabsContent>
+
+          <TabsContent value="asignaciones">
 
         {/* Eventos Próximos */}
         <Card className="mb-6 overflow-hidden">
