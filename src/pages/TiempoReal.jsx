@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clock, Search, Calendar, RefreshCw, Star, Users, Mail, MessageCircle } from 'lucide-react';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import HojaAsistencia from '../components/tiemporeal/HojaAsistencia';
 import EnviarWhatsApp from '../components/whatsapp/EnviarWhatsApp';
+import WhatsAppEventos from '../components/whatsapp/WhatsAppEventos';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
