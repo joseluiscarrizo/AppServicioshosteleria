@@ -628,8 +628,6 @@ export default function TiempoReal() {
           </TabsContent>
         </Tabs>
 
-      </div>
-
       {/* Modal de valoración */}
       {valoracionModal.camarero && (
         <ValoracionCamarero
@@ -639,6 +637,7 @@ export default function TiempoReal() {
           pedido={valoracionModal.pedido}
         />
       )}
+      </div>
     </div>
   );
 }
