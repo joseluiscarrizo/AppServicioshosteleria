@@ -157,6 +157,10 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
         let mensaje = await generarMensaje(asignacion, camarero);
         if (urlArchivo) mensaje += `\n\n📎 *Archivo adjunto:*\n${urlArchivo}`;
 
+        const baseUrl = window.location.origin;
+        const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
+        const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
+
         const response = await base44.functions.invoke('enviarWhatsAppDirecto', {
           telefono: camarero.telefono,
           mensaje,
@@ -164,6 +168,8 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
           camarero_nombre: camarero.nombre,
           pedido_id: eventoSeleccionado.id,
           asignacion_id: asignacion.id,
+          link_confirmar: linkConfirmar,
+          link_rechazar: linkRechazar,
           plantilla_usada: plantillaSeleccionada ? plantillas.find(p => p.id === plantillaSeleccionada)?.nombre : 'Manual'
         });
 
