@@ -122,7 +122,7 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
     }
     if (mensajePersonalizado.trim()) return reemplazar(mensajePersonalizado);
 
-    // Mensaje por defecto
+    // Mensaje por defecto (sin links visibles, los botones se envían aparte)
     let msg = `📅 *Día:* ${pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : ''}\n`;
     msg += `👤 *Cliente:* ${pedido.cliente}\n`;
     msg += `📍 *Lugar del Evento:* ${pedido.lugar_evento || 'Por confirmar'}\n`;
@@ -132,10 +132,7 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
     msg += `👕 *Camisa:* ${pedido.camisa || 'blanca'}\n`;
     msg += `✨ *Uniforme Impoluto.*\n\n`;
     msg += `⏰ *Presentarse 15 minutos antes.*\n\n`;
-    msg += `━━━━━━━━━━━━━━━━\n`;
-    msg += `Por favor, confirma tu asistencia:\n\n`;
-    msg += `✅ *CONFIRMO*\n${linkConfirmar}\n\n`;
-    msg += `❌ *RECHAZO*\n${linkRechazar}`;
+    msg += `Por favor, confirma tu asistencia:`;
     return msg;
   };
 
