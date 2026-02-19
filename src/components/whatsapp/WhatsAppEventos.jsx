@@ -111,10 +111,11 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
       .replace(/\{\{hora_entrada\}\}/g, asignacion.hora_entrada || pedido.entrada || '-')
       .replace(/\{\{hora_salida\}\}/g, asignacion.hora_salida || pedido.salida || '-')
       .replace(/\{\{camisa\}\}/g, pedido.camisa || 'blanca')
-      .replace(/\{\{link_confirmar\}\}/g, linkConfirmar)
-      .replace(/\{\{link_rechazar\}\}/g, linkRechazar)
+      .replace(/\{\{link_confirmar\}\}/g, '') // Se envía como botón, no como texto
+      .replace(/\{\{link_rechazar\}\}/g, '')  // Se envía como botón, no como texto
       .replace(/\{\{link_ubicacion\}\}/g, pedido.link_ubicacion || '')
-      .replace(/\{\{camarero_nombre\}\}/g, camarero?.nombre || '');
+      .replace(/\{\{camarero_nombre\}\}/g, camarero?.nombre || '')
+      .trim();
 
     if (plantillaSeleccionada) {
       const plantilla = plantillas.find(p => p.id === plantillaSeleccionada);
