@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No autorizado' }, { status: 403 });
     }
 
-    const { telefono, mensaje, camarero_id, camarero_nombre, pedido_id, asignacion_id, plantilla_usada } = await req.json();
+    const { telefono, mensaje, camarero_id, camarero_nombre, pedido_id, asignacion_id, plantilla_usada, link_confirmar, link_rechazar } = await req.json();
     
     if (!telefono || !mensaje) {
       return Response.json({ error: 'Teléfono y mensaje son requeridos' }, { status: 400 });
