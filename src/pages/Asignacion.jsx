@@ -631,14 +631,24 @@ Sistema de Gestión de Camareros
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">Asigna camareros a los pedidos con recomendaciones inteligentes</p>
           </div>
-          <Button 
-            onClick={handleExportarExcel}
-            disabled={exportandoExcel}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
-            {exportandoExcel ? 'Exportando...' : 'Exportar Excel'}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleExportarCalendario}
+              disabled={exportandoCalendario}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              {exportandoCalendario ? 'Exportando...' : 'Calendario Eventos'}
+            </Button>
+            <Button 
+              onClick={handleExportarExcel}
+              disabled={exportandoExcel}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              {exportandoExcel ? 'Exportando...' : 'Exportar Asignaciones'}
+            </Button>
+          </div>
         </div>
 
         {/* Selector de Vista */}
