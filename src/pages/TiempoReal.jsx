@@ -10,11 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clock, Search, Calendar, RefreshCw, Star, Users, Mail, MessageCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import HojaAsistencia from '../components/tiemporeal/HojaAsistencia';
 import EnviarWhatsApp from '../components/whatsapp/EnviarWhatsApp';
 import WhatsAppEventos from '../components/whatsapp/WhatsAppEventos';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const estadoColors = {
@@ -55,6 +56,10 @@ export default function TiempoReal() {
     mutationFn: (data) => base44.entities.AsignacionCamarero.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+    },
+    onError: (error) => {
+      console.error('Error al crear asignación:', error);
+      toast.error('Error al crear asignación: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -62,6 +67,10 @@ export default function TiempoReal() {
     mutationFn: ({ id, data }) => base44.entities.AsignacionCamarero.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+    },
+    onError: (error) => {
+      console.error('Error al actualizar asignación:', error);
+      toast.error('Error al actualizar asignación: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -108,7 +117,7 @@ export default function TiempoReal() {
       
       // Filtrar por rango de fechas del calendario
       if (p.dia) {
-        const fechaPedido = new Date(p.dia);
+        const fechaPedido = parseISO(p.dia);
         const enRango = fechaPedido >= rangoFechas.inicio && fechaPedido <= rangoFechas.fin;
         if (!enRango) return false;
       }
@@ -244,7 +253,7 @@ export default function TiempoReal() {
                       </div>
                       <div className="flex items-center gap-2 text-xs text-slate-600">
                         <Calendar className="w-3 h-3" />
-                        {format(new Date(pedido.dia), 'dd MMM yyyy', { locale: es })}
+                        {format(parseISO(pedido.dia), 'dd MMM yyyy', { locale: es })}
                       </div>
                     </Card>
                     );

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, Mail, Bell, Phone, X, UserCog, Clock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -39,6 +40,10 @@ export default function Coordinadores() {
       queryClient.invalidateQueries({ queryKey: ['coordinadores'] });
       resetForm();
       toast.success('Coordinador añadido');
+    },
+    onError: (error) => {
+      console.error('Error al crear coordinador:', error);
+      toast.error('Error al crear coordinador: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -48,6 +53,10 @@ export default function Coordinadores() {
       queryClient.invalidateQueries({ queryKey: ['coordinadores'] });
       resetForm();
       toast.success('Coordinador actualizado');
+    },
+    onError: (error) => {
+      console.error('Error al actualizar coordinador:', error);
+      toast.error('Error al actualizar coordinador: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -56,6 +65,10 @@ export default function Coordinadores() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['coordinadores'] });
       toast.success('Coordinador eliminado');
+    },
+    onError: (error) => {
+      console.error('Error al eliminar coordinador:', error);
+      toast.error('Error al eliminar coordinador: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -318,18 +331,34 @@ export default function Coordinadores() {
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => {
-                            if (confirm('¿Eliminar este coordinador?')) {
-                              deleteMutation.mutate(coord.id);
-                            }
-                          }}
-                          className="h-8 w-8 text-slate-500 hover:text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="h-8 w-8 text-slate-500 hover:text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar coordinador?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Se eliminará el coordinador <strong>{coord.nombre}</strong>. Esta acción no se puede deshacer.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteMutation.mutate(coord.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>

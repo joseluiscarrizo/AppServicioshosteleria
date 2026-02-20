@@ -56,6 +56,10 @@ export default function Disponibilidad() {
       setSelectedDate(null);
       setExistingDisponibilidad(null);
       toast.success('Disponibilidad guardada');
+    },
+    onError: (error) => {
+      console.error('Error al guardar disponibilidad:', error);
+      toast.error('Error al guardar disponibilidad: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -66,6 +70,10 @@ export default function Disponibilidad() {
       setSelectedDate(null);
       setExistingDisponibilidad(null);
       toast.success('Disponibilidad eliminada');
+    },
+    onError: (error) => {
+      console.error('Error al eliminar disponibilidad:', error);
+      toast.error('Error al eliminar disponibilidad: ' + (error.message || 'Error desconocido'));
     }
   });
 

@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, User, Star, Award, Calendar, TrendingUp, MapPin, Clock, Phone, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GestionDocumentosCamarero from '../components/camareros/GestionDocumentosCamarero';
 
@@ -259,7 +259,7 @@ export default function PerfilCamarero() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4 text-slate-400" />
-                              {pedido.dia ? format(new Date(pedido.dia), 'dd MMM yyyy', { locale: es }) : 'N/A'}
+                              {pedido.dia ? format(parseISO(pedido.dia), 'dd MMM yyyy', { locale: es }) : 'N/A'}
                             </div>
                           </TableCell>
                           <TableCell className="font-medium">{pedido.cliente}</TableCell>

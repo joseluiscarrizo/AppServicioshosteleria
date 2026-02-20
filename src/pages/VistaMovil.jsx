@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bell, Calendar, MapPin, Clock, User, Navigation, Phone, CheckCircle2, BellRing } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import NotificacionesCamarero from '../components/camareros/NotificacionesCamarero';
 import MapaEventos from '../components/mapa/MapaEventos';
@@ -83,7 +83,7 @@ export default function VistaMovil() {
   const hoy = new Date();
   const proximosPedidos = misPedidos.filter(p => {
     if (!p.dia) return false;
-    const fecha = new Date(p.dia);
+    const fecha = parseISO(p.dia);
     const diff = (fecha - hoy) / (1000 * 60 * 60 * 24);
     return diff >= 0 && diff <= 7;
   });
@@ -236,7 +236,7 @@ export default function VistaMovil() {
                         <div className="space-y-2 text-sm text-slate-600">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4" />
-                            <span>{pedido.dia ? format(new Date(pedido.dia), 'EEEE dd MMMM', { locale: es }) : '-'}</span>
+                            <span>{pedido.dia ? format(parseISO(pedido.dia), 'EEEE dd MMMM', { locale: es }) : '-'}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4" />

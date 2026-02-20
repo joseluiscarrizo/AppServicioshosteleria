@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, Calendar as CalendarIcon, RefreshCw, X, ChevronRight, Star, Filter, Award, GripVertical, Sparkles, Ban, Copy, Repeat, Pencil, Trash2, FileSpreadsheet } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -62,7 +63,19 @@ export default function Asignacion() {
 
   const { data: pedidos = [], isLoading: loadingPedidos } = useQuery({
     queryKey: ['pedidos'],
-    queryFn: () => base44.entities.Pedido.list('-dia', 200)
+    queryFn: async () => {
+      try {
+        const hoy      = new Date();
+        const desde    = new Date(hoy.getFullYear(), hoy.getMonth() - 3, 1);
+        const hasta    = new Date(hoy.getFullYear(), hoy.getMonth() + 6, 0);
+        return await base44.entities.Pedido.filter({
+          dia: { $gte: format(desde, 'yyyy-MM-dd'), $lte: format(hasta, 'yyyy-MM-dd') }
+        }, '-dia', 300);
+      } catch (error) {
+        console.error('Error cargando pedidos con filtro, usando fallback:', error);
+        return await base44.entities.Pedido.list('-dia', 300);
+      }
+    }
   });
 
   const { data: camareros = [] } = useQuery({
@@ -72,7 +85,18 @@ export default function Asignacion() {
 
   const { data: asignaciones = [] } = useQuery({
     queryKey: ['asignaciones'],
-    queryFn: () => base44.entities.AsignacionCamarero.list('-created_date', 1000)
+    queryFn: async () => {
+      try {
+        const hoy      = new Date();
+        const desde    = new Date(hoy.getFullYear(), hoy.getMonth() - 3, 1);
+        const hasta    = new Date(hoy.getFullYear(), hoy.getMonth() + 6, 0);
+        return await base44.entities.AsignacionCamarero.filter({
+          fecha_pedido: { $gte: format(desde, 'yyyy-MM-dd'), $lte: format(hasta, 'yyyy-MM-dd') }
+        }, '-created_date', 500);
+      } catch {
+        return await base44.entities.AsignacionCamarero.list('-created_date', 500);
+      }
+    }
   });
 
   const createAsignacionMutation = useMutation({
@@ -90,7 +114,7 @@ export default function Asignacion() {
       if (pedido && camarero) {
         try {
           // Construir mensaje según si tiene transporte o no
-          let mensaje = `📅 Día: ${pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Por confirmar'}\n`;
+          let mensaje = `📅 Día: ${pedido.dia ? format(parseISO(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Por confirmar'}\n`;
           mensaje += `👤 Cliente: ${pedido.cliente}\n`;
           mensaje += `📍 Lugar del Evento: ${pedido.lugar_evento || 'Por confirmar'}\n`;
           mensaje += `🕐 Hora de entrada: ${data.hora_entrada || pedido.entrada || '-'}\n\n`;
@@ -169,7 +193,7 @@ export default function Asignacion() {
             const coordinador = coords[0];
             
             if (coordinador) {
-              const mensajeNotif = `Se ha asignado a ${camarero.nombre} al servicio de ${pedido.cliente} el ${pedido.dia ? format(new Date(pedido.dia), 'dd/MM/yyyy', { locale: es }) : 'fecha pendiente'}`;
+              const mensajeNotif = `Se ha asignado a ${camarero.nombre} al servicio de ${pedido.cliente} el ${pedido.dia ? format(parseISO(pedido.dia), 'dd/MM/yyyy', { locale: es }) : 'fecha pendiente'}`;
               
               // Notificación in-app al coordinador
               await base44.entities.Notificacion.create({
@@ -195,7 +219,7 @@ Se ha asignado un nuevo servicio a tu camarero ${camarero.nombre}:
 
 👤 Camarero: ${camarero.nombre} (#${camarero.codigo})
 📋 Cliente: ${pedido.cliente}
-📅 Fecha: ${pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Por confirmar'}
+📅 Fecha: ${pedido.dia ? format(parseISO(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Por confirmar'}
 🕐 Horario: ${pedido.entrada || '-'} - ${pedido.salida || '-'}
 📍 Ubicación: ${pedido.lugar_evento || 'Por confirmar'}
 ${pedido.camisa ? `👔 Camisa: ${pedido.camisa}` : ''}
@@ -235,6 +259,10 @@ Sistema de Gestión de Camareros
     mutationFn: ({ id, data }) => base44.entities.AsignacionCamarero.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+    },
+    onError: (error) => {
+      console.error('Error al actualizar asignación:', error);
+      toast.error('Error al actualizar asignación: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -248,6 +276,10 @@ Sistema de Gestión de Camareros
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
       toast.success('Asignación eliminada');
+    },
+    onError: (error) => {
+      console.error('Error al eliminar asignación:', error);
+      toast.error('Error al eliminar asignación: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -259,6 +291,10 @@ Sistema de Gestión de Camareros
       setShowForm(false);
       setEditingPedido(null);
       toast.success('Pedido actualizado');
+    },
+    onError: (error) => {
+      console.error('Error al actualizar pedido:', error);
+      toast.error('Error al actualizar pedido: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -267,6 +303,10 @@ Sistema de Gestión de Camareros
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       toast.success('Pedido eliminado');
+    },
+    onError: (error) => {
+      console.error('Error al eliminar pedido:', error);
+      toast.error('Error al eliminar pedido: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -650,7 +690,7 @@ Sistema de Gestión de Camareros
                           <SelectValue placeholder="Especialidad" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={null}>Todas</SelectItem>
+                          <SelectItem value="">Todas</SelectItem>
                           <SelectItem value="general">General</SelectItem>
                           <SelectItem value="cocteleria">Coctelería</SelectItem>
                           <SelectItem value="banquetes">Banquetes</SelectItem>
@@ -728,14 +768,34 @@ Sistema de Gestión de Camareros
                                   {asignacion.estado}
                                 </Badge>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50"
-                                onClick={() => deleteAsignacionMutation.mutate(asignacion)}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar asignación?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Se eliminará la asignación de <strong>{asignacion.camarero_nombre}</strong>. Esta acción no se puede deshacer.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteAsignacionMutation.mutate(asignacion)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Eliminar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </Card>
                         ))}
@@ -843,7 +903,7 @@ Sistema de Gestión de Camareros
                           <SelectValue placeholder="Especialidad" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={null}>Todas</SelectItem>
+                          <SelectItem value="">Todas</SelectItem>
                           <SelectItem value="general">General</SelectItem>
                           <SelectItem value="cocteleria">Coctelería</SelectItem>
                           <SelectItem value="banquetes">Banquetes</SelectItem>
@@ -857,7 +917,7 @@ Sistema de Gestión de Camareros
                           <SelectValue placeholder="Habilidad" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={null}>Todas</SelectItem>
+                          <SelectItem value="">Todas</SelectItem>
                           {todasHabilidades.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
@@ -1130,14 +1190,34 @@ Sistema de Gestión de Camareros
                                                       #{asignacion.camarero_codigo}
                                                     </span>
                                                   </div>
-                                                  <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
-                                                    onClick={() => deleteAsignacionMutation.mutate(asignacion)}
-                                                  >
-                                                    <X className="w-4 h-4" />
-                                                  </Button>
+                                                  <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                      <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                                                      >
+                                                        <X className="w-4 h-4" />
+                                                      </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                      <AlertDialogHeader>
+                                                        <AlertDialogTitle>¿Eliminar asignación?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                          Se eliminará la asignación de <strong>{asignacion.camarero_nombre}</strong>. Esta acción no se puede deshacer.
+                                                        </AlertDialogDescription>
+                                                      </AlertDialogHeader>
+                                                      <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                          onClick={() => deleteAsignacionMutation.mutate(asignacion)}
+                                                          className="bg-red-600 hover:bg-red-700"
+                                                        >
+                                                          Eliminar
+                                                        </AlertDialogAction>
+                                                      </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                  </AlertDialog>
                                                 </div>
 
                                                 {/* Estado con mejor UI */}
@@ -1257,14 +1337,34 @@ Sistema de Gestión de Camareros
                                                 #{asignacion.camarero_codigo}
                                               </span>
                                             </div>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
-                                              onClick={() => deleteAsignacionMutation.mutate(asignacion)}
-                                            >
-                                              <X className="w-4 h-4" />
-                                            </Button>
+                                            <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                                                >
+                                                  <X className="w-4 h-4" />
+                                                </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                  <AlertDialogTitle>¿Eliminar asignación?</AlertDialogTitle>
+                                                  <AlertDialogDescription>
+                                                    Se eliminará la asignación de <strong>{asignacion.camarero_nombre}</strong>. Esta acción no se puede deshacer.
+                                                  </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                  <AlertDialogAction
+                                                    onClick={() => deleteAsignacionMutation.mutate(asignacion)}
+                                                    className="bg-red-600 hover:bg-red-700"
+                                                  >
+                                                    Eliminar
+                                                  </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                            </AlertDialog>
                                           </div>
 
                                           {/* Estado con mejor UI */}
@@ -1478,7 +1578,7 @@ Sistema de Gestión de Camareros
                               >
                                 <div className="flex items-center gap-1">
                                   <Calendar className="w-3 h-3" />
-                                  {pedido.dia ? format(new Date(pedido.dia), 'dd MMM yyyy', { locale: es }) : '-'}
+                                  {pedido.dia ? format(parseISO(pedido.dia), 'dd MMM yyyy', { locale: es }) : '-'}
                                 </div>
                               </TableCell>
                             ) : null}
@@ -1555,14 +1655,34 @@ Sistema de Gestión de Camareros
                                     >
                                       <Pencil className="w-4 h-4" />
                                     </Button>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => deletePedidoMutation.mutate(pedido.id)}
-                                      className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="icon"
+                                          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>¿Eliminar pedido?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Se eliminará el pedido de <strong>{pedido.cliente}</strong>. Esta acción no se puede deshacer.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => deletePedidoMutation.mutate(pedido.id)}
+                                            className="bg-red-600 hover:bg-red-700"
+                                          >
+                                            Eliminar
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
                                   </div>
                                 </TableCell>
                               </>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Calendar, Clock, Users, MapPin, Layers, TrendingUp } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 
@@ -92,7 +92,7 @@ export default function TableroEventos() {
       const pedido = pedidos.find(p => p.id === asignacion.pedido_id);
       if (!pedido || !pedido.dia) return;
 
-      const fechaPedido = new Date(pedido.dia);
+      const fechaPedido = parseISO(pedido.dia);
       if (fechaPedido >= inicioSemana && fechaPedido <= finSemana) {
         if (carga[asignacion.camarero_id]) {
           carga[asignacion.camarero_id].eventos += 1;
@@ -252,7 +252,7 @@ export default function TableroEventos() {
                                     <div className="space-y-1.5 text-xs text-slate-600">
                                       <div className="flex items-center gap-1.5">
                                         <Calendar className="w-3 h-3" />
-                                        {pedido.dia ? format(new Date(pedido.dia), 'dd MMM', { locale: es }) : '-'}
+                                        {pedido.dia ? format(parseISO(pedido.dia), 'dd MMM', { locale: es }) : '-'}
                                       </div>
                                       <div className="flex items-center gap-1.5">
                                         <Clock className="w-3 h-3" />

@@ -21,7 +21,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { format, isToday, isTomorrow, differenceInHours, addDays, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay, addMonths, subMonths } from 'date-fns';
+import { format, isToday, isTomorrow, differenceInHours, addDays, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay, addMonths, subMonths, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -58,10 +58,10 @@ export default function DashboardCoordinador() {
 
   // Cálculos y filtros
   const hoy = new Date();
-  const eventosHoy = pedidos.filter(p => isToday(new Date(p.dia)) && p.estado_evento !== 'cancelado');
-  const eventosManana = pedidos.filter(p => isTomorrow(new Date(p.dia)) && p.estado_evento !== 'cancelado');
+  const eventosHoy = pedidos.filter(p => isToday(parseISO(p.dia)) && p.estado_evento !== 'cancelado');
+  const eventosManana = pedidos.filter(p => isTomorrow(parseISO(p.dia)) && p.estado_evento !== 'cancelado');
   const eventosSemana = pedidos.filter(p => {
-    const fecha = new Date(p.dia);
+    const fecha = parseISO(p.dia);
     const diff = differenceInHours(fecha, hoy) / 24;
     return diff >= 0 && diff <= 7 && p.estado_evento !== 'cancelado';
   });
@@ -82,7 +82,7 @@ export default function DashboardCoordinador() {
   pedidos.forEach(pedido => {
     if (pedido.estado_evento === 'cancelado') return;
     
-    const fechaPedido = new Date(pedido.dia);
+    const fechaPedido = parseISO(pedido.dia);
     const horasHasta = differenceInHours(fechaPedido, hoy);
     
     if (horasHasta > 0 && horasHasta < 48) {
@@ -131,7 +131,7 @@ export default function DashboardCoordinador() {
   asignacionesPendientes.forEach(asig => {
     const pedido = pedidos.find(p => p.id === asig.pedido_id);
     if (pedido && pedido.dia) {
-      const horasHasta = differenceInHours(new Date(pedido.dia), hoy);
+      const horasHasta = differenceInHours(parseISO(pedido.dia), hoy);
       if (horasHasta > 0 && horasHasta < 24) {
         alertas.push({
           id: `sin-confirmar-${asig.id}`,

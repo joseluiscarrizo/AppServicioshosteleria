@@ -4,13 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, ClipboardList, X, Sparkles, Calendar, MapPin, Users, Ban, Copy, Repeat } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -57,11 +55,27 @@ export default function Pedidos() {
     queryKey: ['pedidos'],
     queryFn: async () => {
       try {
-        const data = await base44.entities.Pedido.list('-dia', 200);
+        // Ventana de 3 meses atrás → 6 meses adelante para tener contexto operativo completo
+        const hoy         = new Date();
+        const desde       = new Date(hoy.getFullYear(), hoy.getMonth() - 3, 1);
+        const hasta       = new Date(hoy.getFullYear(), hoy.getMonth() + 6, 0);
+        const desdeStr    = format(desde, 'yyyy-MM-dd');
+        const hastaStr    = format(hasta, 'yyyy-MM-dd');
+
+        const data = await base44.entities.Pedido.filter({
+          dia: { $gte: desdeStr, $lte: hastaStr }
+        }, '-dia', 300);
         return data.sort((a, b) => (a.dia || '').localeCompare(b.dia || ''));
       } catch (error) {
-        console.error('Error cargando pedidos:', error);
-        return [];
+        // Fallback al list si el filter falla (p.ej. operador no soportado en esta versión SDK)
+        console.error('Error cargando pedidos con filtro, usando fallback:', error);
+        try {
+          const data = await base44.entities.Pedido.list('-dia', 300);
+          return data.sort((a, b) => (a.dia || '').localeCompare(b.dia || ''));
+        } catch (fallbackError) {
+          console.error('Error cargando pedidos:', fallbackError);
+          return [];
+        }
       }
     }
   });
@@ -73,7 +87,19 @@ export default function Pedidos() {
 
   const { data: asignaciones = [] } = useQuery({
     queryKey: ['asignaciones'],
-    queryFn: () => base44.entities.AsignacionCamarero.list('-created_date', 1000)
+    queryFn: async () => {
+      try {
+        // Solo asignaciones de los últimos 3 meses y próximos 6 (alineado con el filtro de pedidos)
+        const hoy      = new Date();
+        const desde    = new Date(hoy.getFullYear(), hoy.getMonth() - 3, 1);
+        const hasta    = new Date(hoy.getFullYear(), hoy.getMonth() + 6, 0);
+        return await base44.entities.AsignacionCamarero.filter({
+          fecha_pedido: { $gte: format(desde, 'yyyy-MM-dd'), $lte: format(hasta, 'yyyy-MM-dd') }
+        }, '-created_date', 500);
+      } catch {
+        return await base44.entities.AsignacionCamarero.list('-created_date', 500);
+      }
+    }
   });
 
   const createMutation = useMutation({
@@ -96,6 +122,10 @@ export default function Pedidos() {
       resetForm();
       setEditingSalida({ pedidoId: null, turnoIndex: null, camareroIndex: null });
       toast.success('Pedido actualizado');
+    },
+    onError: (error) => {
+      console.error('Error al actualizar pedido:', error);
+      toast.error('Error al actualizar pedido: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -134,6 +164,10 @@ export default function Pedidos() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       toast.success('Pedido eliminado');
+    },
+    onError: (error) => {
+      console.error('Error al eliminar pedido:', error);
+      toast.error('Error al eliminar pedido: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -198,15 +232,33 @@ export default function Pedidos() {
 
 
   const handleAIExtraction = (extractedData) => {
+    // Calcular t_horas si hay entrada y salida
+    let t_horas = 0;
+    if (extractedData.entrada && extractedData.salida) {
+      const [hE, mE] = extractedData.entrada.split(':').map(Number);
+      const [hS, mS] = extractedData.salida.split(':').map(Number);
+      let horas = hS - hE;
+      let minutos = mS - mE;
+      if (minutos < 0) { horas -= 1; minutos += 60; }
+      if (horas < 0) horas += 24;
+      t_horas = horas + minutos / 60;
+    }
+
+    // Transformar estructura plana del extractor a estructura de turnos[]
+    // que espera PedidoFormNuevo
+    const turnoExtraido = {
+      cantidad_camareros: extractedData.cantidad_camareros || 1,
+      entrada: extractedData.entrada || '',
+      salida: extractedData.salida || '',
+      t_horas
+    };
+
     setFormData({
       cliente: extractedData.cliente || '',
       lugar_evento: extractedData.lugar_evento || '',
       direccion_completa: extractedData.direccion_completa || '',
-      cantidad_camareros: extractedData.cantidad_camareros || 1,
       dia: extractedData.dia || '',
-      entrada: extractedData.entrada || '',
-      salida: extractedData.salida || '',
-      t_horas: extractedData.t_horas || 0,
+      turnos: [turnoExtraido],
       camisa: extractedData.camisa || '',
       extra_transporte: extractedData.extra_transporte || false,
       notas: extractedData.notas || ''
@@ -281,7 +333,7 @@ export default function Pedidos() {
             <p className="text-sm text-slate-500">Esta Semana</p>
             <p className="text-2xl font-bold text-blue-600">
               {pedidos.filter(p => {
-                const fecha = new Date(p.dia);
+                const fecha = parseISO(p.dia);
                 const hoy = new Date();
                 const diff = (fecha - hoy) / (1000 * 60 * 60 * 24);
                 return diff >= 0 && diff <= 7;
@@ -416,7 +468,7 @@ export default function Pedidos() {
                               >
                                 <div className="flex items-center gap-1">
                                   <Calendar className="w-3 h-3" />
-                                  {pedido.dia ? format(new Date(pedido.dia), 'dd MMM yyyy', { locale: es }) : '-'}
+                                  {pedido.dia ? format(parseISO(pedido.dia), 'dd MMM yyyy', { locale: es }) : '-'}
                                 </div>
                               </TableCell>
                             ) : null}
@@ -494,14 +546,34 @@ export default function Pedidos() {
                                     >
                                       <Pencil className="w-4 h-4" />
                                     </Button>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon"
-                                      onClick={() => deleteMutation.mutate(pedido.id)}
-                                      className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button 
+                                          variant="ghost" 
+                                          size="icon"
+                                          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>¿Eliminar pedido?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Se eliminará el pedido de <strong>{pedido.cliente}</strong> del {pedido.dia}. Esta acción no se puede deshacer y eliminará todas las asignaciones asociadas.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => deleteMutation.mutate(pedido.id)}
+                                            className="bg-red-600 hover:bg-red-700"
+                                          >
+                                            Eliminar
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
                                   </div>
                                 </TableCell>
                               </>

@@ -1,16 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users, LayoutDashboard, Bell, MessageCircle, ChevronDown } from 'lucide-react';
+import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users, LayoutDashboard, Bell, MessageCircle, ChevronDown, Map, Smartphone, CalendarRange } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import NotificationBell from './components/notificaciones/NotificationBell';
-import NotificacionesAutomaticas from './components/notificaciones/NotificacionesAutomaticas';
 import { useWebPushNotifications } from './components/notificaciones/WebPushService';
-import ServicioRecordatorios from './components/recordatorios/ServicioRecordatorios';
 import RateLimitHandler from './components/notificaciones/RateLimitHandler';
-import RecordatoriosProactivos from './components/whatsapp/RecordatoriosProactivos';
+import { useBackgroundServices } from './hooks/useBackgroundServices';
 
 const navItems = [
   { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
@@ -22,7 +20,14 @@ const navItems = [
 const clientesSubmenu = [
   { name: 'Clientes', page: 'Clientes', icon: Users },
   { name: 'Pedidos', page: 'Pedidos', icon: ClipboardList },
-  { name: 'Asignación', page: 'Asignacion', icon: UserCog }
+  { name: 'Asignación', page: 'Asignacion', icon: UserCog },
+  { name: 'Coordinadores', page: 'Coordinadores', icon: UserCog },
+  { name: 'Disponibilidad', page: 'Disponibilidad', icon: CalendarDays }
+];
+
+const herramientasSubmenu = [
+  { name: 'Tablero Eventos', page: 'TableroEventos', icon: CalendarRange },
+  { name: 'Vista Móvil', page: 'VistaMovil', icon: Smartphone },
 ];
 
 const comunicacionSubmenu = [
@@ -33,6 +38,9 @@ const comunicacionSubmenu = [
 export default function Layout({ children, currentPageName }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { showNotification, isAllowed, requestPermission } = useWebPushNotifications();
+
+  // Servicios background unificados (reemplaza NotificacionesAutomaticas + ServicioRecordatorios + RecordatoriosProactivos)
+  useBackgroundServices({ showPushNotifications: isAllowed ? showNotification : null });
   
   // Solicitar permisos al cargar la app
   React.useEffect(() => {
@@ -49,17 +57,6 @@ export default function Layout({ children, currentPageName }) {
     <div className="min-h-screen bg-slate-50">
       {/* Manejador global de errores de rate limit */}
       <RateLimitHandler />
-
-      {/* Sistema de Notificaciones Automáticas Global */}
-          <NotificacionesAutomaticas 
-            showPushNotifications={isAllowed ? showNotification : null}
-          />
-
-          {/* Sistema de Recordatorios Automáticos */}
-              <ServicioRecordatorios />
-
-              {/* Recordatorios Proactivos de WhatsApp */}
-              <RecordatoriosProactivos />
       
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
@@ -96,8 +93,8 @@ export default function Layout({ children, currentPageName }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant={['Clientes', 'Pedidos', 'Asignacion'].includes(currentPageName) ? 'default' : 'ghost'}
-                    className={['Clientes', 'Pedidos', 'Asignacion'].includes(currentPageName)
+                    variant={['Clientes', 'Pedidos', 'Asignacion', 'Coordinadores', 'Disponibilidad'].includes(currentPageName) ? 'default' : 'ghost'}
+                    className={['Clientes', 'Pedidos', 'Asignacion', 'Coordinadores', 'Disponibilidad'].includes(currentPageName)
                       ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
                       : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
                     }
@@ -109,6 +106,33 @@ export default function Layout({ children, currentPageName }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   {clientesSubmenu.map(item => (
+                    <Link key={item.page} to={createPageUrl(item.page)}>
+                      <DropdownMenuItem className="cursor-pointer">
+                        <item.icon className="w-4 h-4 mr-2" />
+                        {item.name}
+                      </DropdownMenuItem>
+                    </Link>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Dropdown de Herramientas */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={['TableroEventos', 'VistaMovil'].includes(currentPageName) ? 'default' : 'ghost'}
+                    className={['TableroEventos', 'VistaMovil'].includes(currentPageName)
+                      ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
+                      : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
+                    }
+                  >
+                    <CalendarRange className="w-4 h-4 mr-2" />
+                    Herramientas
+                    <ChevronDown className="w-3 h-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {herramientasSubmenu.map(item => (
                     <Link key={item.page} to={createPageUrl(item.page)}>
                       <DropdownMenuItem className="cursor-pointer">
                         <item.icon className="w-4 h-4 mr-2" />
@@ -244,6 +268,25 @@ export default function Layout({ children, currentPageName }) {
             <div className="mt-2 pt-2 border-t border-slate-100">
               <div className="text-xs font-semibold text-slate-500 mb-2 px-3">COMUNICACIÓN</div>
               {comunicacionSubmenu.map(item => (
+                <Link key={item.page} to={createPageUrl(item.page)} onClick={() => setMobileMenuOpen(false)}>
+                  <Button
+                    variant={currentPageName === item.page ? 'default' : 'ghost'}
+                    className={`w-full justify-start mb-1 ${currentPageName === item.page 
+                      ? 'bg-[#1e3a5f] text-white' 
+                      : 'text-slate-600'
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4 mr-2" />
+                    {item.name}
+                  </Button>
+                </Link>
+              ))}
+            </div>
+
+            {/* Submenu de Herramientas en Mobile */}
+            <div className="mt-2 pt-2 border-t border-slate-100">
+              <div className="text-xs font-semibold text-slate-500 mb-2 px-3">HERRAMIENTAS</div>
+              {herramientasSubmenu.map(item => (
                 <Link key={item.page} to={createPageUrl(item.page)} onClick={() => setMobileMenuOpen(false)}>
                   <Button
                     variant={currentPageName === item.page ? 'default' : 'ghost'}

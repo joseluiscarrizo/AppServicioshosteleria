@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, XCircle, Calendar, MapPin, Clock, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 
@@ -112,7 +112,7 @@ export default function ConfirmarServicio() {
         const coordinador = coords[0];
         
         if (coordinador) {
-          const mensajeNotif = `${asignacion.camarero_nombre} ha CONFIRMADO el servicio de ${pedido.cliente} para el ${pedido.dia ? format(new Date(pedido.dia), 'dd/MM/yyyy', { locale: es }) : 'fecha pendiente'}`;
+          const mensajeNotif = `${asignacion.camarero_nombre} ha CONFIRMADO el servicio de ${pedido.cliente} para el ${pedido.dia ? format(parseISO(pedido.dia), 'dd/MM/yyyy', { locale: es }) : 'fecha pendiente'}`;
           
           await base44.entities.Notificacion.create({
             tipo: 'estado_cambio',
@@ -135,7 +135,7 @@ Hola ${coordinador.nombre},
 ✅ El camarero ${asignacion.camarero_nombre} ha CONFIRMADO el servicio:
 
 📋 Cliente: ${pedido.cliente}
-📅 Fecha: ${pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Pendiente'}
+📅 Fecha: ${pedido.dia ? format(parseISO(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Pendiente'}
 🕐 Horario: ${asignacion.hora_entrada || pedido.entrada || '-'} - ${asignacion.hora_salida || pedido.salida || '-'}
 📍 Ubicación: ${pedido.lugar_evento || 'Por confirmar'}
 
@@ -232,7 +232,7 @@ Hola ${coordinador.nombre},
 ⚠️ ATENCIÓN URGENTE: El camarero ${asignacion.camarero_nombre} ha RECHAZADO el servicio:
 
 📋 Cliente: ${pedido.cliente}
-📅 Fecha: ${pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Pendiente'}
+📅 Fecha: ${pedido.dia ? format(parseISO(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Pendiente'}
 🕐 Horario: ${asignacion.hora_entrada || pedido.entrada || '-'} - ${asignacion.hora_salida || pedido.salida || '-'}
 📍 Ubicación: ${pedido.lugar_evento || 'Por confirmar'}
 
@@ -320,7 +320,7 @@ Sistema de Gestión de Camareros
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-slate-600">
               <Calendar className="w-5 h-5 text-[#1e3a5f]" />
-              <span>{format(new Date(pedido.dia), 'EEEE, dd MMMM yyyy', { locale: es })}</span>
+              <span>{format(parseISO(pedido.dia), 'EEEE, dd MMMM yyyy', { locale: es })}</span>
             </div>
             <div className="flex items-center gap-2 text-slate-600">
               <Clock className="w-5 h-5 text-[#1e3a5f]" />

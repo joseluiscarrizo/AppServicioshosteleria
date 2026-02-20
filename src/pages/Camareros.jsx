@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +67,10 @@ export default function Camareros() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['camareros'] });
       toast.success('Disponibilidad actualizada');
+    },
+    onError: (error) => {
+      console.error('Error al actualizar disponibilidad:', error);
+      toast.error('Error al actualizar disponibilidad: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -404,19 +409,35 @@ export default function Camareros() {
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => {
-                            if (confirm(`¿Estás seguro de eliminar a ${camarero.nombre}? Esta acción no se puede deshacer.`)) {
-                              deleteMutation.mutate(camarero.id);
-                            }
-                          }}
-                          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar camarero?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Se eliminará a <strong>{camarero.nombre}</strong> y todos sus datos asociados. Esta acción no se puede deshacer.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteMutation.mutate(camarero.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
