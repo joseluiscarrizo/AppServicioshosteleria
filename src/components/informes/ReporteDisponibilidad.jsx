@@ -145,18 +145,8 @@ export default function ReporteDisponibilidad() {
     };
   }, [camareros, dias, disponibilidades, festivos]);
 
-  const exportarCSV = () => {
-    const headers = ['Camarero', 'Código', 'Días Disponibles', 'Días No Disponibles', 'Parciales', 'Vacaciones', 'Bajas', 'Tasa Disponibilidad'];
-    const rows = estadisticas.map(e => [
-      e.nombre, e.codigo, e.disponibles, e.noDisponibles, e.parciales, e.vacaciones, e.bajas, `${e.tasaDisponibilidad}%`
-    ]);
-    const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `disponibilidad_${fechaInicio}_${fechaFin}.csv`;
-    link.click();
+  const exportarExcel = () => {
+    ExportadorExcel.exportarDisponibilidad(estadisticas, fechaInicio, fechaFin);
   };
 
   return (
@@ -172,9 +162,9 @@ export default function ReporteDisponibilidad() {
             <label className="text-sm text-slate-600 mb-1 block">Hasta</label>
             <Input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="w-44" />
           </div>
-          <Button variant="outline" onClick={exportarCSV} className="ml-auto">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
+          <Button variant="outline" onClick={exportarExcel} className="ml-auto">
+            <FileSpreadsheet className="w-4 h-4 mr-2" />
+            Excel
           </Button>
         </div>
       </Card>
