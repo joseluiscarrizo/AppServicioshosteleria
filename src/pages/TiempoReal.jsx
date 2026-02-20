@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, Search, Calendar, RefreshCw, Star, Users, Mail, MessageCircle } from 'lucide-react';
+import { Clock, Search, Calendar, RefreshCw, Star, Users, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import HojaAsistencia from '../components/tiemporeal/HojaAsistencia';

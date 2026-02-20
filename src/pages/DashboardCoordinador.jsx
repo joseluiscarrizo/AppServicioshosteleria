@@ -9,19 +9,15 @@ import {
   LayoutDashboard, 
   AlertTriangle, 
   Calendar, 
-  Users, 
-  CheckCircle2, 
-  XCircle,
+  Users,
   Clock,
   MapPin,
   TrendingUp,
   UserCheck,
-  Ban,
-  Zap,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { format, isToday, isTomorrow, differenceInHours, addDays, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay, addMonths, subMonths, parseISO } from 'date-fns';
+import { format, isToday, isTomorrow, differenceInHours, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay, addMonths, subMonths, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';

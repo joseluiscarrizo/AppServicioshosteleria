@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, User, Star, Award, Calendar, TrendingUp, MapPin, Clock, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, Star, Award, Calendar, MapPin, Clock, Phone, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { format, parseISO } from 'date-fns';
