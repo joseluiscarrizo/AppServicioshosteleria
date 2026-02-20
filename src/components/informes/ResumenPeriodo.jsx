@@ -109,33 +109,8 @@ export default function ResumenPeriodo() {
     return Object.values(porCliente).sort((a, b) => b.pedidos - a.pedidos);
   }, [pedidosFiltrados]);
 
-  const exportarCSV = () => {
-    const headers = ['Fecha', 'Cliente', 'Lugar', 'Camareros', 'Horas', 'Entrada', 'Salida'];
-    const rows = pedidosFiltrados.map(p => [
-      p.dia, p.cliente, p.lugar_evento, p.cantidad_camareros, p.t_horas, p.entrada, p.salida
-    ]);
-    const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `resumen_${periodo}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    link.click();
-  };
-
-  const exportarPDF = () => {
-    ExportadorPDF.generarInformePeriodo({
-      periodo: periodo === 'dia' ? 'Hoy' : periodo === 'semana' ? 'Esta Semana' : periodo === 'mes' ? 'Este Mes' : 'Personalizado',
-      fechaInicio,
-      fechaFin,
-      totalPedidos: stats.totalPedidos,
-      totalCamareros: stats.totalCamareros,
-      totalHoras: stats.totalHoras.toFixed(1),
-      confirmados: stats.confirmados,
-      enviados: stats.enviados,
-      pendientes: stats.pendientes,
-      porCliente: datosPorCliente
-    }, `resumen_periodo_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+  const exportarExcel = () => {
+    ExportadorExcel.exportarResumenPeriodo(pedidosFiltrados, stats, datosPorCliente, periodo, fechaInicio, fechaFin);
   };
 
   return (
@@ -172,13 +147,9 @@ export default function ResumenPeriodo() {
           )}
           
           <div className="flex gap-2 ml-auto">
-            <Button variant="outline" onClick={exportarCSV} size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              CSV
-            </Button>
-            <Button variant="outline" onClick={exportarPDF} size="sm">
-              <FileText className="w-4 h-4 mr-2" />
-              PDF
+            <Button variant="outline" onClick={exportarExcel} size="sm">
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Excel
             </Button>
           </div>
         </div>
