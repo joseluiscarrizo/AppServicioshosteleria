@@ -59,54 +59,9 @@ export default function InformeCamarero() {
   const totalHoras = asignacionesCamarero.reduce((sum, a) => sum + a.horas, 0);
   const totalEventos = asignacionesCamarero.length;
 
-  const exportarCSV = () => {
+  const exportarExcel = () => {
     if (!camarero || asignacionesCamarero.length === 0) return;
-
-    const rows = [
-      ['Informe por Camarero'],
-      ['Camarero:', camarero.nombre],
-      ['Código:', camarero.codigo || '-'],
-      [],
-      ['Día', 'Cliente', 'Lugar del Evento', 'Horas Trabajadas']
-    ];
-
-    asignacionesCamarero.forEach(a => {
-      rows.push([
-        a.dia ? format(new Date(a.dia), 'dd/MM/yyyy', { locale: es }) : '-',
-        a.cliente || '-',
-        a.lugar_evento || '-',
-        a.horas.toFixed(2)
-      ]);
-    });
-
-    rows.push([]);
-    rows.push(['Total Eventos:', totalEventos]);
-    rows.push(['Total Horas:', totalHoras.toFixed(2)]);
-
-    const csv = rows.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `informe_camarero_${camarero.nombre.replace(/\s/g, '_')}.csv`;
-    a.click();
-  };
-
-  const exportarPDF = () => {
-    if (!camarero || asignacionesCamarero.length === 0) return;
-    
-    ExportadorPDF.generarInformeCamarero({
-      nombre: camarero.nombre,
-      codigo: camarero.codigo,
-      totalEventos,
-      totalHoras: totalHoras.toFixed(2),
-      eventos: asignacionesCamarero.map(a => ({
-        fecha: a.dia ? format(new Date(a.dia), 'dd/MM/yyyy', { locale: es }) : '-',
-        cliente: a.cliente || '-',
-        lugar: a.lugar_evento || '-',
-        horas: a.horas.toFixed(2)
-      }))
-    }, `informe_camarero_${camarero.nombre.replace(/\s/g, '_')}.pdf`);
+    ExportadorExcel.exportarInformeCamarero(camarero, asignacionesCamarero, totalEventos, totalHoras);
   };
 
   return (
@@ -136,13 +91,9 @@ export default function InformeCamarero() {
                 <p className="text-sm text-slate-500">Código: {camarero.codigo || 'Sin código'}</p>
               </div>
               <div className="flex gap-2">
-                <Button onClick={exportarCSV} variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  CSV
-                </Button>
-                <Button onClick={exportarPDF} variant="outline" size="sm">
-                  <FileText className="w-4 h-4 mr-2" />
-                  PDF
+                <Button onClick={exportarExcel} variant="outline" size="sm">
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Excel
                 </Button>
               </div>
             </div>
