@@ -67,20 +67,8 @@ export default function ConfirmarServicio() {
         estado: 'confirmado'
       });
 
-      // Crear grupo de chat siempre que haya al menos una confirmación
-      try {
-        const gruposExistentes = await base44.entities.GrupoChat.filter({ 
-          pedido_id: asignacion.pedido_id,
-          activo: true
-        });
-        
-        // Solo crear si no existe ya un grupo activo
-        if (gruposExistentes.length === 0) {
-          await base44.functions.invoke('crearGrupoChat', { pedido_id: asignacion.pedido_id });
-        }
-      } catch (e) {
-        console.error('Error creando grupo de chat:', e);
-      }
+      // El grupo de chat se crea automáticamente via autoCrearGrupoChatConfirmado
+      // (webhook que se dispara solo cuando TODOS los camareros del pedido están confirmados)
 
       // Actualizar notificación si existe
       const notificaciones = await base44.entities.NotificacionCamarero.filter({

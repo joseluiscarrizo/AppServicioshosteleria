@@ -45,41 +45,10 @@ Deno.serve(async (req) => {
 
         let body;
         if (tieneLinks) {
-          // Usar mensaje interactivo con botones
-          body = {
-            messaging_product: 'whatsapp',
-            to: numeroWhatsApp,
-            type: 'interactive',
-            interactive: {
-              type: 'button',
-              body: {
-                text: mensaje
-              },
-              action: {
-                buttons: [
-                  {
-                    type: 'url',
-                    reply: undefined,
-                    url: undefined,
-                    // WhatsApp Cloud API botones tipo "reply" (no url nativa en botones)
-                    // Usamos reply buttons con id para identificar acción
-                    id: 'confirmar',
-                    title: '✅ Confirmo'
-                  },
-                  {
-                    type: 'reply',
-                    reply: {
-                      id: 'rechazar',
-                      title: '❌ Rechazo'
-                    }
-                  }
-                ]
-              }
-            }
-          };
-
-          // La API de WhatsApp Cloud solo soporta reply buttons (sin URL nativa en botón)
-          // Necesitamos el formato correcto:
+          // Mensaje interactivo con reply buttons.
+          // La Cloud API NO soporta botones tipo URL nativos — se usan reply buttons
+          // con id que el webhook procesa. Los links reales quedan en el cuerpo del mensaje
+          // y el coordinador los ve en el historial; el camarero usa los botones.
           body = {
             messaging_product: 'whatsapp',
             to: numeroWhatsApp,
@@ -89,8 +58,8 @@ Deno.serve(async (req) => {
               body: { text: mensaje },
               action: {
                 buttons: [
-                  { type: 'reply', reply: { id: `confirmar::${asignacion_id}`, title: '✅ Confirmo' } },
-                  { type: 'reply', reply: { id: `rechazar::${asignacion_id}`, title: '❌ Rechazo' } }
+                  { type: 'reply', reply: { id: `confirmar::${asignacion_id}`, title: 'ACEPTO ✅' } },
+                  { type: 'reply', reply: { id: `rechazar::${asignacion_id}`, title: 'RECHAZO ❌' } }
                 ]
               }
             }

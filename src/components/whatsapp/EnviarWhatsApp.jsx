@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GestionPlantillas from './GestionPlantillas';
 
@@ -84,9 +84,14 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
       }
     }
 
+    // Fix timezone: parseISO en lugar de new Date() para strings 'yyyy-MM-dd'
+    const fechaFormateada = pedido.dia
+      ? format(parseISO(pedido.dia), "dd 'de' MMMM yyyy", { locale: es })
+      : 'Por confirmar';
+
     let resultado = contenido
       .replace(/\{\{cliente\}\}/g, pedido.cliente || '')
-      .replace(/\{\{dia\}\}/g, pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Por confirmar')
+      .replace(/\{\{dia\}\}/g, fechaFormateada)
       .replace(/\{\{lugar_evento\}\}/g, pedido.lugar_evento || 'Por confirmar')
       .replace(/\{\{hora_entrada\}\}/g, asignacion.hora_entrada || pedido.entrada || '-')
       .replace(/\{\{hora_salida\}\}/g, asignacion.hora_salida || pedido.salida || '-')
@@ -97,84 +102,74 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
       .replace(/\{\{link_ubicacion\}\}/g, pedido.link_ubicacion || '')
       .replace(/\{\{camarero_nombre\}\}/g, camarero?.nombre || '');
 
-    return resultado;
+    return { texto: resultado, linkConfirmar, linkRechazar };
   };
 
   const generarMensajeWhatsApp = async (asignacion, camarero) => {
-    // Si hay una plantilla seleccionada, usarla
-    if (plantillaSeleccionada) {
+    // Si hay plantilla o mensaje personalizado, usar reemplazarCamposDinamicos
+    // que siempre devuelve { texto, linkConfirmar, linkRechazar }
+    if (plantillaSeleccionada && plantillaSeleccionada !== 'none') {
       const plantilla = plantillas.find(p => p.id === plantillaSeleccionada);
       if (plantilla) {
         return await reemplazarCamposDinamicos(plantilla.contenido, asignacion, camarero);
       }
     }
 
-    // Si hay mensaje personalizado, usarlo
     if (mensajePersonalizado.trim()) {
       return await reemplazarCamposDinamicos(mensajePersonalizado, asignacion, camarero);
     }
 
-    // Mensaje por defecto
+    // Mensaje por defecto — construir links de confirmación
     const baseUrl = window.location.origin;
     const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
-    const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
+    const linkRechazar  = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
 
-    let mensaje = `📅 *Día:* ${pedido.dia ? format(new Date(pedido.dia), "dd 'de' MMMM yyyy", { locale: es }) : 'Por confirmar'}\n`;
-    mensaje += `👤 *Cliente:* ${pedido.cliente}\n`;
-    mensaje += `📍 *Lugar del Evento:* ${pedido.lugar_evento || 'Por confirmar'}\n`;
-    mensaje += `🕐 *Hora de entrada:* ${asignacion.hora_entrada || pedido.entrada || '-'}\n\n`;
+    // Fix timezone: parseISO en lugar de new Date() sobre string 'yyyy-MM-dd'
+    const fechaFormateada = pedido.dia
+      ? format(parseISO(pedido.dia), "dd 'de' MMMM yyyy", { locale: es })
+      : 'Por confirmar';
+
+    let texto = `📅 *Día:* ${fechaFormateada}\n`;
+    texto += `👤 *Cliente:* ${pedido.cliente}\n`;
+    texto += `📍 *Lugar del Evento:* ${pedido.lugar_evento || 'Por confirmar'}\n`;
+    texto += `🕐 *Hora de entrada:* ${asignacion.hora_entrada || pedido.entrada || '-'}\n\n`;
 
     if (pedido.extra_transporte) {
-      // Con transporte - calcular hora de encuentro
       const puntoEncuentro = 'https://maps.app.goo.gl/hrR4eHSq4Q7dLcaV7';
-      
+
       if (pedido.link_ubicacion) {
         try {
           const resultadoDistancia = await base44.integrations.Core.InvokeLLM({
             prompt: `Calcula el tiempo de viaje en transporte desde ${puntoEncuentro} hasta ${pedido.link_ubicacion}. Devuelve solo el tiempo estimado en minutos como número.`,
             add_context_from_internet: true,
-            response_json_schema: {
-              type: "object",
-              properties: {
-                minutos: { type: "number" }
-              }
-            }
+            response_json_schema: { type: 'object', properties: { minutos: { type: 'number' } } }
           });
-          
+
           const minutosViaje = resultadoDistancia?.minutos || 30;
-          const horaEntrada = asignacion.hora_entrada || pedido.entrada;
+          const horaEntrada  = asignacion.hora_entrada || pedido.entrada;
           if (horaEntrada) {
-            const [horas, minutos] = horaEntrada.split(':').map(Number);
-            const horaEntradaDate = new Date();
-            horaEntradaDate.setHours(horas, minutos, 0);
-            horaEntradaDate.setMinutes(horaEntradaDate.getMinutes() - minutosViaje - 15);
-            
-            mensaje += `🚗 *Hora de encuentro:* ${horaEntradaDate.getHours().toString().padStart(2, '0')}:${horaEntradaDate.getMinutes().toString().padStart(2, '0')}\n`;
+            const [h, m] = horaEntrada.split(':').map(Number);
+            const dt = new Date();
+            dt.setHours(h, m - minutosViaje - 15, 0);
+            texto += `🚗 *Hora de encuentro:* ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}\n`;
           }
         } catch (e) {
           console.error('Error calculando distancia:', e);
-          mensaje += `🚗 *Hora de encuentro:* Por confirmar\n`;
+          texto += `🚗 *Hora de encuentro:* Por confirmar\n`;
         }
       }
-      
-      mensaje += `📌 *Punto de encuentro:* ${puntoEncuentro}\n\n`;
-    } else {
-      // Sin transporte - mostrar link de Google Maps
-      if (pedido.link_ubicacion) {
-        mensaje += `🗺️ *Ubicación:* ${pedido.link_ubicacion}\n\n`;
-      }
+
+      texto += `📌 *Punto de encuentro:* ${puntoEncuentro}\n\n`;
+    } else if (pedido.link_ubicacion) {
+      texto += `🗺️ *Ubicación:* ${pedido.link_ubicacion}\n\n`;
     }
 
-    mensaje += `👔 *Uniforme:* Zapatos, pantalón y delantal. Todo de color negro\n`;
-    mensaje += `👕 *Camisa:* ${pedido.camisa || 'blanca'}\n`;
-    mensaje += `✨ *Uniforme Impoluto.*\n\n`;
-    mensaje += `⏰ *Presentarse 15 minutos antes para estar a la hora exacta en el puesto de trabajo.*\n\n`;
-    mensaje += `━━━━━━━━━━━━━━━━\n`;
-    mensaje += `Por favor, confirma tu asistencia:\n\n`;
-    mensaje += `✅ *CONFIRMO*\n${linkConfirmar}\n\n`;
-    mensaje += `❌ *RECHAZO*\n${linkRechazar}`;
+    texto += `👔 *Uniforme:* Zapatos, pantalón y delantal. Todo de color negro\n`;
+    texto += `👕 *Camisa:* ${pedido.camisa || 'blanca'}\n`;
+    texto += `✨ *Uniforme Impoluto.*\n\n`;
+    texto += `⏰ *Presentarse 15 minutos antes para estar a la hora exacta en el puesto de trabajo.*`;
 
-    return mensaje;
+    return { texto, linkConfirmar, linkRechazar };
   };
 
   const enviarMutation = useMutation({
@@ -222,23 +217,32 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
           continue;
         }
 
-        let mensaje = await generarMensajeWhatsApp(asignacion, camarero);
-        
+        let resultado = await generarMensajeWhatsApp(asignacion, camarero);
+
+        // generarMensajeWhatsApp siempre devuelve { texto, linkConfirmar, linkRechazar }
+        const textoMensaje  = resultado?.texto    ?? resultado ?? '';
+        const linkConfirmar = resultado?.linkConfirmar ?? '';
+        const linkRechazar  = resultado?.linkRechazar  ?? '';
+
         // Añadir link de archivo si existe
-        if (urlArchivo) {
-          mensaje += `\n\n📎 *Archivo adjunto:*\n${urlArchivo}`;
-        }
-        
+        const mensajeFinal = urlArchivo
+          ? `${textoMensaje}\n\n📎 *Archivo adjunto:*\n${urlArchivo}`
+          : textoMensaje;
+
         // Enviar mensaje directo por WhatsApp usando backend function
         try {
           const response = await base44.functions.invoke('enviarWhatsAppDirecto', {
             telefono: camarero.telefono,
-            mensaje: mensaje,
+            mensaje: mensajeFinal,
+            link_confirmar: linkConfirmar,
+            link_rechazar: linkRechazar,
             camarero_id: camarero.id,
             camarero_nombre: camarero.nombre,
             pedido_id: pedido.id,
             asignacion_id: asignacion.id,
-            plantilla_usada: plantillaSeleccionada ? plantillas.find(p => p.id === plantillaSeleccionada)?.nombre : 'Manual'
+            plantilla_usada: plantillaSeleccionada && plantillaSeleccionada !== 'none'
+              ? plantillas.find(p => p.id === plantillaSeleccionada)?.nombre
+              : 'Manual'
           });
           const resultado = response.data || response;
           

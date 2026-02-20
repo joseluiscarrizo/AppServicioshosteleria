@@ -83,14 +83,17 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Añadir coordinador (usar el primero disponible o uno específico del pedido)
-      if (coordinadores.length > 0) {
-        const coordinador = coordinadores[0]; // Puedes mejorar esto según tu lógica
-        const usuarioCoord = usuarios.find(u => u.coordinador_id === coordinador.id);
-        
+      // Añadir coordinador del pedido. Fallback al primero disponible.
+      const coordinadorDelPedido = pedido.coordinador_id
+        ? coordinadores.find(c => c.id === pedido.coordinador_id)
+        : coordinadores[0];
+
+      if (coordinadorDelPedido) {
+        const usuarioCoord = usuarios.find(u => u.coordinador_id === coordinadorDelPedido.id);
+
         miembros.push({
-          user_id: usuarioCoord?.id || coordinador.id,
-          nombre: coordinador.nombre,
+          user_id: usuarioCoord?.id || coordinadorDelPedido.id,
+          nombre: coordinadorDelPedido.nombre,
           rol: 'coordinador'
         });
       }
