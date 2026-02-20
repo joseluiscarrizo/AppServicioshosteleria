@@ -86,8 +86,8 @@ export default function Layout({ children, currentPageName }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant={['Clientes', 'Pedidos', 'Asignacion', 'Coordinadores', 'Disponibilidad'].includes(currentPageName) ? 'default' : 'ghost'}
-                    className={['Clientes', 'Pedidos', 'Asignacion', 'Coordinadores', 'Disponibilidad'].includes(currentPageName)
+                    variant={['Clientes', 'Pedidos', 'Asignacion'].includes(currentPageName) ? 'default' : 'ghost'}
+                    className={['Clientes', 'Pedidos', 'Asignacion'].includes(currentPageName)
                       ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
                       : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
                     }
@@ -109,12 +109,26 @@ export default function Layout({ children, currentPageName }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Camareros */}
+              <Link to={createPageUrl('Camareros')}>
+                <Button
+                  variant={currentPageName === 'Camareros' ? 'default' : 'ghost'}
+                  className={currentPageName === 'Camareros'
+                    ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
+                    : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
+                  }
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Camareros
+                </Button>
+              </Link>
+
               {/* Dropdown de Herramientas */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant={['TableroEventos', 'VistaMovil'].includes(currentPageName) ? 'default' : 'ghost'}
-                    className={['TableroEventos', 'VistaMovil'].includes(currentPageName)
+                    variant={['TiempoReal', 'TableroEventos', 'VistaMovil', 'Informes'].includes(currentPageName) ? 'default' : 'ghost'}
+                    className={['TiempoReal', 'TableroEventos', 'VistaMovil', 'Informes'].includes(currentPageName)
                       ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
                       : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
                     }
@@ -135,22 +149,6 @@ export default function Layout({ children, currentPageName }) {
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              {/* Resto de items */}
-              {navItems.map(item => (
-                <Link key={item.page} to={createPageUrl(item.page)}>
-                  <Button
-                    variant={currentPageName === item.page ? 'default' : 'ghost'}
-                    className={currentPageName === item.page 
-                      ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
-                      : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
-                    }
-                  >
-                    <item.icon className="w-4 h-4 mr-2" />
-                    {item.name}
-                  </Button>
-                </Link>
-              ))}
 
               {/* Dropdown de Comunicación */}
               <DropdownMenu>
