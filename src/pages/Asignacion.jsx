@@ -564,6 +564,24 @@ Sistema de Gestión de Camareros
     }
   };
 
+  const handleExportarCalendario = async () => {
+    setExportandoCalendario(true);
+    try {
+      const { data } = await base44.functions.invoke('exportarCalendarioEventos', {});
+      if (data.success) {
+        window.open(data.spreadsheetUrl, '_blank');
+        toast.success(`Calendario exportado: ${data.total_eventos} eventos. Se abrió en una nueva pestaña.`);
+      } else {
+        toast.error('Error al generar el calendario');
+      }
+    } catch (error) {
+      console.error('Error exportando calendario:', error);
+      toast.error('Error al exportar el calendario');
+    } finally {
+      setExportandoCalendario(false);
+    }
+  };
+
   const handleDragEnd = (result) => {
     const { source, destination, draggableId } = result;
     
