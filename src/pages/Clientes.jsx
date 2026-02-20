@@ -20,6 +20,7 @@ export default function Clientes() {
   const [formData, setFormData] = useState({
     codigo: '',
     nombre: '',
+    coordinador: '',
     email_1: '',
     email_2: '',
     telefono_1: '',
