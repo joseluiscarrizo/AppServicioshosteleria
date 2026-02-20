@@ -45,77 +45,9 @@ export default function InformeCliente() {
     turnos: pedido.turnos || []
   } : null;
 
-  const exportarCSV = () => {
+  const exportarExcel = () => {
     if (!datosInforme || !pedido) return;
-
-    const rows = [
-      ['Informe por Cliente'],
-      ['Cliente:', pedido.cliente],
-      ['Lugar:', pedido.lugar_evento || '-'],
-      ['Día:', datosInforme.dia ? format(new Date(datosInforme.dia), 'dd/MM/yyyy', { locale: es }) : '-'],
-      [],
-      ['Detalle de Turnos'],
-      ['Turno', 'Camareros', 'Entrada', 'Salida', 'Horas', 'Total Horas']
-    ];
-
-    if (datosInforme.turnos.length > 0) {
-      datosInforme.turnos.forEach((turno, i) => {
-        rows.push([
-          `Turno ${i + 1}`,
-          turno.cantidad_camareros || 0,
-          turno.entrada || '-',
-          turno.salida || '-',
-          turno.t_horas || 0,
-          (turno.t_horas || 0) * (turno.cantidad_camareros || 0)
-        ]);
-      });
-    } else {
-      rows.push([
-        'Único',
-        pedido.cantidad_camareros || 0,
-        pedido.entrada || '-',
-        pedido.salida || '-',
-        pedido.t_horas || 0,
-        datosInforme.total_horas
-      ]);
-    }
-
-    rows.push([]);
-    rows.push(['Total Camareros:', datosInforme.cantidad_camareros]);
-    rows.push(['Total Horas Trabajadas:', datosInforme.total_horas.toFixed(2)]);
-
-    const csv = rows.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `informe_cliente_${selectedCliente}_${datosInforme.dia}.csv`;
-    a.click();
-  };
-
-  const exportarPDF = () => {
-    if (!datosInforme || !pedido) return;
-    
-    ExportadorPDF.generarInformeCliente({
-      cliente: pedido.cliente,
-      lugar: pedido.lugar_evento || '-',
-      fecha: datosInforme.dia ? format(new Date(datosInforme.dia), 'dd/MM/yyyy', { locale: es }) : '-',
-      totalCamareros: datosInforme.cantidad_camareros,
-      totalHoras: datosInforme.total_horas.toFixed(2),
-      turnos: datosInforme.turnos.length > 0 ? datosInforme.turnos.map(t => ({
-        cantidad: t.cantidad_camareros || 0,
-        entrada: t.entrada || '-',
-        salida: t.salida || '-',
-        horas: t.t_horas || 0,
-        total: ((t.t_horas || 0) * (t.cantidad_camareros || 0)).toFixed(2)
-      })) : [{
-        cantidad: pedido.cantidad_camareros || 0,
-        entrada: pedido.entrada || '-',
-        salida: pedido.salida || '-',
-        horas: pedido.t_horas || 0,
-        total: datosInforme.total_horas.toFixed(2)
-      }]
-    }, `informe_cliente_${selectedCliente}_${datosInforme.dia}.pdf`);
+    ExportadorExcel.exportarInformeCliente(pedido, datosInforme, selectedCliente);
   };
 
   return (
@@ -163,13 +95,9 @@ export default function InformeCliente() {
                 <p className="text-sm text-slate-500">{pedido.lugar_evento || 'Sin ubicación'}</p>
               </div>
               <div className="flex gap-2">
-                <Button onClick={exportarCSV} variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  CSV
-                </Button>
-                <Button onClick={exportarPDF} variant="outline" size="sm">
-                  <FileIcon className="w-4 h-4 mr-2" />
-                  PDF
+                <Button onClick={exportarExcel} variant="outline" size="sm">
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Excel
                 </Button>
               </div>
             </div>
