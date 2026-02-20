@@ -121,31 +121,8 @@ export default function RendimientoCamareros() {
     return { totalHoras, totalPedidos, promedioHoras, tasaGlobal };
   }, [rendimientoCamareros, camareros]);
 
-  const exportarCSV = () => {
-    const headers = ['Código', 'Nombre', 'Especialidad', 'Pedidos', 'Horas', 'Confirmados', 'Enviados', 'Alta', 'Pendientes', 'Tasa Confirm.'];
-    const rows = rendimientoFiltrado.map(r => [
-      r.codigo, r.nombre, r.especialidad, r.pedidosAsignados, r.horasTrabajadas.toFixed(1),
-      r.confirmados, r.enviados, r.altas, r.pendientes, `${r.tasaConfirmacion}%`
-    ]);
-    const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `rendimiento_camareros_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    link.click();
-  };
-
-  const exportarPDF = () => {
-    ExportadorPDF.generarInformeRendimiento({
-      fechaInicio,
-      fechaFin,
-      totalHoras: statsGlobales.totalHoras.toFixed(1),
-      promedioHoras: statsGlobales.promedioHoras.toFixed(1),
-      totalAsignaciones: statsGlobales.totalPedidos,
-      tasaGlobal: statsGlobales.tasaGlobal,
-      camareros: rendimientoFiltrado
-    }, `rendimiento_camareros_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+  const exportarExcel = () => {
+    ExportadorExcel.exportarRendimientoCamareros(rendimientoFiltrado, statsGlobales, fechaInicio, fechaFin);
   };
 
   return (
@@ -171,13 +148,9 @@ export default function RendimientoCamareros() {
             <Input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="w-40" />
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={exportarCSV}>
-              <Download className="w-4 h-4 mr-2" />
-              CSV
-            </Button>
-            <Button variant="outline" onClick={exportarPDF}>
-              <FileText className="w-4 h-4 mr-2" />
-              PDF
+            <Button variant="outline" onClick={exportarExcel}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Excel
             </Button>
           </div>
         </div>
