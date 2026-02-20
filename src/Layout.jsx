@@ -239,26 +239,26 @@ export default function Layout({ children, currentPageName }) {
               ))}
             </div>
 
-            {/* Resto de items */}
-            {navItems.map(item => (
-              <Link key={item.page} to={createPageUrl(item.page)} onClick={() => setMobileMenuOpen(false)}>
+            {/* Camareros en Mobile */}
+            <div className="mt-2 pt-2 border-t border-slate-100">
+              <Link to={createPageUrl('Camareros')} onClick={() => setMobileMenuOpen(false)}>
                 <Button
-                  variant={currentPageName === item.page ? 'default' : 'ghost'}
-                  className={`w-full justify-start mb-1 ${currentPageName === item.page 
+                  variant={currentPageName === 'Camareros' ? 'default' : 'ghost'}
+                  className={`w-full justify-start mb-1 ${currentPageName === 'Camareros' 
                     ? 'bg-[#1e3a5f] text-white' 
                     : 'text-slate-600'
                   }`}
                 >
-                  <item.icon className="w-4 h-4 mr-2" />
-                  {item.name}
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Camareros
                 </Button>
               </Link>
-            ))}
+            </div>
 
-            {/* Submenu de Comunicación en Mobile */}
+            {/* Submenu de Herramientas en Mobile */}
             <div className="mt-2 pt-2 border-t border-slate-100">
-              <div className="text-xs font-semibold text-slate-500 mb-2 px-3">COMUNICACIÓN</div>
-              {comunicacionSubmenu.map(item => (
+              <div className="text-xs font-semibold text-slate-500 mb-2 px-3">HERRAMIENTAS</div>
+              {herramientasSubmenu.map(item => (
                 <Link key={item.page} to={createPageUrl(item.page)} onClick={() => setMobileMenuOpen(false)}>
                   <Button
                     variant={currentPageName === item.page ? 'default' : 'ghost'}
@@ -274,10 +274,10 @@ export default function Layout({ children, currentPageName }) {
               ))}
             </div>
 
-            {/* Submenu de Herramientas en Mobile */}
+            {/* Submenu de Comunicación en Mobile */}
             <div className="mt-2 pt-2 border-t border-slate-100">
-              <div className="text-xs font-semibold text-slate-500 mb-2 px-3">HERRAMIENTAS</div>
-              {herramientasSubmenu.map(item => (
+              <div className="text-xs font-semibold text-slate-500 mb-2 px-3">COMUNICACIÓN</div>
+              {comunicacionSubmenu.map(item => (
                 <Link key={item.page} to={createPageUrl(item.page)} onClick={() => setMobileMenuOpen(false)}>
                   <Button
                     variant={currentPageName === item.page ? 'default' : 'ghost'}
