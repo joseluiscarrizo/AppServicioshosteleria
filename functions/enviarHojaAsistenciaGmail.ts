@@ -110,49 +110,83 @@ Deno.serve(async (req) => {
 </html>
         `;
 
+        // Obtener emails del cliente
+        let emailsDestinatarios: string[] = [];
+
+        // Primero intentar desde el cliente relacionado
+        if (pedido.cliente_id) {
+            try {
+                const clienteData = await base44.entities.Cliente.get(pedido.cliente_id);
+                if (clienteData?.email_1) emailsDestinatarios.push(clienteData.email_1);
+                if (clienteData?.email_2) emailsDestinatarios.push(clienteData.email_2);
+            } catch (e) {
+                console.error('Error obteniendo cliente:', e);
+            }
+        }
+
+        // Fallback: usar emails desnormalizados en el pedido
+        if (emailsDestinatarios.length === 0) {
+            if (pedido.cliente_email_1) emailsDestinatarios.push(pedido.cliente_email_1);
+            if (pedido.cliente_email_2) emailsDestinatarios.push(pedido.cliente_email_2);
+        }
+
+        // Si no hay emails del cliente, enviar al coordinador autenticado como fallback
+        const sinEmailCliente = emailsDestinatarios.length === 0;
+        if (sinEmailCliente) {
+            emailsDestinatarios.push(user.email);
+            console.warn(`Cliente ${pedido.cliente} sin email registrado — enviando al coordinador ${user.email}`);
+        }
+
         // Obtener token de Gmail
         const accessToken = await base44.asServiceRole.connectors.getAccessToken("gmail");
 
-        // Crear el email en formato MIME
+        // Construir y enviar un email por destinatario
         const subject = `Hoja de Asistencia - ${pedido.cliente} - ${pedido.dia}`;
-        const to = user.email; // Enviar al coordinador autenticado
-        
-        const emailContent = [
-            'Content-Type: text/html; charset=utf-8',
-            'MIME-Version: 1.0',
-            `To: ${to}`,
-            `Subject: ${subject}`,
-            '',
-            htmlContent
-        ].join('\r\n');
+        const resultados: { to: string; ok: boolean }[] = [];
 
-        // Codificar en base64url
-        const encodedEmail = btoa(emailContent)
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_')
-            .replace(/=+$/, '');
+        for (const to of emailsDestinatarios) {
+            const emailContent = [
+                'Content-Type: text/html; charset=utf-8',
+                'MIME-Version: 1.0',
+                `To: ${to}`,
+                `Subject: ${subject}`,
+                '',
+                htmlContent
+            ].join('\r\n');
 
-        // Enviar con Gmail API
-        const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                raw: encodedEmail
-            })
-        });
+            const encodedEmail = btoa(emailContent)
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=+$/, '');
 
-        if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`Error al enviar email: ${error}`);
+            const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ raw: encodedEmail })
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                console.error(`Error enviando a ${to}:`, error);
+                resultados.push({ to, ok: false });
+            } else {
+                resultados.push({ to, ok: true });
+            }
+        }
+
+        const exitosos = resultados.filter(r => r.ok).map(r => r.to);
+        if (exitosos.length === 0) {
+            throw new Error('No se pudo enviar a ningún destinatario');
         }
 
         return Response.json({
             success: true,
-            message: 'Hoja de asistencia enviada por Gmail correctamente',
-            destinatario: to
+            message: 'Hoja de asistencia enviada correctamente',
+            destinatarios: exitosos,
+            sin_email_cliente: sinEmailCliente
         });
 
     } catch (error) {

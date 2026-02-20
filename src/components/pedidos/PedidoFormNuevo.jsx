@@ -75,7 +75,10 @@ export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
     setFormData(prev => ({
       ...prev,
       cliente_id: cliente.id,
-      cliente: cliente.nombre
+      cliente: cliente.nombre,
+      // Propagar emails del cliente al pedido para que enviarParteAutomatico los encuentre
+      cliente_email_1: cliente.email_1 || '',
+      cliente_email_2: cliente.email_2 || '',
     }));
   };
 

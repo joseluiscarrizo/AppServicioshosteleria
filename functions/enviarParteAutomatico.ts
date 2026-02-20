@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { format } from 'npm:date-fns@3.6.0';
+import { format, parseISO } from 'npm:date-fns@3.6.0';
 import { es } from 'npm:date-fns@3.6.0/locale';
 
 Deno.serve(async (req) => {
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
 
     // Construir parte de servicio
     const fechaFormateada = pedido.dia 
-      ? format(new Date(pedido.dia), "EEEE dd 'de' MMMM 'de' yyyy", { locale: es })
+      ? format(parseISO(pedido.dia), "EEEE dd 'de' MMMM 'de' yyyy", { locale: es })
       : 'Fecha por confirmar';
 
     let parteMensaje = `PARTE DE SERVICIO - ${pedido.codigo_pedido || 'S/N'}

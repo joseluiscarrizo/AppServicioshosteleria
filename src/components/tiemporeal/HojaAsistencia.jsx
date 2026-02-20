@@ -89,7 +89,9 @@ export default function HojaAsistencia({ pedido, asignaciones, camareros }) {
       return response.data;
     },
     onSuccess: (data) => {
-      toast.success(`Hoja de asistencia enviada a ${data.destinatario}`);
+      const dest = data.destinatarios?.join(', ') || data.destinatario || 'destinatario';
+      const aviso = data.sin_email_cliente ? ' (cliente sin email — enviado al coordinador)' : '';
+      toast.success(`Hoja de asistencia enviada a ${dest}${aviso}`);
     },
     onError: (error) => {
       toast.error('Error al enviar la hoja de asistencia');
