@@ -10,24 +10,17 @@ import { useWebPushNotifications } from './components/notificaciones/WebPushServ
 import RateLimitHandler from './components/notificaciones/RateLimitHandler';
 import { useBackgroundServices } from './hooks/useBackgroundServices';
 
-const navItems = [
-  { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
-  { name: 'Camareros', page: 'Camareros', icon: UserPlus },
-  { name: 'Informes', page: 'Informes', icon: FileText },
-  { name: 'Notificaciones', page: 'PreferenciasNotificaciones', icon: Bell }
-];
-
 const clientesSubmenu = [
-  { name: 'Clientes', page: 'Clientes', icon: Users },
+  { name: 'Alta Cliente', page: 'Clientes', icon: Users },
   { name: 'Pedidos', page: 'Pedidos', icon: ClipboardList },
   { name: 'Asignación', page: 'Asignacion', icon: UserCog },
-  { name: 'Coordinadores', page: 'Coordinadores', icon: UserCog },
-  { name: 'Disponibilidad', page: 'Disponibilidad', icon: CalendarDays }
 ];
 
 const herramientasSubmenu = [
+  { name: 'Tiempo Real', page: 'TiempoReal', icon: Clock },
   { name: 'Tablero Eventos', page: 'TableroEventos', icon: CalendarRange },
   { name: 'Vista Móvil', page: 'VistaMovil', icon: Smartphone },
+  { name: 'Informes', page: 'Informes', icon: FileText },
 ];
 
 const comunicacionSubmenu = [
