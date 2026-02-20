@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Download, FileText as FileIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ExportadorPDF } from './ExportadorPDF';
+import { ExportadorExcel } from './ExportadorExcel';
 
 export default function InformeCliente() {
   const [selectedCliente, setSelectedCliente] = useState('');

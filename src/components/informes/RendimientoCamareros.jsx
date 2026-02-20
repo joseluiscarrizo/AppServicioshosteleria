@@ -11,7 +11,7 @@ import { Download, Search, TrendingUp, Clock, CheckCircle, Send, Star, FileText 
 import { format, parseISO, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { ExportadorPDF } from './ExportadorPDF';
+import { ExportadorExcel } from './ExportadorExcel';
 
 const COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'];
 

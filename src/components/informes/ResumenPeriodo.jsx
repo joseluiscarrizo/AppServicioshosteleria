@@ -10,7 +10,7 @@ import { Calendar, ClipboardList, Clock, Users, Download, TrendingUp, TrendingDo
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isWithinInterval, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { ExportadorPDF } from './ExportadorPDF';
+import { ExportadorExcel } from './ExportadorExcel';
 
 export default function ResumenPeriodo() {
   const [periodo, setPeriodo] = useState('semana');
