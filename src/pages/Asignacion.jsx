@@ -56,6 +56,7 @@ export default function Asignacion() {
   const [showForm, setShowForm] = useState(false);
   const [editingPedido, setEditingPedido] = useState(null);
   const [exportandoExcel, setExportandoExcel] = useState(false);
+  const [exportandoCalendario, setExportandoCalendario] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -688,7 +689,7 @@ Sistema de Gestión de Camareros
                           <SelectValue placeholder="Especialidad" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Todas</SelectItem>
+                          <SelectItem value={null}>Todas</SelectItem>
                           <SelectItem value="general">General</SelectItem>
                           <SelectItem value="cocteleria">Coctelería</SelectItem>
                           <SelectItem value="banquetes">Banquetes</SelectItem>
@@ -901,7 +902,7 @@ Sistema de Gestión de Camareros
                           <SelectValue placeholder="Especialidad" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Todas</SelectItem>
+                          <SelectItem value={null}>Todas</SelectItem>
                           <SelectItem value="general">General</SelectItem>
                           <SelectItem value="cocteleria">Coctelería</SelectItem>
                           <SelectItem value="banquetes">Banquetes</SelectItem>
@@ -915,7 +916,7 @@ Sistema de Gestión de Camareros
                           <SelectValue placeholder="Habilidad" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Todas</SelectItem>
+                          <SelectItem value={null}>Todas</SelectItem>
                           {todasHabilidades.map(h => (
                             <SelectItem key={h} value={h}>{h}</SelectItem>
                           ))}
