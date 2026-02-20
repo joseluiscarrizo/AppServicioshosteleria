@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Download, Search, TrendingUp, Clock, CheckCircle, Send, Star, FileText } from 'lucide-react';
+import { Search, TrendingUp, Clock, CheckCircle, Star, FileSpreadsheet } from 'lucide-react';
 import { format, parseISO, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';

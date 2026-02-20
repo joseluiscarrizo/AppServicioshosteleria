@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Calendar, Users, Check, X, Clock, Palmtree } from 'lucide-react';
+import { FileSpreadsheet, Calendar, Users, Check, X, Clock, Palmtree } from 'lucide-react';
 import { format, parseISO, eachDayOfInterval, addDays, getDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 
