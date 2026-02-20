@@ -89,7 +89,8 @@ export default function Clientes() {
     setFormData({
       codigo: '',
       nombre: '',
-      coordinador: '',
+      coordinador_codigo: '',
+      coordinador_nombre: '',
       email_1: '',
       email_2: '',
       telefono_1: '',
