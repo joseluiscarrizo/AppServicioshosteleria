@@ -39,6 +39,11 @@ export default function Clientes() {
     queryFn: () => base44.entities.Cliente.list('-created_date')
   });
 
+  const { data: coordinadores = [] } = useQuery({
+    queryKey: ['coordinadores'],
+    queryFn: () => base44.entities.Coordinador.list('nombre')
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Cliente.create(data),
     onSuccess: () => {
