@@ -347,6 +347,17 @@ export default function Clientes() {
                 />
               </div>
 
+              {/* Coordinador */}
+              <div className="space-y-2">
+                <Label htmlFor="coordinador">Coordinador</Label>
+                <Input
+                  id="coordinador"
+                  value={formData.coordinador || ''}
+                  onChange={(e) => setFormData({ ...formData, coordinador: e.target.value })}
+                  placeholder="Nombre del coordinador asignado"
+                />
+              </div>
+
               {/* Emails */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
