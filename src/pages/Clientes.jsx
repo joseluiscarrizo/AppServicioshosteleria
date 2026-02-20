@@ -308,7 +308,7 @@ export default function Clientes() {
         </Card>
 
         <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) resetForm(); }}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingCliente ? 'Editar Cliente' : 'Nuevo Cliente'}
