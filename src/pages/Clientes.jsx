@@ -357,13 +357,38 @@ export default function Clientes() {
 
               {/* Coordinador */}
               <div className="space-y-2">
-                <Label htmlFor="coordinador">Coordinador</Label>
-                <Input
-                  id="coordinador"
-                  value={formData.coordinador || ''}
-                  onChange={(e) => setFormData({ ...formData, coordinador: e.target.value })}
-                  placeholder="Nombre del coordinador asignado"
-                />
+                <Label>Coordinador</Label>
+                <div className="flex items-center gap-3">
+                  <Select
+                    value={formData.coordinador_codigo || ''}
+                    onValueChange={(val) => {
+                      const coord = coordinadores.find(c => c.codigo === val);
+                      setFormData({
+                        ...formData,
+                        coordinador_codigo: coord?.codigo || '',
+                        coordinador_nombre: coord?.nombre || ''
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Seleccionar coordinador..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {coordinadores.map(c => (
+                        <SelectItem key={c.id} value={c.codigo}>
+                          {c.codigo} — {c.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formData.coordinador_codigo && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-md text-sm text-slate-700 whitespace-nowrap">
+                      <span className="font-mono font-semibold text-[#1e3a5f]">{formData.coordinador_codigo}</span>
+                      <span className="text-slate-500">·</span>
+                      <span>{formData.coordinador_nombre}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Emails */}
