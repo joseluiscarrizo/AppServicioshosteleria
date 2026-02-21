@@ -13,6 +13,7 @@ import { ExportadorExcel } from './ExportadorExcel';
 export default function InformeCliente() {
   const [selectedCliente, setSelectedCliente] = useState('');
   const [selectedPedido, setSelectedPedido] = useState('');
+  const [filtroPeriodo, setFiltroPeriodo] = useState('todos'); // 'semana' | 'mes' | 'todos'
 
   const { data: pedidos = [] } = useQuery({
     queryKey: ['pedidos'],
@@ -27,8 +28,26 @@ export default function InformeCliente() {
   // Obtener lista de clientes únicos
   const clientes = [...new Set(pedidos.map(p => p.cliente).filter(Boolean))].sort();
 
-  // Pedidos del cliente seleccionado
-  const pedidosCliente = pedidos.filter(p => p.cliente === selectedCliente);
+  // Filtrar pedidos del cliente por período
+  const pedidosClienteTodos = pedidos.filter(p => p.cliente === selectedCliente);
+
+  const pedidosCliente = pedidosClienteTodos.filter(p => {
+    if (filtroPeriodo === 'todos' || !p.dia) return true;
+    const fecha = new Date(p.dia);
+    const hoy = new Date();
+    if (filtroPeriodo === 'semana') {
+      const inicio = new Date(hoy);
+      inicio.setDate(hoy.getDate() - hoy.getDay());
+      inicio.setHours(0, 0, 0, 0);
+      const fin = new Date(inicio);
+      fin.setDate(inicio.getDate() + 6);
+      return fecha >= inicio && fecha <= fin;
+    }
+    if (filtroPeriodo === 'mes') {
+      return fecha.getMonth() === hoy.getMonth() && fecha.getFullYear() === hoy.getFullYear();
+    }
+    return true;
+  });
 
   // Pedido seleccionado
   const pedido = pedidos.find(p => p.id === selectedPedido);
@@ -52,7 +71,7 @@ export default function InformeCliente() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="text-sm font-medium text-slate-700 mb-2 block">Seleccionar Cliente</label>
           <Select value={selectedCliente} onValueChange={(v) => { setSelectedCliente(v); setSelectedPedido(''); }}>
@@ -69,15 +88,35 @@ export default function InformeCliente() {
 
         {selectedCliente && (
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-2 block">Seleccionar Evento</label>
+            <label className="text-sm font-medium text-slate-700 mb-2 block">Período</label>
+            <Select value={filtroPeriodo} onValueChange={(v) => { setFiltroPeriodo(v); setSelectedPedido(''); }}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los eventos</SelectItem>
+                <SelectItem value="semana">Esta semana</SelectItem>
+                <SelectItem value="mes">Este mes</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {selectedCliente && (
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-2 block">
+              Seleccionar Evento {pedidosCliente.length > 0 && <span className="text-slate-400 font-normal">({pedidosCliente.length})</span>}
+            </label>
             <Select value={selectedPedido} onValueChange={setSelectedPedido}>
               <SelectTrigger>
                 <SelectValue placeholder="Elegir evento..." />
               </SelectTrigger>
               <SelectContent>
-                {pedidosCliente.map(p => (
+                {pedidosCliente.length === 0 ? (
+                  <SelectItem value="__empty__" disabled>Sin eventos en este período</SelectItem>
+                ) : pedidosCliente.map(p => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.lugar_evento || 'Sin ubicación'} - {p.dia ? format(new Date(p.dia), 'dd MMM yyyy', { locale: es }) : 'Sin fecha'}
+                    {p.dia ? format(new Date(p.dia), 'dd MMM yyyy', { locale: es }) : 'Sin fecha'} — {p.lugar_evento || 'Sin ubicación'}
                   </SelectItem>
                 ))}
               </SelectContent>
