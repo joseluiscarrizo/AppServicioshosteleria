@@ -242,7 +242,33 @@ export default function Camareros() {
             </h1>
             <p className="text-slate-500 mt-1">Gestiona tu equipo de camareros, habilidades y valoraciones</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={exportarExcel}
+              className="border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Exportar Excel
+            </Button>
+            <label>
+              <Button
+                variant="outline"
+                className="border-blue-600 text-blue-700 hover:bg-blue-50 cursor-pointer"
+                onClick={() => document.getElementById('import-camareros').click()}
+                type="button"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Importar Excel
+              </Button>
+              <input
+                id="import-camareros"
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+                onChange={importarExcel}
+              />
+            </label>
             <Button 
               onClick={() => setShowGestionDisponibilidad(true)}
               variant="outline"
