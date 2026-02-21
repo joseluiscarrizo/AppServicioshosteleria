@@ -286,5 +286,4 @@ export default function PartesTrabajos({ user }) {
       </Dialog>
     </div>
   );
-
 }
