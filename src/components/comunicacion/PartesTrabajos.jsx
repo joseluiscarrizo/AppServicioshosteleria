@@ -287,12 +287,4 @@ export default function PartesTrabajos({ user }) {
     </div>
   );
 
-  function getHoraResumen(p) {
-    if (p.turnos?.length > 0) {
-      const entrada = p.turnos[0].entrada || '-';
-      const salida = p.turnos[p.turnos.length - 1].salida || '-';
-      return `${entrada} - ${salida}`;
-    }
-    return `${p.entrada || '-'} - ${p.salida || '-'}`;
-  }
 }
