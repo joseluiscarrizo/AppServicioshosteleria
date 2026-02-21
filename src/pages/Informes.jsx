@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Calendar, Users, TrendingUp, Building2, UserCheck, BarChart3, Activity } from 'lucide-react';
+import { FileText, Calendar, Users, TrendingUp, Building2, UserCheck, BarChart3, Activity, Clock } from 'lucide-react';
 import ResumenPeriodo from '../components/informes/ResumenPeriodo';
 import RendimientoCamareros from '../components/informes/RendimientoCamareros';
 import ReporteDisponibilidad from '../components/informes/ReporteDisponibilidad';
