@@ -53,7 +53,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
 
     // Calcular hora de encuentro si hay destino
     let horaEncuentro = 'Por confirmar';
-    const puntoEncuentro = 'https://maps.app.goo.gl/zF44yK4fjTrVneoD9';
+    const puntoEncuentro = 'https://maps.app.goo.gl/nofiiyVsnx5XLkES8';
     
     if (pedido.link_ubicacion) {
       try {
