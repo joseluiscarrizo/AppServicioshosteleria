@@ -78,6 +78,9 @@ export default function Informes() {
           <TabsContent value="camarero">
             <InformeCamarero />
           </TabsContent>
+          <TabsContent value="programados">
+            <InformesProgramados />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
