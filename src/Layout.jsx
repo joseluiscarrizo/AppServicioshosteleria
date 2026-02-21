@@ -24,7 +24,7 @@ const herramientasSubmenu = [
 ];
 
 const comunicacionSubmenu = [
-  { name: 'Chat', page: 'Chat', icon: MessageCircle },
+  { name: 'Comunicación', page: 'Comunicacion', icon: MessageCircle },
   { name: 'WhatsApp', page: 'HistorialMensajes', icon: MessageCircle }
 ];
 
