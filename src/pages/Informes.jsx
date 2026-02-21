@@ -8,6 +8,7 @@ import InformeCliente from '../components/informes/InformeCliente';
 import InformeCamarero from '../components/informes/InformeCamarero';
 import AnalisisTendencias from '../components/informes/AnalisisTendencias';
 import AnalisisDemanda from '../components/informes/AnalisisDemanda';
+import InformesProgramados from '../components/informes/InformesProgramados';
 
 export default function Informes() {
   const [activeTab, setActiveTab] = useState('resumen');
