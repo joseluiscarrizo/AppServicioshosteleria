@@ -26,7 +26,7 @@ export default function Informes() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 mb-6">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 mb-6">
             <TabsTrigger value="resumen" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">Resumen</span>
