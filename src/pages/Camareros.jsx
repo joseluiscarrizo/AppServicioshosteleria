@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, User, Star, Search, Filter, Award, MessageSquare, CalendarDays, UserCheck, Trash2 } from 'lucide-react';
+import { Plus, Pencil, User, Star, Search, Filter, Award, MessageSquare, CalendarDays, UserCheck, Trash2, Download, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
