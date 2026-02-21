@@ -49,6 +49,105 @@ export default function Camareros() {
   const [showGestionDisponibilidad, setShowGestionDisponibilidad] = useState(false);
 
   const queryClient = useQueryClient();
+  const importInputRef = useState(null);
+
+  const exportarExcel = () => {
+    const headers = ['Código', 'Nombre', 'Teléfono', 'Email', 'Disponible', 'En Reserva', 'Estado', 'Especialidad', 'Nivel Experiencia', 'Años Experiencia', 'Habilidades', 'Idiomas', 'Dirección', 'Notas', 'Valoración Promedio', 'Total Valoraciones'];
+    const filas = camareros.map(c => [
+      c.codigo || '',
+      c.nombre || '',
+      c.telefono || '',
+      c.email || '',
+      c.disponible ? 'Sí' : 'No',
+      c.en_reserva ? 'Sí' : 'No',
+      c.estado_actual || '',
+      c.especialidad || '',
+      c.nivel_experiencia || '',
+      c.experiencia_anios || '',
+      (c.habilidades || []).join(', '),
+      (c.idiomas || []).join(', '),
+      c.direccion || '',
+      c.notas || '',
+      c.valoracion_promedio || '',
+      c.total_valoraciones || 0
+    ]);
+
+    const csvContent = [headers, ...filas]
+      .map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `camareros_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${camareros.length} camareros exportados`);
+  };
+
+  const importarExcel = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const text = await file.text();
+    const lines = text.split('\n').filter(l => l.trim());
+    if (lines.length < 2) { toast.error('El archivo no tiene datos'); return; }
+
+    const sep = lines[0].includes(';') ? ';' : ',';
+    const headers = lines[0].split(sep).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+
+    const parsear = (row) => {
+      const vals = [];
+      let cur = '', inQ = false;
+      for (const ch of row) {
+        if (ch === '"') { inQ = !inQ; }
+        else if (ch === sep[0] && !inQ) { vals.push(cur); cur = ''; }
+        else { cur += ch; }
+      }
+      vals.push(cur);
+      return vals.map(v => v.replace(/^"|"$/g, '').trim());
+    };
+
+    const idx = (name) => headers.findIndex(h => h.includes(name));
+
+    let creados = 0, actualizados = 0, errores = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const vals = parsear(lines[i]);
+      if (!vals[idx('nombre')] && !vals[0]) continue;
+      try {
+        const data = {
+          codigo: vals[idx('código')] || vals[idx('codigo')] || vals[0] || '',
+          nombre: vals[idx('nombre')] || vals[1] || '',
+          telefono: vals[idx('teléfono')] || vals[idx('telefono')] || vals[2] || '',
+          email: vals[idx('email')] || vals[3] || '',
+          disponible: (vals[idx('disponible')] || '').toLowerCase() !== 'no',
+          en_reserva: (vals[idx('en reserva')] || vals[idx('reserva')] || '').toLowerCase() === 'sí' || (vals[idx('en reserva')] || '').toLowerCase() === 'si',
+          especialidad: vals[idx('especialidad')] || 'general',
+          nivel_experiencia: vals[idx('nivel')] || 'intermedio',
+          experiencia_anios: parseFloat(vals[idx('años')]) || undefined,
+          habilidades: vals[idx('habilidades')] ? vals[idx('habilidades')].split(',').map(h => h.trim()).filter(Boolean) : [],
+          idiomas: vals[idx('idiomas')] ? vals[idx('idiomas')].split(',').map(h => h.trim()).filter(Boolean) : [],
+          direccion: vals[idx('dirección')] || vals[idx('direccion')] || '',
+          notas: vals[idx('notas')] || '',
+        };
+        if (!data.nombre) continue;
+
+        const existente = camareros.find(c => c.codigo === data.codigo || c.email === data.email);
+        if (existente) {
+          await base44.entities.Camarero.update(existente.id, data);
+          actualizados++;
+        } else {
+          await base44.entities.Camarero.create(data);
+          creados++;
+        }
+      } catch { errores++; }
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['camareros'] });
+    toast.success(`Importación: ${creados} creados, ${actualizados} actualizados${errores ? `, ${errores} errores` : ''}`);
+  };
 
   const { data: camareros = [] } = useQuery({
     queryKey: ['camareros'],
