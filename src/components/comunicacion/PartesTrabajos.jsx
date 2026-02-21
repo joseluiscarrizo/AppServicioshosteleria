@@ -64,6 +64,7 @@ export default function PartesTrabajos({ user }) {
     return `${p.entrada || '-'} - ${p.salida || '-'}`;
   };
 
+
   const handleEnviarParte = async (pedido) => {
     setEnviando(pedido.id);
     try {
