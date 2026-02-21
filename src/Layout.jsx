@@ -154,8 +154,8 @@ export default function Layout({ children, currentPageName }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant={['Chat', 'HistorialMensajes'].includes(currentPageName) ? 'default' : 'ghost'}
-                    className={['Chat', 'HistorialMensajes'].includes(currentPageName)
+                    variant={['Comunicacion', 'Chat', 'HistorialMensajes'].includes(currentPageName) ? 'default' : 'ghost'}
+                                  className={['Comunicacion', 'Chat', 'HistorialMensajes'].includes(currentPageName)
                       ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
                       : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
                     }
