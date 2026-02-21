@@ -89,13 +89,18 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
       ? format(parseISO(pedido.dia), "dd 'de' MMMM yyyy", { locale: es })
       : 'Por confirmar';
 
+    const diaSemana = pedido.dia
+      ? format(parseISO(pedido.dia), "EEEE", { locale: es })
+      : '';
+
     let resultado = contenido
       .replace(/\{\{cliente\}\}/g, pedido.cliente || '')
       .replace(/\{\{dia\}\}/g, fechaFormateada)
+      .replace(/\{\{dia_semana\}\}/g, diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1))
       .replace(/\{\{lugar_evento\}\}/g, pedido.lugar_evento || 'Por confirmar')
       .replace(/\{\{hora_entrada\}\}/g, asignacion.hora_entrada || pedido.entrada || '-')
       .replace(/\{\{hora_salida\}\}/g, asignacion.hora_salida || pedido.salida || '-')
-      .replace(/\{\{camisa\}\}/g, pedido.camisa || 'blanca')
+      .replace(/\{\{camisa\}\}/g, (pedido.camisa || 'blanca').toUpperCase())
       .replace(/\{\{hora_encuentro\}\}/g, horaEncuentro)
       .replace(/\{\{link_confirmar\}\}/g, linkConfirmar)
       .replace(/\{\{link_rechazar\}\}/g, linkRechazar)
