@@ -50,7 +50,20 @@ export default function EventoContextBanner({ grupo }) {
             <Calendar className="w-4 h-4 text-white" />
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-slate-800 truncate text-sm">{pedido.cliente}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-slate-800 truncate text-sm">{pedido.cliente}</p>
+              {fichajeUrl && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); copiarLink(); }}
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 rounded px-1.5 py-0.5 flex-shrink-0"
+                  title="Copiar link de fichaje QR"
+                >
+                  <QrCode className="w-3 h-3" />
+                  Fichaje QR
+                  <Copy className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </div>
             <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
               {pedido.dia && (
                 <span>{format(parseISO(pedido.dia), "dd MMM yyyy", { locale: es })}</span>
