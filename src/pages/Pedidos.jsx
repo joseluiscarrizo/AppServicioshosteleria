@@ -519,6 +519,13 @@ export default function Pedidos() {
                                 </TableCell>
                                 <TableCell className="text-right" rowSpan={totalFilas}>
                                   <div className="flex justify-end gap-1">
+                                    <SugerenciasInteligentes
+                                      pedido={pedido}
+                                      onAsignar={(camarero) => {
+                                        // Navigate to Asignacion page with pedido selected
+                                        window.location.href = `/Asignacion?pedido_id=${pedido.id}`;
+                                      }}
+                                    />
                                     <GenerarDocumentacion pedido={pedido} variant="ghost" size="icon" />
                                     <Button 
                                       variant="ghost" 
