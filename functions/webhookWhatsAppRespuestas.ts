@@ -338,8 +338,9 @@ Deno.serve(async (req) => {
       }
 
       if (buttonId === 'menu::coordinador') {
-        setSesion(telefono, { flujo: 'coordinador' });
-        await sendTextMessage(telefono, '💬 Escribe el mensaje que quieres enviar al coordinador:');
+        const sesion = { flujo: 'coordinador', paso: 'nombre', datos: {} };
+        setSesion(telefono, sesion);
+        await sendTextMessage(telefono, `💬 *Mensaje al coordinador*\n\nVoy a necesitar unos datos para enviarlo correctamente. Puedes cancelar escribiendo *cancelar*.\n\n${PASOS_COORDINADOR[0].prompt}`);
         continue;
       }
 
