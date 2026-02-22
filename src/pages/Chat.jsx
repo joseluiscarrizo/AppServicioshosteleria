@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { MessageCircle, Loader2 } from 'lucide-react';
 import GruposList from '../components/chat/GruposList';
-import ChatWindow from '../components/chat/ChatWindow';
+import ChatWindow from '../components/chat/ChatWindow.jsx';
 
 export default function Chat() {
   const [user, setUser] = useState(null);
