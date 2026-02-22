@@ -3,7 +3,8 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Clock, Users, ChevronDown, ChevronUp, Shirt } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, ChevronDown, ChevronUp, Shirt, QrCode, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 

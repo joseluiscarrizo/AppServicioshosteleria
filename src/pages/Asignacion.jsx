@@ -25,6 +25,7 @@ import DuplicarEvento from '../components/pedidos/DuplicarEvento';
 import EventoRecurrente from '../components/pedidos/EventoRecurrente';
 import PedidoFormNuevo from '../components/pedidos/PedidoFormNuevo';
 import SugerenciasInteligentes from '../components/asignacion/SugerenciasInteligentes';
+import PanelFichajeQR from '../components/asignacion/PanelFichajeQR';
 
 const estadoColors = {
   pendiente: 'bg-slate-100 text-slate-700 border-slate-200',
