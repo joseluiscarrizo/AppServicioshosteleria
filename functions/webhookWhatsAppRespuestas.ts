@@ -371,8 +371,81 @@ Deno.serve(async (req) => {
       }
 
       if (buttonId === 'menu::evento') {
-        setSesion(telefono, { flujo: 'evento' });
-        await sendTextMessage(telefono, '📅 Escribe el nombre del cliente o la fecha del evento sobre el que tienes dudas:');
+        setSesion(telefono, { flujo: 'evento', paso: 'nombre_cliente', datos: {} });
+        await sendTextMessage(telefono, '📅 *Consulta sobre un evento*\n\nPuedes cancelar escribiendo *cancelar*.\n\n1️⃣ ¿Cuál es el *nombre del cliente* relacionado con el evento?');
+        continue;
+      }
+
+      // ─── FLUJO EVENTO: rango (pasado/futuro) ─────────────────
+      if (buttonId === 'evento::pasado' || buttonId === 'evento::futuro') {
+        const sesion = getSesion(telefono);
+        if (sesion.flujo !== 'evento') continue;
+        const rango = buttonId === 'evento::pasado' ? 'past' : 'future';
+        sesion.datos.rango = rango;
+        setSesion(telefono, sesion);
+
+        const hoy = new Date();
+        let fechaDesde, fechaHasta;
+        if (rango === 'past') {
+          fechaDesde = new Date(hoy); fechaDesde.setDate(hoy.getDate() - 14);
+          fechaHasta = hoy;
+        } else {
+          fechaDesde = hoy;
+          fechaHasta = new Date(hoy); fechaHasta.setDate(hoy.getDate() + 7);
+        }
+
+        const fmtDate = (d) => d.toISOString().split('T')[0];
+        const base44Local = createClientFromRequest(req);
+        const pedidos = await base44Local.asServiceRole.entities.Pedido.list();
+        const nombreCliente = (sesion.datos.nombre_cliente || '').toLowerCase();
+        const pedidosFiltrados = pedidos.filter(p => {
+          if (!p.dia) return false;
+          const fecha = new Date(p.dia);
+          const matchCliente = !nombreCliente || (p.cliente || '').toLowerCase().includes(nombreCliente);
+          return matchCliente && fecha >= new Date(fmtDate(fechaDesde)) && fecha <= new Date(fmtDate(fechaHasta));
+        });
+
+        if (pedidosFiltrados.length === 0) {
+          await sendTextMessage(telefono, `😕 No encontré eventos ${rango === 'past' ? 'de las últimas 2 semanas' : 'en los próximos 7 días'} para "${sesion.datos.nombre_cliente || 'ese cliente'}".\n\nEscribe *cancelar* para volver al menú.`);
+          continue;
+        }
+
+        sesion.datos.pedidos_disponibles = pedidosFiltrados.map(p => ({ id: p.id, label: `${p.cliente} – ${p.dia} – ${p.lugar_evento || ''}` }));
+        sesion.paso = 'seleccionar_evento';
+        setSesion(telefono, sesion);
+
+        // Mostrar lista de eventos (máx 10 por límite de WhatsApp)
+        const rows = pedidosFiltrados.slice(0, 10).map(p => ({
+          id: `evsel::${p.id}`,
+          title: `${p.cliente}`.substring(0, 24),
+          description: `${p.dia} – ${(p.lugar_evento || '').substring(0, 40)}`
+        }));
+
+        await sendWAMessage(telefono, {
+          type: 'interactive',
+          interactive: {
+            type: 'list',
+            body: { text: 'Selecciona el evento sobre el que quieres consultar:' },
+            action: {
+              button: 'Ver eventos',
+              sections: [{ title: 'Eventos', rows }]
+            }
+          }
+        });
+        continue;
+      }
+
+      // ─── FLUJO EVENTO: evento seleccionado ───────────────────
+      if (buttonId.startsWith('evsel::')) {
+        const pedidoId = buttonId.split('::')[1];
+        const sesion = getSesion(telefono);
+        if (sesion.flujo !== 'evento') continue;
+        sesion.datos.pedido_id = pedidoId;
+        const pedidoInfo = (sesion.datos.pedidos_disponibles || []).find(p => p.id === pedidoId);
+        sesion.datos.pedido_label = pedidoInfo?.label || pedidoId;
+        sesion.paso = 'escribir_mensaje';
+        setSesion(telefono, sesion);
+        await sendTextMessage(telefono, `✏️ Evento seleccionado: *${sesion.datos.pedido_label}*\n\nEscribe tu mensaje sobre este evento:`);
         continue;
       }
 
