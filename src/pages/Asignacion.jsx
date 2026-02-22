@@ -779,9 +779,16 @@ Sistema de Gestión de Camareros
                     )}
                   </div>
 
-                  {/* Camareros ya asignados */}
+                  {/* Panel de fichaje QR */}
                   {getAsignacionesPedido(selectedPedido.id).length > 0 && (
                     <div className="mt-6 pt-6 border-t">
+                      <PanelFichajeQR pedido={selectedPedido} />
+                    </div>
+                  )}
+
+                  {/* Camareros ya asignados */}
+                  {getAsignacionesPedido(selectedPedido.id).length > 0 && (
+                    <div className="mt-4">
                       <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
                         <Users className="w-4 h-4" />
                         Camareros Asignados ({getAsignacionesPedido(selectedPedido.id).length})
