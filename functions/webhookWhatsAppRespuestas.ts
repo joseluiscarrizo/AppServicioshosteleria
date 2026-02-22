@@ -214,21 +214,149 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true, skipped: 'sin mensajes' });
     }
 
-    // Crear cliente Base44 en modo serviceRole (el webhook no tiene usuario autenticado)
-    // Usamos la URL base de la función para reutilizar el client SDK disponible
     const base44 = createClientFromRequest(req);
 
     for (const message of messages) {
-      // Solo procesar interactive reply buttons
-      if (message.type !== 'interactive' || message.interactive?.type !== 'button_reply') {
+      const telefono = message.from;
+
+      // ─── Mensaje de texto libre ───────────────────────────────
+      if (message.type === 'text') {
+        const texto = message.text?.body || '';
+        const sesion = getSesion(telefono);
+
+        // Si hay un flujo de pedido activo, continuar con él
+        if (sesion.paso && sesion.flujo === 'pedido') {
+          await handleFlujoPedido(base44, telefono, sesion, texto);
+          continue;
+        }
+
+        // Si hay un flujo de mensaje a coordinador activo
+        if (sesion.flujo === 'coordinador') {
+          // Guardar mensaje y notificar coordinadores
+          await base44.asServiceRole.entities.Notificacion.create({
+            tipo: 'alerta',
+            titulo: '💬 Mensaje de cliente vía WhatsApp',
+            mensaje: `Mensaje de ${telefono}: "${texto}"`,
+            prioridad: 'media'
+          });
+          await sendTextMessage(telefono, '✅ Tu mensaje ha sido enviado al coordinador. Te contactaremos pronto. 😊');
+          clearSesion(telefono);
+          continue;
+        }
+
+        // Si hay un flujo de admin activo
+        if (sesion.flujo === 'admin') {
+          await base44.asServiceRole.entities.Notificacion.create({
+            tipo: 'alerta',
+            titulo: '🏢 Mensaje de cliente para Administración vía WhatsApp',
+            mensaje: `Mensaje de ${telefono}: "${texto}"`,
+            prioridad: 'media'
+          });
+          await sendTextMessage(telefono, '✅ Tu mensaje ha llegado a Administración. Te responderemos a la brevedad. 😊');
+          clearSesion(telefono);
+          continue;
+        }
+
+        // Si hay un flujo de consulta de evento activo
+        if (sesion.flujo === 'evento') {
+          await base44.asServiceRole.entities.Notificacion.create({
+            tipo: 'alerta',
+            titulo: '📅 Consulta de evento vía WhatsApp',
+            mensaje: `Consulta de ${telefono}: "${texto}"`,
+            prioridad: 'media'
+          });
+          await sendTextMessage(telefono, '✅ Hemos registrado tu consulta. Un coordinador te responderá pronto. 😊');
+          clearSesion(telefono);
+          continue;
+        }
+
+        // Sin flujo activo → mostrar menú principal
+        await sendMenuPrincipal(telefono);
+        continue;
+      }
+
+      // ─── Mensajes interactivos (list_reply o button_reply) ────
+      if (message.type !== 'interactive') {
         console.log(`Mensaje tipo ${message.type} ignorado`);
         continue;
       }
 
-      const buttonId    = message.interactive.button_reply?.id   ?? '';
-      const telefono    = message.from; // número del remitente (ya con código de país)
+      const interactiveType = message.interactive?.type;
+      let buttonId = '';
 
-      // Parsear id: "confirmar::<asignacion_id>" o "rechazar::<asignacion_id>"
+      if (interactiveType === 'button_reply') {
+        buttonId = message.interactive.button_reply?.id ?? '';
+      } else if (interactiveType === 'list_reply') {
+        buttonId = message.interactive.list_reply?.id ?? '';
+      }
+
+      // ─── MENÚ PRINCIPAL ───────────────────────────────────────
+      if (buttonId === 'menu::pedido') {
+        const sesion = { flujo: 'pedido', paso: 'cliente', datos: {} };
+        setSesion(telefono, sesion);
+        await sendTextMessage(telefono, '📋 *Solicitud de pedido*\n\nVoy a necesitar algunos datos. Puedes cancelar en cualquier momento escribiendo *cancelar*.\n\n1️⃣ ¿Cuál es el *nombre del cliente*?');
+        continue;
+      }
+
+      if (buttonId === 'menu::coordinador') {
+        setSesion(telefono, { flujo: 'coordinador' });
+        await sendTextMessage(telefono, '💬 Escribe el mensaje que quieres enviar al coordinador:');
+        continue;
+      }
+
+      if (buttonId === 'menu::admin') {
+        setSesion(telefono, { flujo: 'admin' });
+        await sendTextMessage(telefono, '🏢 Escribe el mensaje que quieres enviar a Administración:');
+        continue;
+      }
+
+      if (buttonId === 'menu::evento') {
+        setSesion(telefono, { flujo: 'evento' });
+        await sendTextMessage(telefono, '📅 Escribe el nombre del cliente o la fecha del evento sobre el que tienes dudas:');
+        continue;
+      }
+
+      // ─── FLUJO PEDIDO: color camisa ───────────────────────────
+      if (buttonId.startsWith('camisa::')) {
+        const color = buttonId.split('::')[1];
+        const sesion = getSesion(telefono);
+        if (sesion.flujo === 'pedido') {
+          sesion.datos['color_camisa'] = color;
+          sesion.paso = 'cantidad_camareros'; // reusamos handler para avanzar al siguiente
+          // El siguiente paso real es mail_contacto ya que cantidad_camareros fue el prev
+          // Avanzamos manualmente al paso mail_contacto
+          const idxCantidad = PASOS_PEDIDO.findIndex(p => p.id === 'cantidad_camareros');
+          const siguientePaso = PASOS_PEDIDO[idxCantidad + 1];
+          sesion.paso = siguientePaso.id;
+          setSesion(telefono, sesion);
+          await sendTextMessage(telefono, siguientePaso.prompt);
+        }
+        continue;
+      }
+
+      // ─── FLUJO PEDIDO: confirmar/cancelar envío ───────────────
+      if (buttonId === 'pedido::enviar') {
+        const sesion = getSesion(telefono);
+        if (sesion.flujo === 'pedido') {
+          try {
+            await crearPedidoEnBD(base44, { ...sesion.datos, telefono });
+            await sendTextMessage(telefono, '🎉 *¡Muchas gracias por confiar en nosotros!*\n\nTu solicitud ha sido registrada correctamente. Un coordinador se pondrá en contacto contigo muy pronto. 😊');
+          } catch (e) {
+            console.error('Error creando pedido:', e);
+            await sendTextMessage(telefono, '⚠️ Hubo un problema al registrar tu solicitud. Por favor llámanos directamente.');
+          }
+          clearSesion(telefono);
+        }
+        continue;
+      }
+
+      if (buttonId === 'pedido::cancelar') {
+        clearSesion(telefono);
+        await sendTextMessage(telefono, '❌ Solicitud cancelada. ¡Hasta pronto! Si necesitas algo más, escríbenos.');
+        continue;
+      }
+
+      // ─── BOTONES DE CAMAREROS (confirmar/rechazar asignación) ─
       const [accion, asignacionId] = buttonId.split('::');
 
       if (!asignacionId || !['confirmar', 'rechazar'].includes(accion)) {
