@@ -278,16 +278,8 @@ Deno.serve(async (req) => {
         }
 
         // Si hay un flujo de mensaje a coordinador activo
-        if (sesion.flujo === 'coordinador') {
-          // Guardar mensaje y notificar coordinadores
-          await base44.asServiceRole.entities.Notificacion.create({
-            tipo: 'alerta',
-            titulo: '💬 Mensaje de cliente vía WhatsApp',
-            mensaje: `Mensaje de ${telefono}: "${texto}"`,
-            prioridad: 'media'
-          });
-          await sendTextMessage(telefono, '✅ Tu mensaje ha sido enviado al coordinador. Te contactaremos pronto. 😊');
-          clearSesion(telefono);
+        if (sesion.flujo === 'coordinador' && sesion.paso) {
+          await handleFlujoCoordinador(base44, telefono, sesion, texto);
           continue;
         }
 
