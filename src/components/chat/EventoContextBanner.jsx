@@ -23,6 +23,16 @@ export default function EventoContextBanner({ grupo }) {
     enabled: !!grupo?.pedido_id
   });
 
+  const asignacionesConQR = asignaciones.filter(a => a.qr_token);
+  const fichajeUrl = asignacionesConQR.length > 0
+    ? `${window.location.origin}/FichajeQR?pedido_id=${grupo.pedido_id}`
+    : null;
+
+  const copiarLink = () => {
+    navigator.clipboard.writeText(fichajeUrl);
+    toast.success('Link de fichaje copiado');
+  };
+
   if (!pedido) return null;
 
   const confirmados = asignaciones.filter(a => a.estado === 'confirmado' || a.estado === 'alta').length;
