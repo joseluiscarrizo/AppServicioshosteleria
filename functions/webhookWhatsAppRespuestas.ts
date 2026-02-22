@@ -318,14 +318,41 @@ Deno.serve(async (req) => {
 
         // Si hay un flujo de consulta de evento activo
         if (sesion.flujo === 'evento') {
-          await base44.asServiceRole.entities.Notificacion.create({
-            tipo: 'alerta',
-            titulo: '📅 Consulta de evento vía WhatsApp',
-            mensaje: `Consulta de ${telefono}: "${texto}"`,
-            prioridad: 'media'
-          });
-          await sendTextMessage(telefono, '✅ Hemos registrado tu consulta. Un coordinador te responderá pronto. 😊');
-          clearSesion(telefono);
+          // Paso 1: recibir nombre del cliente
+          if (sesion.paso === 'nombre_cliente') {
+            sesion.datos.nombre_cliente = texto.trim();
+            sesion.paso = 'rango_evento';
+            setSesion(telefono, sesion);
+            await sendWAMessage(telefono, {
+              type: 'interactive',
+              interactive: {
+                type: 'button',
+                body: { text: '2️⃣ ¿Es sobre un evento pasado o futuro?' },
+                action: {
+                  buttons: [
+                    { type: 'reply', reply: { id: 'evento::pasado', title: '📁 Últimas 2 semanas' } },
+                    { type: 'reply', reply: { id: 'evento::futuro', title: '📅 Próximos 7 días' } }
+                  ]
+                }
+              }
+            });
+            continue;
+          }
+
+          // Paso 3: recibir mensaje del cliente sobre el evento
+          if (sesion.paso === 'escribir_mensaje') {
+            const mensajeEvento = texto.trim();
+            await base44.asServiceRole.entities.Notificacion.create({
+              tipo: 'alerta',
+              titulo: `📅 Consulta de evento vía WhatsApp`,
+              mensaje: `Cliente ${sesion.datos.nombre_cliente} (${telefono}) sobre el evento "${sesion.datos.pedido_label}":\n\n"${mensajeEvento}"`,
+              pedido_id: sesion.datos.pedido_id,
+              prioridad: 'media'
+            });
+            await sendTextMessage(telefono, '✅ *¡MUCHAS GRACIAS!*\n\nTu consulta ha sido registrada. Un coordinador te responderá lo antes posible. 😊');
+            clearSesion(telefono);
+            continue;
+          }
           continue;
         }
 
