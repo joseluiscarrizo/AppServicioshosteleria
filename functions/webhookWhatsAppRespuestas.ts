@@ -147,50 +147,70 @@ async function handleFlujoPedido(base44, telefono, sesion, textoMensaje) {
   }
 }
 
-const PASOS_COORDINADOR = [
-  { id: 'nombre',  prompt: '1️⃣ ¿Cuál es tu *nombre completo*?' },
-  { id: 'asunto',  prompt: '2️⃣ ¿Sobre qué es tu mensaje? (ej: evento del 15 de marzo, consulta general...)' },
-  { id: 'mensaje', prompt: '3️⃣ Escribe tu *mensaje* para el coordinador:' },
-];
-
 async function handleFlujoCoordinador(base44, telefono, sesion, textoMensaje) {
   const pasoActual = sesion.paso;
 
-  // Guardar respuesta del paso actual
-  if (pasoActual && pasoActual !== 'confirmar_coordinador') {
-    sesion.datos[pasoActual] = textoMensaje.trim();
-  }
+  // Paso 1: recibir nombre → crear grupo de chat y notificar coordinadores
+  if (pasoActual === 'nombre') {
+    const nombre = textoMensaje.trim();
+    sesion.datos.nombre = nombre;
 
-  const indicePasoActual = PASOS_COORDINADOR.findIndex(p => p.id === pasoActual);
-  const siguientePasoIndex = indicePasoActual + 1;
-
-  // Tras recoger el mensaje, mostrar resumen para confirmar
-  if (pasoActual === 'mensaje') {
-    sesion.paso = 'confirmar_coordinador';
-    setSesion(telefono, sesion);
-    const d = sesion.datos;
-    const resumen = `📋 *Resumen de tu mensaje:*\n\n👤 Nombre: ${d.nombre}\n📌 Asunto: ${d.asunto}\n💬 Mensaje: ${d.mensaje}\n\n¿Deseas enviar este mensaje al coordinador?`;
-    return sendWAMessage(telefono, {
-      type: 'interactive',
-      interactive: {
-        type: 'button',
-        body: { text: resumen },
-        action: {
-          buttons: [
-            { type: 'reply', reply: { id: 'coord::enviar', title: '✅ Enviar' } },
-            { type: 'reply', reply: { id: 'coord::cancelar', title: '❌ Cancelar' } }
-          ]
-        }
-      }
+    // Crear grupo de chat cliente-coordinador
+    const grupo = await base44.asServiceRole.entities.GrupoChat.create({
+      nombre: `Chat con ${nombre}`,
+      descripcion: `Cliente WhatsApp: ${telefono}`,
+      fecha_evento: new Date().toISOString().split('T')[0],
+      hora_fin_evento: '23:59',
+      miembros: [],
+      activo: true
     });
+
+    sesion.datos.grupo_id = grupo.id;
+    sesion.paso = 'mensaje_inicial';
+    setSesion(telefono, sesion);
+
+    // Notificar a todos los coordinadores
+    const coordinadores = await base44.asServiceRole.entities.Coordinador.list();
+    await base44.asServiceRole.entities.Notificacion.create({
+      tipo: 'alerta',
+      titulo: `💬 Nuevo chat de cliente: ${nombre}`,
+      mensaje: `El cliente ${nombre} (WhatsApp: ${telefono}) ha iniciado una conversación. Entra al Chat para responderle.`,
+      prioridad: 'alta'
+    });
+
+    // Email a coordinadores
+    for (const coord of coordinadores) {
+      if (coord.email && coord.notificaciones_email) {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: coord.email,
+          subject: `💬 Nuevo mensaje de cliente: ${nombre}`,
+          body: `Hola ${coord.nombre},\n\nEl cliente *${nombre}* (WhatsApp: ${telefono}) quiere hablar contigo.\n\nEntra a la app en la sección de Chat para responderle.\n\nSaludos,\nSistema de Gestión de Camareros`
+        });
+      }
+    }
+
+    return sendTextMessage(telefono, `✅ ¡Hola ${nombre}! Tu chat con el coordinador ha sido abierto.\n\nEscribe tu mensaje y un coordinador te responderá muy pronto. 😊`);
   }
 
-  // Siguiente paso normal
-  if (siguientePasoIndex < PASOS_COORDINADOR.length) {
-    const siguientePaso = PASOS_COORDINADOR[siguientePasoIndex];
-    sesion.paso = siguientePaso.id;
+  // Paso 2+: reenviar mensajes al grupo de chat interno
+  if (pasoActual === 'mensaje_inicial' || pasoActual === 'en_chat') {
+    const texto = textoMensaje.trim();
+    sesion.paso = 'en_chat';
     setSesion(telefono, sesion);
-    return sendTextMessage(telefono, siguientePaso.prompt);
+
+    if (sesion.datos.grupo_id) {
+      await base44.asServiceRole.entities.MensajeChat.create({
+        grupo_id: sesion.datos.grupo_id,
+        user_id: telefono,
+        nombre_usuario: sesion.datos.nombre || telefono,
+        rol_usuario: 'camarero',
+        mensaje: texto,
+        tipo: 'texto',
+        leido_por: []
+      });
+    }
+    // No respondemos automáticamente; el coordinador responde desde la app
+    return;
   }
 }
 
