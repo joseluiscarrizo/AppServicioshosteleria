@@ -147,6 +147,53 @@ async function handleFlujoPedido(base44, telefono, sesion, textoMensaje) {
   }
 }
 
+const PASOS_COORDINADOR = [
+  { id: 'nombre',  prompt: '1️⃣ ¿Cuál es tu *nombre completo*?' },
+  { id: 'asunto',  prompt: '2️⃣ ¿Sobre qué es tu mensaje? (ej: evento del 15 de marzo, consulta general...)' },
+  { id: 'mensaje', prompt: '3️⃣ Escribe tu *mensaje* para el coordinador:' },
+];
+
+async function handleFlujoCoordinador(base44, telefono, sesion, textoMensaje) {
+  const pasoActual = sesion.paso;
+
+  // Guardar respuesta del paso actual
+  if (pasoActual && pasoActual !== 'confirmar_coordinador') {
+    sesion.datos[pasoActual] = textoMensaje.trim();
+  }
+
+  const indicePasoActual = PASOS_COORDINADOR.findIndex(p => p.id === pasoActual);
+  const siguientePasoIndex = indicePasoActual + 1;
+
+  // Tras recoger el mensaje, mostrar resumen para confirmar
+  if (pasoActual === 'mensaje') {
+    sesion.paso = 'confirmar_coordinador';
+    setSesion(telefono, sesion);
+    const d = sesion.datos;
+    const resumen = `📋 *Resumen de tu mensaje:*\n\n👤 Nombre: ${d.nombre}\n📌 Asunto: ${d.asunto}\n💬 Mensaje: ${d.mensaje}\n\n¿Deseas enviar este mensaje al coordinador?`;
+    return sendWAMessage(telefono, {
+      type: 'interactive',
+      interactive: {
+        type: 'button',
+        body: { text: resumen },
+        action: {
+          buttons: [
+            { type: 'reply', reply: { id: 'coord::enviar', title: '✅ Enviar' } },
+            { type: 'reply', reply: { id: 'coord::cancelar', title: '❌ Cancelar' } }
+          ]
+        }
+      }
+    });
+  }
+
+  // Siguiente paso normal
+  if (siguientePasoIndex < PASOS_COORDINADOR.length) {
+    const siguientePaso = PASOS_COORDINADOR[siguientePasoIndex];
+    sesion.paso = siguientePaso.id;
+    setSesion(telefono, sesion);
+    return sendTextMessage(telefono, siguientePaso.prompt);
+  }
+}
+
 async function crearPedidoEnBD(base44, datos) {
   // Parsear fecha DD/MM/AAAA → YYYY-MM-DD
   let diaFormateado = null;
