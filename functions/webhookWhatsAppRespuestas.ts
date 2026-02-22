@@ -376,47 +376,6 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // ─── FLUJO COORDINADOR: confirmar/cancelar envío ─────────
-      if (buttonId === 'coord::enviar') {
-        const sesion = getSesion(telefono);
-        if (sesion.flujo === 'coordinador') {
-          const d = sesion.datos;
-          try {
-            // Buscar todos los coordinadores para notificarles
-            const coordinadores = await base44.asServiceRole.entities.Coordinador.list();
-            // Crear notificación en la app
-            await base44.asServiceRole.entities.Notificacion.create({
-              tipo: 'alerta',
-              titulo: `💬 Mensaje de cliente vía WhatsApp`,
-              mensaje: `👤 De: ${d.nombre} (${telefono})\n📌 Asunto: ${d.asunto}\n💬 Mensaje: ${d.mensaje}`,
-              prioridad: 'media'
-            });
-            // Enviar email a todos los coordinadores con email habilitado
-            for (const coord of coordinadores) {
-              if (coord.email && coord.notificaciones_email) {
-                await base44.asServiceRole.integrations.Core.SendEmail({
-                  to: coord.email,
-                  subject: `💬 Mensaje de cliente WhatsApp: ${d.asunto}`,
-                  body: `Hola ${coord.nombre},\n\nHas recibido un mensaje de un cliente a través de WhatsApp:\n\n👤 Nombre: ${d.nombre}\n📞 Teléfono: ${telefono}\n📌 Asunto: ${d.asunto}\n\n💬 Mensaje:\n"${d.mensaje}"\n\nPor favor, contacta con el cliente a la brevedad.\n\nSaludos,\nSistema de Gestión de Camareros`
-                });
-              }
-            }
-            await sendTextMessage(telefono, '✅ *¡Mensaje enviado correctamente!*\n\nUn coordinador se pondrá en contacto contigo a la brevedad. 😊');
-          } catch (e) {
-            console.error('Error enviando mensaje a coordinador:', e);
-            await sendTextMessage(telefono, '⚠️ Hubo un problema al enviar tu mensaje. Por favor inténtalo más tarde.');
-          }
-          clearSesion(telefono);
-        }
-        continue;
-      }
-
-      if (buttonId === 'coord::cancelar') {
-        clearSesion(telefono);
-        await sendTextMessage(telefono, '❌ Mensaje cancelado. ¡Hasta pronto! Si necesitas algo más, escríbenos.');
-        continue;
-      }
-
       // ─── FLUJO PEDIDO: color camisa ───────────────────────────
       if (buttonId.startsWith('camisa::')) {
         const color = buttonId.split('::')[1];
