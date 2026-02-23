@@ -127,6 +127,33 @@ export default function Layout({ children, currentPageName }) {
                 </Button>
               </Link>
 
+              {/* Dropdown Admin */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={['Coordinadores'].includes(currentPageName) ? 'default' : 'ghost'}
+                    className={['Coordinadores'].includes(currentPageName)
+                      ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
+                      : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
+                    }
+                  >
+                    <ShieldCheck className="w-4 h-4 mr-2" />
+                    Admin
+                    <ChevronDown className="w-3 h-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {adminSubmenu.map(item => (
+                    <Link key={item.page} to={createPageUrl(item.page)}>
+                      <DropdownMenuItem className="cursor-pointer">
+                        <item.icon className="w-4 h-4 mr-2" />
+                        {item.name}
+                      </DropdownMenuItem>
+                    </Link>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               {/* Dropdown de Herramientas */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
