@@ -215,7 +215,7 @@ Deno.serve(async (req) => {
                   sheetId: 0,
                   dimension: 'COLUMNS',
                   startIndex: 0,
-                  endIndex: 16
+                  endIndex: 12
                 }
               }
             }
