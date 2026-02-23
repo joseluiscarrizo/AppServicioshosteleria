@@ -213,8 +213,16 @@ export default function Camareros() {
     const matchEspecialidad = filtroEspecialidad === 'todos' || c.especialidad === filtroEspecialidad;
     
     const matchHabilidad = filtroHabilidad === 'todos' || c.habilidades?.includes(filtroHabilidad);
+
+    const matchValoracion = filtroValoracion === 'todos' ||
+      (filtroValoracion === 'alta' && (c.valoracion_promedio || 0) >= 4) ||
+      (filtroValoracion === 'media' && (c.valoracion_promedio || 0) >= 3 && (c.valoracion_promedio || 0) < 4) ||
+      (filtroValoracion === 'baja' && (c.valoracion_promedio || 0) < 3 && (c.valoracion_promedio || 0) > 0) ||
+      (filtroValoracion === 'sin' && !(c.valoracion_promedio > 0));
+
+    const matchNivel = filtroNivel === 'todos' || c.nivel_experiencia === filtroNivel;
     
-    return matchBusqueda && matchDisponibilidad && matchEspecialidad && matchHabilidad;
+    return matchBusqueda && matchDisponibilidad && matchEspecialidad && matchHabilidad && matchValoracion && matchNivel;
   });
 
   const camarerosFiltradosActivos = camareros.filter(c => !c.en_reserva);
