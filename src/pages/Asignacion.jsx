@@ -739,36 +739,20 @@ Sistema de Gestión de Camareros
                 </div>
 
                 <div className="p-4">
-                  {/* Filtros y búsqueda */}
-                  <div className="mb-4 flex flex-col sm:flex-row gap-3">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <Input
-                        value={busquedaCamarero}
-                        onChange={(e) => setBusquedaCamarero(e.target.value)}
-                        placeholder="Buscar camarero..."
-                        className="pl-10"
+                  {/* Filtros avanzados */}
+                  <div className="mb-4 flex flex-col sm:flex-row gap-3 items-start">
+                    <div className="flex-1">
+                      <FiltrosAvanzadosCamareros
+                        filtros={filtrosCamareros}
+                        onFiltrosChange={setFiltrosCamareros}
+                        camareros={camareros}
+                        pedido={selectedPedido}
                       />
                     </div>
-                    <div className="flex gap-2">
-                      <Select value={filtroEspecialidad} onValueChange={setFiltroEspecialidad}>
-                        <SelectTrigger className="w-40">
-                          <SelectValue placeholder="Especialidad" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={null}>Todas</SelectItem>
-                          <SelectItem value="general">General</SelectItem>
-                          <SelectItem value="cocteleria">Coctelería</SelectItem>
-                          <SelectItem value="banquetes">Banquetes</SelectItem>
-                          <SelectItem value="eventos_vip">Eventos VIP</SelectItem>
-                          <SelectItem value="buffet">Buffet</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <SugerenciasInteligentes 
-                        pedido={selectedPedido} 
-                        onAsignar={(camarero) => handleAsignarCamarero(selectedPedido, camarero)} 
-                      />
-                    </div>
+                    <SugerenciasInteligentes 
+                      pedido={selectedPedido} 
+                      onAsignar={(camarero) => handleAsignarCamarero(selectedPedido, camarero)} 
+                    />
                   </div>
 
                   {/* Lista de camareros disponibles con botón de asignación rápida */}
