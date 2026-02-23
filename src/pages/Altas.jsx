@@ -143,6 +143,7 @@ export default function Altas() {
                   <TableHead className="font-semibold text-slate-700 whitespace-nowrap">Hora Entrada</TableHead>
                   <TableHead className="font-semibold text-slate-700 text-center whitespace-nowrap">Dar Alta</TableHead>
                   <TableHead className="font-semibold text-slate-700 text-center whitespace-nowrap">Alta</TableHead>
+                  <TableHead className="font-semibold text-slate-700 text-center whitespace-nowrap">Baja</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
