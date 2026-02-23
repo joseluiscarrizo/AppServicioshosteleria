@@ -1090,7 +1090,7 @@ Sistema de Gestión de Camareros
                             </motion.div>
                           )}
                         </div>
-                      </ScrollArea>
+                      </div>
                     )}
                   </Droppable>
                 </Card>
