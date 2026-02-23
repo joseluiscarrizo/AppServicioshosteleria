@@ -48,6 +48,10 @@ export default function Camareros() {
   const [showHistorial, setShowHistorial] = useState(false);
   const [camareroHistorial, setCamareroHistorial] = useState(null);
   const [showGestionDisponibilidad, setShowGestionDisponibilidad] = useState(false);
+  const [showPreferencias, setShowPreferencias] = useState(false);
+  const [camareroPreferencias, setCamareroPreferencias] = useState(null);
+  const [filtroValoracion, setFiltroValoracion] = useState('todos');
+  const [filtroNivel, setFiltroNivel] = useState('todos');
 
   const queryClient = useQueryClient();
   const importInputRef = useState(null);
