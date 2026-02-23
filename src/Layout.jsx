@@ -28,6 +28,10 @@ const comunicacionSubmenu = [
   { name: 'WhatsApp', page: 'HistorialMensajes', icon: MessageCircle }
 ];
 
+const adminSubmenu = [
+  { name: 'Coordinadores', page: 'Coordinadores', icon: UserCog },
+];
+
 export default function Layout({ children, currentPageName }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { showNotification, isAllowed, requestPermission } = useWebPushNotifications();
