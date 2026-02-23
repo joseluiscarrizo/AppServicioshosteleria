@@ -1,5 +1,5 @@
 /**
- * webhookWhatsAppRespuestas.ts
+ * webhookWhatsAppRespuestas.js
  *
  * Webhook que recibe notificaciones de la WhatsApp Cloud API.
  * Procesa:
@@ -13,7 +13,6 @@
  *   WHATSAPP_API_TOKEN              — token de acceso permanente de la app
  *   WHATSAPP_PHONE_NUMBER           — ID del número de WhatsApp Business
  */
-
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { format, parseISO } from 'npm:date-fns@3.6.0';
 import { es } from 'npm:date-fns@3.6.0/locale';
@@ -69,9 +68,11 @@ const sesiones = new Map();
 function getSesion(telefono) {
   return sesiones.get(telefono) || { paso: null, datos: {} };
 }
+
 function setSesion(telefono, data) {
   sesiones.set(telefono, data);
 }
+
 function clearSesion(telefono) {
   sesiones.delete(telefono);
 }
@@ -164,7 +165,6 @@ async function handleFlujoCoordinador(base44, telefono, sesion, textoMensaje) {
       miembros: [],
       activo: true
     });
-
     sesion.datos.grupo_id = grupo.id;
     sesion.paso = 'mensaje_inicial';
     setSesion(telefono, sesion);
@@ -214,7 +214,7 @@ async function handleFlujoCoordinador(base44, telefono, sesion, textoMensaje) {
   }
 }
 
-async function crearPedidoEnBD(base44, datos) {
+async function crearPedidoEnBD(base44, datos, telefono) {
   // Parsear fecha DD/MM/AAAA → YYYY-MM-DD
   let diaFormateado = null;
   if (datos.fecha_evento) {
@@ -223,6 +223,7 @@ async function crearPedidoEnBD(base44, datos) {
       diaFormateado = `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
     }
   }
+
   return base44.asServiceRole.entities.Pedido.create({
     cliente: datos.cliente || 'Pedido WhatsApp',
     lugar_evento: datos.lugar_evento || '',
@@ -246,7 +247,6 @@ Deno.serve(async (req) => {
     const mode   = url.searchParams.get('hub.mode');
     const token  = url.searchParams.get('hub.verify_token');
     const challenge = url.searchParams.get('hub.challenge');
-
     const verifyToken = Deno.env.get('WHATSAPP_WEBHOOK_VERIFY_TOKEN');
 
     if (mode === 'subscribe' && token === verifyToken) {
@@ -267,7 +267,6 @@ Deno.serve(async (req) => {
     const body = await req.json();
     console.log('📨 Webhook recibido:', JSON.stringify(body).slice(0, 500));
 
-    // Navegar estructura: body.entry[0].changes[0].value
     const entry   = body?.entry?.[0];
     const changes = entry?.changes?.[0];
     const value   = changes?.value;
@@ -291,19 +290,16 @@ Deno.serve(async (req) => {
         const texto = message.text?.body || '';
         const sesion = getSesion(telefono);
 
-        // Si hay un flujo de pedido activo, continuar con él
         if (sesion.paso && sesion.flujo === 'pedido') {
           await handleFlujoPedido(base44, telefono, sesion, texto);
           continue;
         }
 
-        // Si hay un flujo de mensaje a coordinador activo
         if (sesion.flujo === 'coordinador' && sesion.paso) {
           await handleFlujoCoordinador(base44, telefono, sesion, texto);
           continue;
         }
 
-        // Si hay un flujo de admin activo
         if (sesion.flujo === 'admin') {
           await base44.asServiceRole.entities.Notificacion.create({
             tipo: 'alerta',
@@ -316,9 +312,7 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Si hay un flujo de consulta de evento activo
         if (sesion.flujo === 'evento') {
-          // Paso 1: recibir nombre del cliente
           if (sesion.paso === 'nombre_cliente') {
             sesion.datos.nombre_cliente = texto.trim();
             sesion.paso = 'rango_evento';
@@ -339,7 +333,6 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Paso 3: recibir mensaje del cliente sobre el evento
           if (sesion.paso === 'escribir_mensaje') {
             const mensajeEvento = texto.trim();
             await base44.asServiceRole.entities.Notificacion.create({
@@ -353,10 +346,10 @@ Deno.serve(async (req) => {
             clearSesion(telefono);
             continue;
           }
+
           continue;
         }
 
-        // Sin flujo activo → mostrar menú principal
         await sendMenuPrincipal(telefono);
         continue;
       }
@@ -369,7 +362,6 @@ Deno.serve(async (req) => {
 
       const interactiveType = message.interactive?.type;
       let buttonId = '';
-
       if (interactiveType === 'button_reply') {
         buttonId = message.interactive.button_reply?.id ?? '';
       } else if (interactiveType === 'list_reply') {
@@ -407,6 +399,7 @@ Deno.serve(async (req) => {
       if (buttonId === 'evento::pasado' || buttonId === 'evento::futuro') {
         const sesion = getSesion(telefono);
         if (sesion.flujo !== 'evento') continue;
+
         const rango = buttonId === 'evento::pasado' ? 'past' : 'future';
         sesion.datos.rango = rango;
         setSesion(telefono, sesion);
@@ -422,10 +415,9 @@ Deno.serve(async (req) => {
         }
 
         const fmtDate = (d) => d.toISOString().split('T')[0];
-        const base44Local = createClientFromRequest(req);
-        const pedidos = await base44Local.asServiceRole.entities.Pedido.list();
+        const pedidosTodos = await base44.asServiceRole.entities.Pedido.list();
         const nombreCliente = (sesion.datos.nombre_cliente || '').toLowerCase();
-        const pedidosFiltrados = pedidos.filter(p => {
+        const pedidosFiltrados = pedidosTodos.filter(p => {
           if (!p.dia) return false;
           const fecha = new Date(p.dia);
           const matchCliente = !nombreCliente || (p.cliente || '').toLowerCase().includes(nombreCliente);
@@ -441,7 +433,6 @@ Deno.serve(async (req) => {
         sesion.paso = 'seleccionar_evento';
         setSesion(telefono, sesion);
 
-        // Mostrar lista de eventos (máx 10 por límite de WhatsApp)
         const rows = pedidosFiltrados.slice(0, 10).map(p => ({
           id: `evsel::${p.id}`,
           title: `${p.cliente}`.substring(0, 24),
@@ -467,11 +458,13 @@ Deno.serve(async (req) => {
         const pedidoId = buttonId.split('::')[1];
         const sesion = getSesion(telefono);
         if (sesion.flujo !== 'evento') continue;
+
         sesion.datos.pedido_id = pedidoId;
         const pedidoInfo = (sesion.datos.pedidos_disponibles || []).find(p => p.id === pedidoId);
         sesion.datos.pedido_label = pedidoInfo?.label || pedidoId;
         sesion.paso = 'escribir_mensaje';
         setSesion(telefono, sesion);
+
         await sendTextMessage(telefono, `✏️ Evento seleccionado: *${sesion.datos.pedido_label}*\n\nEscribe tu mensaje sobre este evento:`);
         continue;
       }
@@ -482,9 +475,6 @@ Deno.serve(async (req) => {
         const sesion = getSesion(telefono);
         if (sesion.flujo === 'pedido') {
           sesion.datos['color_camisa'] = color;
-          sesion.paso = 'cantidad_camareros'; // reusamos handler para avanzar al siguiente
-          // El siguiente paso real es mail_contacto ya que cantidad_camareros fue el prev
-          // Avanzamos manualmente al paso mail_contacto
           const idxCantidad = PASOS_PEDIDO.findIndex(p => p.id === 'cantidad_camareros');
           const siguientePaso = PASOS_PEDIDO[idxCantidad + 1];
           sesion.paso = siguientePaso.id;
@@ -499,7 +489,7 @@ Deno.serve(async (req) => {
         const sesion = getSesion(telefono);
         if (sesion.flujo === 'pedido') {
           try {
-            await crearPedidoEnBD(base44, { ...sesion.datos, telefono });
+            await crearPedidoEnBD(base44, sesion.datos, telefono);
             await sendTextMessage(telefono, '🎉 *¡Muchas gracias por confiar en nosotros!*\n\nTu solicitud ha sido registrada correctamente. Un coordinador se pondrá en contacto contigo muy pronto. 😊');
           } catch (e) {
             console.error('Error creando pedido:', e);
@@ -517,7 +507,9 @@ Deno.serve(async (req) => {
       }
 
       // ─── BOTONES DE CAMAREROS (confirmar/rechazar asignación) ─
-      const [accion, asignacionId] = buttonId.split('::');
+      const parts = buttonId.split('::');
+      const accion = parts[0];
+      const asignacionId = parts[1];
 
       if (!asignacionId || !['confirmar', 'rechazar'].includes(accion)) {
         console.warn('Button id no reconocido:', buttonId);
@@ -526,12 +518,9 @@ Deno.serve(async (req) => {
 
       console.log(`🔔 Acción: ${accion} | Asignación: ${asignacionId} | Tel: ${telefono}`);
 
-      // Obtener la asignación
-      let asignaciones: any[] = [];
+      let asignaciones = [];
       try {
-        asignaciones = await base44.asServiceRole.entities.AsignacionCamarero.filter({
-          id: asignacionId
-        });
+        asignaciones = await base44.asServiceRole.entities.AsignacionCamarero.filter({ id: asignacionId });
       } catch (e) {
         console.error('Error buscando asignación:', e);
         continue;
@@ -543,12 +532,9 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Obtener pedido
-      let pedido: any = null;
+      let pedido = null;
       try {
-        const pedidos = await base44.asServiceRole.entities.Pedido.filter({
-          id: asignacion.pedido_id
-        });
+        const pedidos = await base44.asServiceRole.entities.Pedido.filter({ id: asignacion.pedido_id });
         pedido = pedidos[0];
       } catch (e) {
         console.error('Error buscando pedido:', e);
@@ -558,50 +544,32 @@ Deno.serve(async (req) => {
         ? format(parseISO(pedido.dia), "dd 'de' MMMM yyyy", { locale: es })
         : 'fecha pendiente';
 
-      // ────────────────────────────────────────────────────────
-      // ACEPTO: marcar asignación como confirmada
-      // ────────────────────────────────────────────────────────
       if (accion === 'confirmar') {
-        // Evitar doble-confirmación
         if (asignacion.estado === 'confirmado') {
           console.log('Ya estaba confirmado, ignorando');
           continue;
         }
 
-        await base44.asServiceRole.entities.AsignacionCamarero.update(asignacionId, {
-          estado: 'confirmado'
-        });
+        await base44.asServiceRole.entities.AsignacionCamarero.update(asignacionId, { estado: 'confirmado' });
 
-        // Marcar camarero como ocupado
         if (asignacion.camarero_id) {
-          await base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, {
-            estado_actual: 'ocupado'
-          });
+          await base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, { estado_actual: 'ocupado' });
         }
 
-        // Actualizar notificación si existe
         try {
-          const notifs = await base44.asServiceRole.entities.NotificacionCamarero.filter({
-            asignacion_id: asignacionId
-          });
+          const notifs = await base44.asServiceRole.entities.NotificacionCamarero.filter({ asignacion_id: asignacionId });
           if (notifs[0]) {
             await base44.asServiceRole.entities.NotificacionCamarero.update(notifs[0].id, {
-              respondida: true,
-              respuesta: 'aceptado',
-              leida: true
+              respondida: true, respuesta: 'aceptado', leida: true
             });
           }
         } catch (e) {
           console.error('Error actualizando notificación:', e);
         }
 
-        // Notificar al coordinador
         if (pedido) {
-          const camareroData = await base44.asServiceRole.entities.Camarero.filter({
-            id: asignacion.camarero_id
-          });
+          const camareroData = await base44.asServiceRole.entities.Camarero.filter({ id: asignacion.camarero_id });
           const coordinadorId = camareroData[0]?.coordinador_id || pedido.coordinador_id;
-
           if (coordinadorId) {
             await base44.asServiceRole.entities.Notificacion.create({
               tipo: 'estado_cambio',
@@ -616,38 +584,24 @@ Deno.serve(async (req) => {
 
         console.log(`✅ Asignación ${asignacionId} confirmada vía botón WhatsApp`);
 
-      // ────────────────────────────────────────────────────────
-      // RECHAZO: eliminar asignación y alertar coordinador
-      // ────────────────────────────────────────────────────────
       } else if (accion === 'rechazar') {
-        // Marcar camarero disponible
         if (asignacion.camarero_id) {
-          await base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, {
-            estado_actual: 'disponible'
-          });
+          await base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, { estado_actual: 'disponible' });
         }
 
-        // Actualizar notificación si existe
         try {
-          const notifs = await base44.asServiceRole.entities.NotificacionCamarero.filter({
-            asignacion_id: asignacionId
-          });
+          const notifs = await base44.asServiceRole.entities.NotificacionCamarero.filter({ asignacion_id: asignacionId });
           if (notifs[0]) {
             await base44.asServiceRole.entities.NotificacionCamarero.update(notifs[0].id, {
-              respondida: true,
-              respuesta: 'rechazado',
-              leida: true
+              respondida: true, respuesta: 'rechazado', leida: true
             });
           }
         } catch (e) {
           console.error('Error actualizando notificación:', e);
         }
 
-        // Alerta urgente al coordinador
         if (pedido) {
-          const camareroData = await base44.asServiceRole.entities.Camarero.filter({
-            id: asignacion.camarero_id
-          });
+          const camareroData = await base44.asServiceRole.entities.Camarero.filter({ id: asignacion.camarero_id });
           const coordinadorId = camareroData[0]?.coordinador_id || pedido.coordinador_id;
 
           await base44.asServiceRole.entities.Notificacion.create({
@@ -659,12 +613,9 @@ Deno.serve(async (req) => {
             email_enviado: false
           });
 
-          // Email de alerta al coordinador si tiene email
           if (coordinadorId) {
             try {
-              const coords = await base44.asServiceRole.entities.Coordinador.filter({
-                id: coordinadorId
-              });
+              const coords = await base44.asServiceRole.entities.Coordinador.filter({ id: coordinadorId });
               const coord = coords[0];
               if (coord?.email && coord?.notificaciones_email) {
                 await base44.asServiceRole.integrations.Core.SendEmail({
@@ -679,18 +630,14 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Eliminar asignación
         await base44.asServiceRole.entities.AsignacionCamarero.delete(asignacionId);
-
         console.log(`❌ Asignación ${asignacionId} rechazada y eliminada vía botón WhatsApp`);
       }
     }
 
     return Response.json({ ok: true });
-
   } catch (error) {
     console.error('Error en webhookWhatsAppRespuestas:', error);
-    // Siempre devolver 200 a Meta para que no reintente indefinidamente
     return Response.json({ ok: true, error: error.message });
   }
 });
