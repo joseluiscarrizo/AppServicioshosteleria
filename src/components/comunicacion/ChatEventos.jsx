@@ -16,10 +16,12 @@ export default function ChatEventos({ user }) {
     queryKey: ['grupos-chat-eventos', user?.id],
     queryFn: async () => {
       const todos = await base44.entities.GrupoChat.filter({ activo: true }, '-created_date');
-      // Coordinadores y admin ven todos
-      if (user.role === 'admin' || user.role === 'coordinador') return todos;
+      // Excluir el grupo interno de coordinadores
+      const soloEventos = todos.filter(g => g.pedido_id !== 'coordinadores-interno');
+      // Coordinadores y admin ven todos los grupos de evento
+      if (user.role === 'admin' || user.role === 'coordinador') return soloEventos;
       // Camareros solo ven los suyos
-      return todos.filter(g => g.miembros?.some(m => m.user_id === user.id || m.user_id === user.camarero_id));
+      return soloEventos.filter(g => g.miembros?.some(m => m.user_id === user.id || m.user_id === user.camarero_id));
     },
     enabled: !!user?.id,
     refetchInterval: 5000
