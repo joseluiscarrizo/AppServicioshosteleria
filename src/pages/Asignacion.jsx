@@ -414,27 +414,10 @@ Sistema de Gestión de Camareros
       
       return true;
     }).sort((a, b) => {
-      // Ordenar por: 1) Valoración, 2) Menor carga de trabajo del día
-      const diffValoracion = (b.valoracion_promedio || 0) - (a.valoracion_promedio || 0);
-      if (diffValoracion !== 0) return diffValoracion;
-      
-      // Si empatan en valoración, priorizar quien tenga menos horas trabajadas ese día
-      const calcularHoras = (camareroId) => {
-        const asigs = asignaciones.filter(asig => 
-          asig.camarero_id === camareroId && asig.fecha_pedido === pedido.dia
-        );
-        let total = 0;
-        asigs.forEach(asig => {
-          if (asig.hora_entrada && asig.hora_salida) {
-            const [hE, mE] = asig.hora_entrada.split(':').map(Number);
-            const [hS, mS] = asig.hora_salida.split(':').map(Number);
-            total += ((hS * 60 + mS) - (hE * 60 + mE)) / 60;
-          }
-        });
-        return total;
-      };
-      
-      return calcularHoras(a.id) - calcularHoras(b.id); // Menos horas primero
+      // Ordenar por score de idoneidad (usa scoresAsignacion si disponible)
+      const scoreA = scoresAsignacion[a.id]?.score ?? 0;
+      const scoreB = scoresAsignacion[b.id]?.score ?? 0;
+      return scoreB - scoreA;
     });
   };
   
