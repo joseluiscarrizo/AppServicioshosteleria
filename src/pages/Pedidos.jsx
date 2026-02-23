@@ -231,6 +231,93 @@ export default function Pedidos() {
 
 
 
+  const exportarExcel = () => {
+    const headers = ['Código', 'Cliente', 'Lugar Evento', 'Fecha', 'Camareros', 'Entrada', 'Salida', 'Horas', 'Camisa', 'Transporte Extra', 'Estado', 'Notas'];
+    const rows = pedidos.map(p => {
+      const turno = (p.turnos && p.turnos[0]) || {};
+      return [
+        p.codigo_pedido || '',
+        p.cliente || '',
+        p.lugar_evento || '',
+        p.dia || '',
+        p.cantidad_camareros || turno.cantidad_camareros || '',
+        p.entrada || turno.entrada || '',
+        p.salida || turno.salida || '',
+        p.t_horas || turno.t_horas || '',
+        p.camisa || '',
+        p.extra_transporte ? 'Sí' : 'No',
+        p.estado_evento || 'planificado',
+        p.notas || ''
+      ];
+    });
+    const csvContent = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pedidos_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Exportado correctamente');
+  };
+
+  const importarExcel = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const text = ev.target.result;
+      const lines = text.split('\n').filter(l => l.trim());
+      if (lines.length < 2) { toast.error('El archivo está vacío o no tiene datos'); return; }
+      const rows = lines.slice(1);
+      let creados = 0;
+      const maxCodigo = pedidos.reduce((max, p) => {
+        if (p.codigo_pedido && p.codigo_pedido.startsWith('P')) {
+          const num = parseInt(p.codigo_pedido.substring(1));
+          return Math.max(max, isNaN(num) ? 0 : num);
+        }
+        return max;
+      }, 0);
+      let counter = maxCodigo + 1;
+      for (const row of rows) {
+        const cols = row.split(',').map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
+        const cliente = cols[1];
+        if (!cliente) continue;
+        const entrada = cols[5] || '';
+        const salida = cols[6] || '';
+        let t_horas = parseFloat(cols[7]) || 0;
+        if (!t_horas && entrada && salida) {
+          const [hE, mE] = entrada.split(':').map(Number);
+          const [hS, mS] = salida.split(':').map(Number);
+          let h = hS - hE, m = mS - mE;
+          if (m < 0) { h--; m += 60; }
+          if (h < 0) h += 24;
+          t_horas = h + m / 60;
+        }
+        await base44.entities.Pedido.create({
+          codigo_pedido: cols[0] && cols[0].startsWith('P') ? cols[0] : `P${String(counter++).padStart(3, '0')}`,
+          cliente,
+          lugar_evento: cols[2] || '',
+          dia: cols[3] || '',
+          cantidad_camareros: parseInt(cols[4]) || 1,
+          entrada,
+          salida,
+          t_horas,
+          turnos: entrada ? [{ cantidad_camareros: parseInt(cols[4]) || 1, entrada, salida, t_horas }] : [],
+          camisa: cols[8] || 'blanca',
+          extra_transporte: cols[9] === 'Sí',
+          estado_evento: cols[10] || 'planificado',
+          notas: cols[11] || ''
+        });
+        creados++;
+      }
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      toast.success(`${creados} pedidos importados correctamente`);
+    };
+    reader.readAsText(file, 'UTF-8');
+    e.target.value = '';
+  };
+
   const handleAIExtraction = (extractedData) => {
     // Calcular t_horas si hay entrada y salida
     let t_horas = 0;
