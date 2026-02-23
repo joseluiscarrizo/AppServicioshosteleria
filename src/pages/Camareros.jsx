@@ -659,6 +659,14 @@ export default function Camareros() {
           open={showGestionDisponibilidad}
           onClose={() => setShowGestionDisponibilidad(false)}
         />
+
+        {showPreferencias && camareroPreferencias && (
+          <PreferenciasHorarias
+            open={showPreferencias}
+            onClose={() => { setShowPreferencias(false); setCamareroPreferencias(null); }}
+            camarero={camareroPreferencias}
+          />
+        )}
       </div>
     </div>
   );
