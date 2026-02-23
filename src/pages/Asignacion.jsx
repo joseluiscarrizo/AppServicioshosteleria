@@ -974,7 +974,7 @@ Sistema de Gestión de Camareros
 
                   <Droppable droppableId="camareros-disponibles" isDropDisabled={true}>
                     {(provided) => (
-                      <ScrollArea className="flex-1" type="always">
+                      <div className="flex-1 overflow-y-auto">
                         <div className="space-y-3 p-4 min-h-[500px]" ref={provided.innerRef} {...provided.droppableProps}>
                           {selectedPedido && getCamarerosDisponibles(selectedPedido).map((camarero, index) => (
                             <Draggable key={camarero.id} draggableId={camarero.id} index={index}>
