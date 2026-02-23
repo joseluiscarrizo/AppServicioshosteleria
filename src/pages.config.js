@@ -57,6 +57,7 @@ import ConfirmarServicio from './pages/ConfirmarServicio';
 import Coordinadores from './pages/Coordinadores';
 import DashboardCoordinador from './pages/DashboardCoordinador';
 import Disponibilidad from './pages/Disponibilidad';
+import FichajeQR from './pages/FichajeQR';
 import HistorialMensajes from './pages/HistorialMensajes';
 import Home from './pages/Home';
 import Informes from './pages/Informes';
@@ -66,7 +67,6 @@ import PreferenciasNotificaciones from './pages/PreferenciasNotificaciones';
 import TableroEventos from './pages/TableroEventos';
 import TiempoReal from './pages/TiempoReal';
 import VistaMovil from './pages/VistaMovil';
-import FichajeQR from './pages/FichajeQR';
 import __Layout from './Layout.jsx';
 
 
@@ -81,6 +81,7 @@ export const PAGES = {
     "Coordinadores": Coordinadores,
     "DashboardCoordinador": DashboardCoordinador,
     "Disponibilidad": Disponibilidad,
+    "FichajeQR": FichajeQR,
     "HistorialMensajes": HistorialMensajes,
     "Home": Home,
     "Informes": Informes,
@@ -90,7 +91,6 @@ export const PAGES = {
     "TableroEventos": TableroEventos,
     "TiempoReal": TiempoReal,
     "VistaMovil": VistaMovil,
-    "FichajeQR": FichajeQR,
 }
 
 export const pagesConfig = {
