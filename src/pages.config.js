@@ -67,6 +67,7 @@ import PreferenciasNotificaciones from './pages/PreferenciasNotificaciones';
 import TableroEventos from './pages/TableroEventos';
 import TiempoReal from './pages/TiempoReal';
 import VistaMovil from './pages/VistaMovil';
+import Altas from './pages/Altas';
 import __Layout from './Layout.jsx';
 
 
@@ -91,6 +92,7 @@ export const PAGES = {
     "TableroEventos": TableroEventos,
     "TiempoReal": TiempoReal,
     "VistaMovil": VistaMovil,
+    "Altas": Altas,
 }
 
 export const pagesConfig = {
