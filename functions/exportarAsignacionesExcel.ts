@@ -20,27 +20,28 @@ Deno.serve(async (req) => {
       camarerosMap[c.id] = c;
     });
 
+    // Obtener coordinadores para mapear por código
+    const coordinadores = await base44.entities.Coordinador.list('nombre');
+    const coordinadoresMap = {};
+    coordinadores.forEach(c => { coordinadoresMap[c.id] = c; });
+
     // Preparar datos para la hoja
     const filas = [];
     
-    // Header
+    // Header según formato requerido
     filas.push([
-      'Código Pedido',
-      'Estado Evento',
-      'Cliente',
-      'Lugar',
+      'Cod. Coordinador',
       'Fecha',
-      'Entrada',
-      'Salida',
-      'Horas',
-      'Camisa',
-      'Transporte',
-      'Nº Camarero',
+      'Cliente',
+      'Evento',
+      'Cod. Camarero',
       'Nombre Camarero',
-      'Código Camarero',
-      'Estado Asignación',
-      'Teléfono',
-      'Email'
+      'Nº Camarero',
+      'Hora Entrada',
+      'Hora Salida',
+      'Total Horas',
+      'Estado Asignado',
+      'Transporte'
     ]);
 
     // Datos
@@ -54,12 +55,31 @@ Deno.serve(async (req) => {
             t_horas: pedido.t_horas || 0 
           }];
       
+      // Formato de fecha
+      let fechaFormato = '-';
+      if (pedido.dia) {
+        try {
+          const [y, m, d] = pedido.dia.split('-');
+          fechaFormato = `${d}/${m}/${y}`;
+        } catch (e) {
+          fechaFormato = pedido.dia;
+        }
+      }
+
+      // Código coordinador del pedido (via cliente → coordinador)
+      let codCoordinador = '-';
+      // Intentar obtenerlo del cliente vinculado
+      // Se usa el campo coordinador_codigo si el pedido lo tiene, o via cliente
+      if (pedido.coordinador_codigo) {
+        codCoordinador = pedido.coordinador_codigo;
+      }
+
       turnos.forEach((turno, turnoIndex) => {
         const cantidadCamareros = turno.cantidad_camareros || 0;
         const filasCamareros = Math.max(1, cantidadCamareros);
         
         for (let camareroIndex = 0; camareroIndex < filasCamareros; camareroIndex++) {
-          // Calcular el número de camarero acumulado
+          // Número de camarero acumulado
           let numeroCamarero = camareroIndex + 1;
           for (let i = 0; i < turnoIndex; i++) {
             numeroCamarero += Math.max(1, turnos[i].cantidad_camareros || 0);
@@ -71,33 +91,13 @@ Deno.serve(async (req) => {
             a.turno_index === turnoIndex &&
             a.posicion_slot === camareroIndex
           );
-          
           if (!asignacion) {
             const asignacionesPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
             if (asignacionesPedido[numeroCamarero - 1]) {
               asignacion = asignacionesPedido[numeroCamarero - 1];
             }
           }
-          
-          const camarero = asignacion ? camarerosMap[asignacion.camarero_id] : null;
-          
-          // Formato de fecha
-          let fechaFormato = '-';
-          if (pedido.dia) {
-            try {
-              const fecha = new Date(pedido.dia);
-              fechaFormato = `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
-            } catch (e) {
-              fechaFormato = pedido.dia;
-            }
-          }
-          
-          // Estado del evento
-          let estadoEvento = 'Planificado';
-          if (pedido.estado_evento === 'cancelado') estadoEvento = 'Cancelado';
-          else if (pedido.estado_evento === 'finalizado') estadoEvento = 'Finalizado';
-          else if (pedido.estado_evento === 'en_curso') estadoEvento = 'En Curso';
-          
+
           // Estado de asignación
           let estadoAsignacion = 'Sin asignar';
           if (asignacion) {
@@ -106,24 +106,23 @@ Deno.serve(async (req) => {
             else if (asignacion.estado === 'confirmado') estadoAsignacion = 'Confirmado';
             else if (asignacion.estado === 'alta') estadoAsignacion = 'Alta';
           }
+
+          // Total horas
+          const totalHoras = turno.t_horas ? turno.t_horas.toFixed(2) : '0';
           
           filas.push([
-            pedido.codigo_pedido || '-',
-            estadoEvento,
+            codCoordinador,
+            fechaFormato,
             pedido.cliente || '-',
             pedido.lugar_evento || '-',
-            fechaFormato,
+            asignacion ? (asignacion.camarero_codigo || '-') : '-',
+            asignacion ? (asignacion.camarero_nombre || 'Sin asignar') : 'Sin asignar',
+            numeroCamarero.toString(),
             turno.entrada || '-',
             turno.salida || '-',
-            turno.t_horas ? `${turno.t_horas.toFixed(1)}h` : '0h',
-            pedido.camisa || '-',
-            pedido.extra_transporte ? 'Sí' : 'No',
-            numeroCamarero.toString(),
-            asignacion ? asignacion.camarero_nombre : 'Sin asignar',
-            asignacion ? asignacion.camarero_codigo : '-',
+            totalHoras,
             estadoAsignacion,
-            camarero?.telefono || '-',
-            camarero?.email || '-'
+            pedido.extra_transporte ? 'Sí' : 'No'
           ]);
         }
       });
