@@ -68,6 +68,9 @@ export default function Asignacion() {
   // Escuchar cambios en tiempo real sobre asignaciones y pedidos
   useAsignacionesRealtime();
 
+  // Detectar conflictos de horario entre asignaciones
+  useConflictosHorario({ asignaciones, pedidos, enabled: !loadingPedidos });
+
   // Scores de idoneidad para el pedido seleccionado
   const scoresAsignacion = useScoresAsignacion({
     pedido: selectedPedido,
