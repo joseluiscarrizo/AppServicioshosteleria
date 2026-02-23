@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users, LayoutDashboard, Bell, MessageCircle, ChevronDown, Smartphone, CalendarRange } from 'lucide-react';
+import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users, LayoutDashboard, Bell, MessageCircle, ChevronDown, Smartphone, CalendarRange, ShieldCheck } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
