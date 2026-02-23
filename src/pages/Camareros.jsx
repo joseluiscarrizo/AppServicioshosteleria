@@ -543,6 +543,15 @@ export default function Camareros() {
                             <User className="w-4 h-4" />
                           </Button>
                         </Link>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => { e.stopPropagation(); handlePreferencias(camarero); }}
+                          className="h-8 w-8 text-slate-500 hover:text-[#1e3a5f] hover:bg-blue-50"
+                          title="Preferencias y horarios"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </Button>
                         <Button 
                           variant="ghost" 
                           size="icon"
@@ -566,15 +575,6 @@ export default function Camareros() {
                           title="Ver comentarios"
                         >
                           <MessageSquare className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => { e.stopPropagation(); handlePreferencias(camarero); }}
-                          className="h-8 w-8 text-slate-500 hover:text-[#1e3a5f] hover:bg-blue-50"
-                          title="Preferencias"
-                        >
-                          <Settings className="w-4 h-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -659,14 +659,6 @@ export default function Camareros() {
           open={showGestionDisponibilidad}
           onClose={() => setShowGestionDisponibilidad(false)}
         />
-
-        {showPreferencias && camareroPreferencias && (
-          <PreferenciasHorarias
-            open={showPreferencias}
-            onClose={() => { setShowPreferencias(false); setCamareroPreferencias(null); }}
-            camarero={camareroPreferencias}
-          />
-        )}
       </div>
     </div>
   );
