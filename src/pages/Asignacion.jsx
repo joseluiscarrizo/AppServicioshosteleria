@@ -1149,7 +1149,7 @@ Sistema de Gestión de Camareros
                     </div>
                   </div>
 
-                  <ScrollArea className="flex-1" type="always">
+                  <div className="flex-1 overflow-y-auto">
                     <div className="p-4 min-h-[500px]">
                     {!selectedPedido ? (
                       <div className="flex items-center justify-center h-full">
