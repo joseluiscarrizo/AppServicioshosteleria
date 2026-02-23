@@ -49,9 +49,23 @@ const estadoBgColors = {
 
 export default function Asignacion() {
   const [selectedPedido, setSelectedPedido] = useState(null);
-  const [filtroHabilidad, setFiltroHabilidad] = useState('');
-  const [filtroEspecialidad, setFiltroEspecialidad] = useState('');
-  const [busquedaCamarero, setBusquedaCamarero] = useState('');
+  // Filtros avanzados unificados
+  const [filtrosCamareros, setFiltrosCamareros] = useState({
+    busqueda: '',
+    especialidad: '',
+    nivel: '',
+    turnoHorario: '',
+    habilidad: '',
+    soloDisponibles: true,
+    valoracionMin: 0,
+  });
+  // Compat: aliases usados en las funciones legadas
+  const filtroHabilidad = filtrosCamareros.habilidad;
+  const filtroEspecialidad = filtrosCamareros.especialidad;
+  const busquedaCamarero = filtrosCamareros.busqueda;
+  const setBusquedaCamarero = (v) => setFiltrosCamareros(f => ({ ...f, busqueda: v }));
+  const setFiltroHabilidad = (v) => setFiltrosCamareros(f => ({ ...f, habilidad: v }));
+  const setFiltroEspecialidad = (v) => setFiltrosCamareros(f => ({ ...f, especialidad: v }));
   const [mostrarCarga, setMostrarCarga] = useState(false);
   const [showAsignacionAuto, setShowAsignacionAuto] = useState(false);
   const [showReglas, setShowReglas] = useState(false);
