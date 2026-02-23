@@ -3,6 +3,8 @@ import { useAsignacionesRealtime } from '../components/notificaciones/useAsignac
 import { useConflictosHorario } from '../components/asignacion/useConflictosHorario';
 import { useScoresAsignacion } from '../components/asignacion/useScoresAsignacion';
 import ScoreBadge from '../components/asignacion/ScoreBadge';
+import CalendarioInteractivo from '../components/asignacion/CalendarioInteractivo';
+import FiltrosAvanzadosCamareros, { aplicarFiltrosCamareros } from '../components/asignacion/FiltrosAvanzadosCamareros';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
