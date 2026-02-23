@@ -362,8 +362,29 @@ export default function Camareros() {
 
         {/* Filtros */}
         <Card className="p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="relative">
+          <div className="flex items-center gap-2 mb-3">
+            <SlidersHorizontal className="w-4 h-4 text-slate-500" />
+            <span className="text-sm font-semibold text-slate-700">Filtros Avanzados</span>
+            {(busqueda || filtroDisponibilidad !== 'todos' || filtroEspecialidad !== 'todos' || filtroHabilidad !== 'todos' || filtroValoracion !== 'todos' || filtroNivel !== 'todos') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto text-xs text-slate-500 hover:text-red-600 h-7"
+                onClick={() => {
+                  setBusqueda('');
+                  setFiltroDisponibilidad('todos');
+                  setFiltroEspecialidad('todos');
+                  setFiltroHabilidad('todos');
+                  setFiltroValoracion('todos');
+                  setFiltroNivel('todos');
+                }}
+              >
+                Limpiar filtros
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="relative col-span-2 md:col-span-1 lg:col-span-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Buscar camarero..."
@@ -374,22 +395,20 @@ export default function Camareros() {
             </div>
             <Select value={filtroDisponibilidad} onValueChange={setFiltroDisponibilidad}>
               <SelectTrigger>
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue />
+                <SelectValue placeholder="Disponibilidad" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="disponible">Disponibles</SelectItem>
-                <SelectItem value="no_disponible">No Disponibles</SelectItem>
+                <SelectItem value="todos">Disponibilidad</SelectItem>
+                <SelectItem value="disponible">✓ Disponibles</SelectItem>
+                <SelectItem value="no_disponible">✗ No Disponibles</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filtroEspecialidad} onValueChange={setFiltroEspecialidad}>
               <SelectTrigger>
-                <Award className="w-4 h-4 mr-2" />
-                <SelectValue />
+                <SelectValue placeholder="Especialidad" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todas las especialidades</SelectItem>
+                <SelectItem value="todos">Especialidad</SelectItem>
                 <SelectItem value="general">General</SelectItem>
                 <SelectItem value="cocteleria">Coctelería</SelectItem>
                 <SelectItem value="banquetes">Banquetes</SelectItem>
@@ -397,32 +416,36 @@ export default function Camareros() {
                 <SelectItem value="buffet">Buffet</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filtroHabilidad} onValueChange={setFiltroHabilidad}>
+            <Select value={filtroValoracion} onValueChange={setFiltroValoracion}>
               <SelectTrigger>
-                <Award className="w-4 h-4 mr-2" />
-                <SelectValue />
+                <SelectValue placeholder="Valoración" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todas las habilidades</SelectItem>
-                {todasHabilidades.map(h => (
-                  <SelectItem key={h} value={h}>{h}</SelectItem>
-                ))}
+                <SelectItem value="todos">Valoración</SelectItem>
+                <SelectItem value="alta">⭐⭐⭐⭐+ Alta (≥4)</SelectItem>
+                <SelectItem value="media">⭐⭐⭐ Media (3-4)</SelectItem>
+                <SelectItem value="baja">⭐ Baja (&lt;3)</SelectItem>
+                <SelectItem value="sin">Sin valoraciones</SelectItem>
               </SelectContent>
             </Select>
-            {(busqueda || filtroDisponibilidad !== 'todos' || filtroEspecialidad !== 'todos' || filtroHabilidad !== 'todos') && (
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setBusqueda('');
-                  setFiltroDisponibilidad('todos');
-                  setFiltroEspecialidad('todos');
-                  setFiltroHabilidad('todos');
-                }}
-              >
-                Limpiar Filtros
-              </Button>
-            )}
+            <Select value={filtroNivel} onValueChange={setFiltroNivel}>
+              <SelectTrigger>
+                <SelectValue placeholder="Nivel" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Nivel exp.</SelectItem>
+                <SelectItem value="junior">Junior</SelectItem>
+                <SelectItem value="intermedio">Intermedio</SelectItem>
+                <SelectItem value="senior">Senior</SelectItem>
+                <SelectItem value="experto">Experto</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          {camarerosFiltrados.length < camareros.filter(c => mostrarReserva ? c.en_reserva : !c.en_reserva).length && (
+            <p className="text-xs text-slate-500 mt-2">
+              Mostrando <strong>{camarerosFiltrados.length}</strong> de {camareros.filter(c => mostrarReserva ? c.en_reserva : !c.en_reserva).length} camareros
+            </p>
+          )}
         </Card>
 
         {/* Tabla */}
