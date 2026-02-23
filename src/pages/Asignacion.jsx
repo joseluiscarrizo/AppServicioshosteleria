@@ -1013,6 +1013,7 @@ Sistema de Gestión de Camareros
                                               <span className="text-xs font-bold text-amber-700">{camarero.valoracion_promedio.toFixed(1)}</span>
                                             </div>
                                           )}
+                                          <ScoreBadge scoreData={scoresAsignacion[camarero.id]} />
                                         </div>
                                         <div className="flex items-center gap-2 mb-2">
                                           <span className="text-xs text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded">#{camarero.codigo}</span>
