@@ -365,7 +365,20 @@ export default function Pedidos() {
             </h1>
             <p className="text-slate-500 mt-1">Gestiona los pedidos de clientes</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={exportarExcel} className="border-emerald-600 text-emerald-600 hover:bg-emerald-50">
+              <Download className="w-4 h-4 mr-2" />
+              Exportar
+            </Button>
+            <label>
+              <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 cursor-pointer" asChild>
+                <span>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Importar
+                  <input type="file" accept=".csv" className="hidden" onChange={importarExcel} />
+                </span>
+              </Button>
+            </label>
             <Button 
               onClick={() => setShowEntradaAuto(true)}
               variant="outline"
