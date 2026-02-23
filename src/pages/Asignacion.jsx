@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAsignacionesRealtime } from '../components/notificaciones/useAsignacionesRealtime';
+import { useConflictosHorario } from '../components/asignacion/useConflictosHorario';
 import { useScoresAsignacion } from '../components/asignacion/useScoresAsignacion';
 import ScoreBadge from '../components/asignacion/ScoreBadge';
 import { base44 } from '@/api/base44Client';
