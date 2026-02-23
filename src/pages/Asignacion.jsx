@@ -132,6 +132,11 @@ export default function Asignacion() {
     }
   });
 
+  const { data: disponibilidades = [] } = useQuery({
+    queryKey: ['disponibilidades'],
+    queryFn: () => base44.entities.Disponibilidad.list('-fecha', 500)
+  });
+
   const createAsignacionMutation = useMutation({
     mutationFn: async (data) => {
       const asignacion = await base44.entities.AsignacionCamarero.create(data);
