@@ -47,6 +47,7 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import Altas from './pages/Altas';
 import Asignacion from './pages/Asignacion';
 import Camareros from './pages/Camareros';
 import Chat from './pages/Chat';
@@ -67,11 +68,11 @@ import PreferenciasNotificaciones from './pages/PreferenciasNotificaciones';
 import TableroEventos from './pages/TableroEventos';
 import TiempoReal from './pages/TiempoReal';
 import VistaMovil from './pages/VistaMovil';
-import Altas from './pages/Altas';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "Altas": Altas,
     "Asignacion": Asignacion,
     "Camareros": Camareros,
     "Chat": Chat,
@@ -92,7 +93,6 @@ export const PAGES = {
     "TableroEventos": TableroEventos,
     "TiempoReal": TiempoReal,
     "VistaMovil": VistaMovil,
-    "Altas": Altas,
 }
 
 export const pagesConfig = {
