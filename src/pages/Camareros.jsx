@@ -235,6 +235,11 @@ export default function Camareros() {
     setShowHistorial(true);
   };
 
+  const handlePreferencias = (camarero) => {
+    setCamareroPreferencias(camarero);
+    setShowPreferencias(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
