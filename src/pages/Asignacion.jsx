@@ -938,44 +938,13 @@ Sistema de Gestión de Camareros
                       </div>
                     </div>
 
-                    <div className="flex gap-2 flex-wrap">
-                      <Select value={filtroEspecialidad} onValueChange={setFiltroEspecialidad}>
-                        <SelectTrigger className="w-40 h-9 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
-                          <Filter className="w-3 h-3 mr-1" />
-                          <SelectValue placeholder="Especialidad" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={null}>Todas</SelectItem>
-                          <SelectItem value="general">General</SelectItem>
-                          <SelectItem value="cocteleria">Coctelería</SelectItem>
-                          <SelectItem value="banquetes">Banquetes</SelectItem>
-                          <SelectItem value="eventos_vip">Eventos VIP</SelectItem>
-                          <SelectItem value="buffet">Buffet</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select value={filtroHabilidad} onValueChange={setFiltroHabilidad}>
-                        <SelectTrigger className="w-40 h-9 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20">
-                          <Award className="w-3 h-3 mr-1" />
-                          <SelectValue placeholder="Habilidad" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={null}>Todas</SelectItem>
-                          {todasHabilidades.map(h => (
-                            <SelectItem key={h} value={h}>{h}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {(filtroEspecialidad || filtroHabilidad) && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-9 text-xs text-white hover:bg-white/20 border border-white/20"
-                          onClick={() => { setFiltroEspecialidad(''); setFiltroHabilidad(''); }}
-                        >
-                          <X className="w-3 h-3 mr-1" />
-                          Limpiar
-                        </Button>
-                      )}
+                    <div className="mt-2">
+                      <FiltrosAvanzadosCamareros
+                        filtros={filtrosCamareros}
+                        onFiltrosChange={setFiltrosCamareros}
+                        camareros={camareros}
+                        pedido={selectedPedido}
+                      />
                     </div>
                   </div>
 
