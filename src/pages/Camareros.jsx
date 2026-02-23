@@ -567,6 +567,15 @@ export default function Camareros() {
                         >
                           <MessageSquare className="w-4 h-4" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => { e.stopPropagation(); handlePreferencias(camarero); }}
+                          className="h-8 w-8 text-slate-500 hover:text-[#1e3a5f] hover:bg-blue-50"
+                          title="Preferencias"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </Button>
                         <Button 
                           variant="ghost" 
                           size="icon"
