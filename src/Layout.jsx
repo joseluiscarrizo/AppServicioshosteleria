@@ -286,6 +286,25 @@ export default function Layout({ children, currentPageName }) {
               </Link>
             </div>
 
+            {/* Admin en Mobile */}
+            <div className="mt-2 pt-2 border-t border-slate-100">
+              <div className="text-xs font-semibold text-slate-500 mb-2 px-3">ADMIN</div>
+              {adminSubmenu.map(item => (
+                <Link key={item.page} to={createPageUrl(item.page)} onClick={() => setMobileMenuOpen(false)}>
+                  <Button
+                    variant={currentPageName === item.page ? 'default' : 'ghost'}
+                    className={`w-full justify-start mb-1 ${currentPageName === item.page 
+                      ? 'bg-[#1e3a5f] text-white' 
+                      : 'text-slate-600'
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4 mr-2" />
+                    {item.name}
+                  </Button>
+                </Link>
+              ))}
+            </div>
+
             {/* Submenu de Herramientas en Mobile */}
             <div className="mt-2 pt-2 border-t border-slate-100">
               <div className="text-xs font-semibold text-slate-500 mb-2 px-3">HERRAMIENTAS</div>
