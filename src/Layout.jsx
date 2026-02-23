@@ -132,8 +132,8 @@ export default function Layout({ children, currentPageName }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant={['Coordinadores'].includes(currentPageName) ? 'default' : 'ghost'}
-                    className={['Coordinadores'].includes(currentPageName)
+                    variant={['Coordinadores', 'Altas'].includes(currentPageName) ? 'default' : 'ghost'}
+                    className={['Coordinadores', 'Altas'].includes(currentPageName)
                       ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
                       : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
                     }
