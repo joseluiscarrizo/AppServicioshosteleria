@@ -207,6 +207,20 @@ export default function Altas() {
                           estadoBadge(fila.estado)
                         )}
                       </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          size="sm"
+                          onClick={() => handleDarBaja(fila)}
+                          disabled={!fila.alta || updateMutation.isPending}
+                          className={!fila.alta
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed hover:bg-slate-100'
+                            : 'bg-red-500 hover:bg-red-600 text-white'
+                          }
+                        >
+                          <UserMinus className="w-3.5 h-3.5 mr-1" />
+                          Baja
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
