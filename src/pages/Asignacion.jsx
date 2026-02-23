@@ -69,7 +69,7 @@ export default function Asignacion() {
   const [mostrarCarga, setMostrarCarga] = useState(false);
   const [showAsignacionAuto, setShowAsignacionAuto] = useState(false);
   const [showReglas, setShowReglas] = useState(false);
-  const [vistaCalendario, setVistaCalendario] = useState('avanzado'); // 'avanzado' o 'clasico'
+  const [vistaCalendario, setVistaCalendario] = useState('interactivo'); // 'interactivo', 'avanzado' o 'clasico'
   const [edicionRapida, setEdicionRapida] = useState({ open: false, pedido: null, campo: null });
   const [duplicarDialog, setDuplicarDialog] = useState({ open: false, pedido: null });
   const [recurrenteDialog, setRecurrenteDialog] = useState({ open: false, pedido: null });
