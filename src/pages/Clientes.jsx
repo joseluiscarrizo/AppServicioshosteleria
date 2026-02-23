@@ -140,6 +140,76 @@ export default function Clientes() {
     }
   };
 
+  const exportarExcel = () => {
+    const headers = ['Código', 'Nombre', 'Email 1', 'Email 2', 'Teléfono 1', 'Teléfono 2', 'Contacto 1', 'Contacto 2', 'Coordinador', 'Estado', 'Notas'];
+    const rows = clientesFiltrados.map(c => [
+      c.codigo || '',
+      c.nombre || '',
+      c.email_1 || '',
+      c.email_2 || '',
+      c.telefono_1 || '',
+      c.telefono_2 || '',
+      c.persona_contacto_1 || '',
+      c.persona_contacto_2 || '',
+      c.coordinador_nombre || '',
+      c.activo ? 'Activo' : 'Inactivo',
+      c.notas || ''
+    ]);
+    const csvContent = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clientes_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Exportado correctamente');
+  };
+
+  const importarExcel = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const text = ev.target.result;
+      const lines = text.split('\n').filter(l => l.trim());
+      if (lines.length < 2) { toast.error('El archivo está vacío o no tiene datos'); return; }
+      const rows = lines.slice(1); // saltar cabecera
+      let creados = 0;
+      const maxCodigo = clientes.reduce((max, c) => {
+        if (c.codigo && c.codigo.startsWith('CL')) {
+          const num = parseInt(c.codigo.substring(2));
+          return Math.max(max, isNaN(num) ? 0 : num);
+        }
+        return max;
+      }, 0);
+      let counter = maxCodigo + 1;
+      for (const row of rows) {
+        const cols = row.split(',').map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
+        const nombre = cols[1] || cols[0]; // si solo hay nombre en col 0
+        if (!nombre) continue;
+        await base44.entities.Cliente.create({
+          codigo: cols[0] && cols[0].startsWith('CL') ? cols[0] : `CL${String(counter++).padStart(3, '0')}`,
+          nombre,
+          email_1: cols[2] || '',
+          email_2: cols[3] || '',
+          telefono_1: cols[4] || '',
+          telefono_2: cols[5] || '',
+          persona_contacto_1: cols[6] || '',
+          persona_contacto_2: cols[7] || '',
+          coordinador_nombre: cols[8] || '',
+          activo: cols[9] !== 'Inactivo',
+          notas: cols[10] || ''
+        });
+        creados++;
+      }
+      queryClient.invalidateQueries({ queryKey: ['clientes'] });
+      toast.success(`${creados} clientes importados correctamente`);
+    };
+    reader.readAsText(file, 'UTF-8');
+    e.target.value = '';
+  };
+
   const clientesFiltrados = clientes.filter(c =>
     c.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
     c.codigo?.toLowerCase().includes(busqueda.toLowerCase()) ||
