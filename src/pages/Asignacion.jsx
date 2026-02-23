@@ -62,6 +62,9 @@ export default function Asignacion() {
 
   const queryClient = useQueryClient();
 
+  // Escuchar cambios en tiempo real sobre asignaciones y pedidos
+  useAsignacionesRealtime();
+
   const { data: pedidos = [], isLoading: loadingPedidos } = useQuery({
     queryKey: ['pedidos'],
     queryFn: async () => {
