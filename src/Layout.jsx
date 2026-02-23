@@ -30,6 +30,7 @@ const comunicacionSubmenu = [
 
 const adminSubmenu = [
   { name: 'Coordinadores', page: 'Coordinadores', icon: UserCog },
+  { name: 'Altas', page: 'Altas', icon: ClipboardList },
 ];
 
 export default function Layout({ children, currentPageName }) {
