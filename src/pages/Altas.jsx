@@ -89,6 +89,10 @@ export default function Altas() {
     updateMutation.mutate({ id: fila.id, estado: 'alta' });
   };
 
+  const handleDarBaja = (fila) => {
+    updateMutation.mutate({ id: fila.id, estado: 'pendiente' });
+  };
+
   const estadoBadge = (estado) => {
     const map = {
       alta: { label: 'Alta', className: 'bg-blue-100 text-blue-700 border-blue-200' },
