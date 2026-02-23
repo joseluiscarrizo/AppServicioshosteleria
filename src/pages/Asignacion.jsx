@@ -67,6 +67,13 @@ export default function Asignacion() {
   // Escuchar cambios en tiempo real sobre asignaciones y pedidos
   useAsignacionesRealtime();
 
+  // Scores de idoneidad para el pedido seleccionado
+  const scoresAsignacion = useScoresAsignacion({
+    pedido: selectedPedido,
+    camareros,
+    asignaciones
+  });
+
   const { data: pedidos = [], isLoading: loadingPedidos } = useQuery({
     queryKey: ['pedidos'],
     queryFn: async () => {
