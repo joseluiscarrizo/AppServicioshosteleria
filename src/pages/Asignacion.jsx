@@ -676,16 +676,33 @@ Sistema de Gestión de Camareros
         {/* Selector de Vista */}
         <div className="mb-4">
           <Select value={vistaCalendario} onValueChange={setVistaCalendario}>
-            <SelectTrigger className="w-full sm:w-64">
+            <SelectTrigger className="w-full sm:w-80">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="interactivo">🗓️ Calendario Interactivo (DnD + Filtros)</SelectItem>
               <SelectItem value="avanzado">📅 Calendario con Asignación Rápida</SelectItem>
               <SelectItem value="clasico">📋 Vista Clásica con Drag & Drop</SelectItem>
               <SelectItem value="reglas">⚙️ Configurar Reglas</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
+        {/* ── Vista Calendario Interactivo ── */}
+        {vistaCalendario === 'interactivo' && (
+          <CalendarioInteractivo
+            pedidos={pedidos}
+            camareros={camareros}
+            asignaciones={asignaciones}
+            disponibilidades={disponibilidades}
+            scoresAsignacion={scoresAsignacion}
+            onAsignar={(pedido, camarero, turnoIdx, posicion) =>
+              handleAsignarCamarero(pedido, camarero, turnoIdx, posicion)
+            }
+            onDesasignar={(asig) => deleteAsignacionMutation.mutate(asig)}
+            onSelectPedido={(p) => { setSelectedPedido(p); setVistaCalendario('clasico'); }}
+          />
+        )}
 
         {/* Vista Calendario Avanzado con Asignación Rápida */}
         {vistaCalendario === 'avanzado' && (
