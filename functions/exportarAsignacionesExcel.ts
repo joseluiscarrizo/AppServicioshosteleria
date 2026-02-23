@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
     
     // Escribir datos
     const updateResponse = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Asignaciones!A1:P${filas.length}?valueInputOption=RAW`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Asignaciones!A1:L${filas.length}?valueInputOption=RAW`,
       {
         method: 'PUT',
         headers: {
