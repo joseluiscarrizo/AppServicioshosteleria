@@ -1,45 +1,97 @@
+/**
+ * useAsignacionesRealtime.js
+ * Hook que escucha cambios en tiempo real sobre AsignacionCamarero y Pedido.
+ * Invalida las queries correspondientes, muestra toasts y crea notificaciones
+ * persistentes en BD para los coordinadores según el tipo de evento:
+ *
+ *  - Nueva asignación creada
+ *  - Cambio de estado (pendiente → enviado → confirmado → alta)
+ *  - Asignación eliminada / camarero desasignado
+ *  - Nuevo pedido que requiere asignación
+ */
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
+const ESTADO_LABELS = {
+  pendiente:  { emoji: '⏳', texto: 'Pendiente',   color: 'info',    prioridad: 'baja' },
+  enviado:    { emoji: '📤', texto: 'Enviado',      color: 'info',    prioridad: 'media' },
+  confirmado: { emoji: '✅', texto: 'Confirmado',   color: 'success', prioridad: 'media' },
+  alta:       { emoji: '🎉', texto: 'Alta',          color: 'success', prioridad: 'baja' }
+};
+
 /**
- * Hook que escucha cambios en tiempo real sobre AsignacionCamarero y Pedido,
- * invalida las queries correspondientes y muestra toasts informativos.
+ * Crea una notificación in-app para el coordinador y opcionalmente
+ * invalida queries adicionales.
  */
+async function crearNotificacionCoordinador({ tipo, titulo, mensaje, prioridad, pedido_id }) {
+  try {
+    await base44.entities.Notificacion.create({
+      tipo,
+      titulo,
+      mensaje,
+      prioridad,
+      pedido_id,
+      leida: false
+    });
+  } catch (_) {
+    // No bloquear si falla la notificación
+  }
+}
+
 export function useAsignacionesRealtime() {
   const queryClient = useQueryClient();
-  // Guardamos los IDs conocidos para detectar nuevas altas vs. reasignaciones
-  const asignacionesRef = useRef(new Map()); // id -> { camarero_nombre, estado, pedido_id }
+
+  // Guardamos snapshot local de asignaciones para detectar transiciones
+  // id → { camarero_nombre, estado, pedido_id, hora_entrada, hora_salida, fecha_pedido }
+  const asignacionesRef = useRef(new Map());
 
   useEffect(() => {
-    // Inicializar el mapa con datos ya cacheados
+    // Inicializar desde caché
     const cached = queryClient.getQueryData(['asignaciones']) || [];
     cached.forEach(a => {
       asignacionesRef.current.set(a.id, {
         camarero_nombre: a.camarero_nombre,
         estado: a.estado,
-        pedido_id: a.pedido_id
+        pedido_id: a.pedido_id,
+        hora_entrada: a.hora_entrada,
+        hora_salida: a.hora_salida,
+        fecha_pedido: a.fecha_pedido
       });
     });
 
-    // -- Suscripción a cambios en AsignacionCamarero --
-    const unsubAsignacion = base44.entities.AsignacionCamarero.subscribe((event) => {
+    // ── Suscripción a AsignacionCamarero ──────────────────────────────────
+    const unsubAsignacion = base44.entities.AsignacionCamarero.subscribe(async (event) => {
       const { type, id, data } = event;
 
       if (type === 'create') {
         queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+
         if (data?.camarero_nombre) {
-          toast.info(`📋 Nueva asignación`, {
+          toast.info('📋 Nueva asignación', {
             description: `${data.camarero_nombre} ha sido asignado a un evento.`,
             duration: 5000
           });
+
+          // Notificación coordinador
+          await crearNotificacionCoordinador({
+            tipo: 'estado_cambio',
+            titulo: `📋 Nueva asignación: ${data.camarero_nombre}`,
+            mensaje: `${data.camarero_nombre} ha sido asignado al evento del ${data.fecha_pedido || 'fecha pendiente'} (${data.hora_entrada || '?'} - ${data.hora_salida || '?'}).`,
+            prioridad: 'media',
+            pedido_id: data.pedido_id
+          });
         }
+
         if (id && data) {
           asignacionesRef.current.set(id, {
             camarero_nombre: data.camarero_nombre,
             estado: data.estado,
-            pedido_id: data.pedido_id
+            pedido_id: data.pedido_id,
+            hora_entrada: data.hora_entrada,
+            hora_salida: data.hora_salida,
+            fecha_pedido: data.fecha_pedido
           });
         }
       }
@@ -49,80 +101,104 @@ export function useAsignacionesRealtime() {
         queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
 
         if (data && prev) {
-          // Reasignación: cambió el camarero asignado
+          // 1. Reasignación a otro pedido
           if (prev.pedido_id && data.pedido_id && prev.pedido_id !== data.pedido_id) {
-            toast.warning(`🔄 Reasignación`, {
+            toast.warning('🔄 Reasignación detectada', {
               description: `${data.camarero_nombre || 'Un camarero'} ha sido reasignado a otro evento.`,
               duration: 6000
             });
-          }
-          // Cambio de estado relevante
-          else if (prev.estado !== data.estado) {
-            const mensajesEstado = {
-              confirmado: `✅ ${data.camarero_nombre || 'Camarero'} confirmó su asistencia.`,
-              alta: `🎉 ${data.camarero_nombre || 'Camarero'} ha dado de alta.`,
-              enviado: `📤 Notificación enviada a ${data.camarero_nombre || 'camarero'}.`,
-              pendiente: `⏳ ${data.camarero_nombre || 'Camarero'} vuelve a estado pendiente.`
-            };
-            const msg = mensajesEstado[data.estado];
-            if (msg) {
-              toast.info(msg, { duration: 5000 });
-            }
+            await crearNotificacionCoordinador({
+              tipo: 'alerta',
+              titulo: `🔄 Reasignación: ${data.camarero_nombre || 'Camarero'}`,
+              mensaje: `${data.camarero_nombre || 'Un camarero'} ha sido reasignado a un evento diferente.`,
+              prioridad: 'media',
+              pedido_id: data.pedido_id
+            });
           }
 
-          // Actualizar referencia
+          // 2. Cambio de estado
+          else if (prev.estado && data.estado && prev.estado !== data.estado) {
+            const cfg = ESTADO_LABELS[data.estado] || { emoji: '🔔', texto: data.estado, prioridad: 'media' };
+            const nombre = data.camarero_nombre || 'Camarero';
+            const toastFn = ['confirmado', 'alta'].includes(data.estado) ? toast.success : toast.info;
+
+            toastFn(`${cfg.emoji} ${nombre} → ${cfg.texto}`, {
+              description: prev.estado
+                ? `Estado cambiado de "${prev.estado}" a "${data.estado}".`
+                : `Nuevo estado: "${data.estado}".`,
+              duration: 5000
+            });
+
+            await crearNotificacionCoordinador({
+              tipo: 'estado_cambio',
+              titulo: `${cfg.emoji} Cambio de estado: ${nombre}`,
+              mensaje: `${nombre} cambió de estado "${prev.estado}" → "${data.estado}" en el evento del ${data.fecha_pedido || prev.fecha_pedido || 'fecha pendiente'}.`,
+              prioridad: cfg.prioridad,
+              pedido_id: data.pedido_id || prev.pedido_id
+            });
+          }
+
+          // Actualizar snapshot
           asignacionesRef.current.set(id, {
-            camarero_nombre: data.camarero_nombre,
-            estado: data.estado,
-            pedido_id: data.pedido_id
+            camarero_nombre: data.camarero_nombre ?? prev.camarero_nombre,
+            estado: data.estado ?? prev.estado,
+            pedido_id: data.pedido_id ?? prev.pedido_id,
+            hora_entrada: data.hora_entrada ?? prev.hora_entrada,
+            hora_salida: data.hora_salida ?? prev.hora_salida,
+            fecha_pedido: data.fecha_pedido ?? prev.fecha_pedido
           });
-        } else {
-          queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
         }
       }
 
       if (type === 'delete') {
         const prev = asignacionesRef.current.get(id);
         queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+
         if (prev?.camarero_nombre) {
-          toast.warning(`🗑️ Asignación eliminada`, {
+          toast.warning('🗑️ Asignación eliminada', {
             description: `${prev.camarero_nombre} fue desasignado del evento.`,
             duration: 5000
           });
+
+          await crearNotificacionCoordinador({
+            tipo: 'alerta',
+            titulo: `🗑️ Asignación eliminada: ${prev.camarero_nombre}`,
+            mensaje: `${prev.camarero_nombre} fue desasignado del evento del ${prev.fecha_pedido || 'fecha pendiente'}. Es posible que el slot quede sin cubrir.`,
+            prioridad: 'alta',
+            pedido_id: prev.pedido_id
+          });
         }
+
         asignacionesRef.current.delete(id);
       }
     });
 
-    // -- Suscripción a cambios en Pedido (nuevos eventos) --
+    // ── Suscripción a Pedido ──────────────────────────────────────────────
     const pedidosKnownRef = new Set(
       (queryClient.getQueryData(['pedidos']) || []).map(p => p.id)
     );
 
-    const unsubPedido = base44.entities.Pedido.subscribe((event) => {
+    const unsubPedido = base44.entities.Pedido.subscribe(async (event) => {
       const { type, id, data } = event;
 
       if (type === 'create') {
         queryClient.invalidateQueries({ queryKey: ['pedidos'] });
         if (!pedidosKnownRef.has(id)) {
           pedidosKnownRef.add(id);
-          toast.info(`📅 Nuevo evento creado`, {
-            description: data?.cliente
-              ? `Se ha añadido el evento de "${data.cliente}" y requiere asignación.`
-              : 'Se ha creado un nuevo evento que requiere asignación.',
+          const clienteLabel = data?.cliente ? `"${data.cliente}"` : 'un nuevo evento';
+          toast.info('📅 Nuevo evento creado', {
+            description: `Se ha añadido ${clienteLabel} y requiere asignación.`,
             duration: 7000
           });
-          // Crear notificación in-app para el coordinador
-          base44.entities.Notificacion.create({
+          await crearNotificacionCoordinador({
             tipo: 'estado_cambio',
-            titulo: '📅 Nuevo Evento Requiere Asignación',
+            titulo: '📅 Nuevo evento requiere asignación',
             mensaje: data?.cliente
               ? `El evento de "${data.cliente}" para el ${data?.dia || 'fecha pendiente'} necesita camareros asignados.`
               : 'Hay un nuevo evento que requiere asignación de camareros.',
             prioridad: 'alta',
-            pedido_id: id,
-            leida: false
-          }).catch(() => {});
+            pedido_id: id
+          });
         }
       }
 
