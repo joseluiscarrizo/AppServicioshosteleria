@@ -230,13 +230,28 @@ export default function Clientes() {
             </h1>
             <p className="text-slate-500 mt-1">Administra la base de datos de clientes</p>
           </div>
-          <Button 
-            onClick={() => { resetForm(); setShowForm(true); }}
-            className="bg-[#1e3a5f] hover:bg-[#152a45]"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Cliente
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={exportarExcel} className="border-emerald-600 text-emerald-600 hover:bg-emerald-50">
+              <Download className="w-4 h-4 mr-2" />
+              Exportar
+            </Button>
+            <label>
+              <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 cursor-pointer" asChild>
+                <span>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Importar
+                  <input type="file" accept=".csv" className="hidden" onChange={importarExcel} />
+                </span>
+              </Button>
+            </label>
+            <Button 
+              onClick={() => { resetForm(); setShowForm(true); }}
+              className="bg-[#1e3a5f] hover:bg-[#152a45]"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nuevo Cliente
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
