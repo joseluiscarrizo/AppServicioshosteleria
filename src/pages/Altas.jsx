@@ -149,13 +149,13 @@ export default function Altas() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12 text-slate-400">
+                    <TableCell colSpan={10} className="text-center py-12 text-slate-400">
                       Cargando...
                     </TableCell>
                   </TableRow>
                 ) : filas.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12 text-slate-400">
+                    <TableCell colSpan={10} className="text-center py-12 text-slate-400">
                       No hay asignaciones registradas
                     </TableCell>
                   </TableRow>
