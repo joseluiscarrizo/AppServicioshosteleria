@@ -1474,6 +1474,7 @@ Sistema de Gestión de Camareros
             </div>
           </DragDropContext>
 
+
           {/* Modal de Asignación Automática */}
           <AsignacionAutomatica
             open={showAsignacionAuto}
