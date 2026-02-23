@@ -731,40 +731,46 @@ Sistema de Gestión de Camareros
 
                   {/* Lista de camareros disponibles con botón de asignación rápida */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-                    {getCamarerosDisponibles(selectedPedido).map((camarero) => (
-                      <Card key={camarero.id} className="p-4 hover:shadow-lg transition-all border-2 hover:border-[#1e3a5f]">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <div className="font-semibold text-slate-800">{camarero.nombre}</div>
-                            <div className="text-xs text-slate-500 font-mono">#{camarero.codigo}</div>
-                          </div>
-                          {camarero.valoracion_promedio > 0 && (
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200">
-                              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                              <span className="text-xs font-bold text-amber-700">{camarero.valoracion_promedio.toFixed(1)}</span>
+                    {getCamarerosDisponibles(selectedPedido).map((camarero, idx) => {
+                      const scoreData = scoresAsignacion[camarero.id];
+                      return (
+                        <Card key={camarero.id} className={`p-4 hover:shadow-lg transition-all border-2 hover:border-[#1e3a5f] ${idx === 0 && scoreData?.nivel === 'excelente' ? 'border-emerald-400 bg-emerald-50/40' : ''}`}>
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-slate-800 truncate">{camarero.nombre}</div>
+                              <div className="text-xs text-slate-500 font-mono">#{camarero.codigo}</div>
                             </div>
-                          )}
-                        </div>
+                            <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
+                              <ScoreBadge scoreData={scoreData} />
+                              {camarero.valoracion_promedio > 0 && (
+                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-50 border border-amber-200">
+                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                  <span className="text-xs font-bold text-amber-700">{camarero.valoracion_promedio.toFixed(1)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
 
-                        <div className="flex gap-1 flex-wrap mb-3">
-                          {camarero.especialidad && (
-                            <Badge variant="outline" className="text-xs">{camarero.especialidad}</Badge>
-                          )}
-                          {camarero.experiencia_anios > 0 && (
-                            <Badge variant="outline" className="text-xs">✨ {camarero.experiencia_anios}a</Badge>
-                          )}
-                        </div>
+                          <div className="flex gap-1 flex-wrap mb-3">
+                            {camarero.especialidad && (
+                              <Badge variant="outline" className="text-xs">{camarero.especialidad}</Badge>
+                            )}
+                            {camarero.experiencia_anios > 0 && (
+                              <Badge variant="outline" className="text-xs">✨ {camarero.experiencia_anios}a</Badge>
+                            )}
+                          </div>
 
-                        <Button 
-                          onClick={() => handleAsignarCamarero(selectedPedido, camarero)}
-                          className="w-full bg-[#1e3a5f] hover:bg-[#152a45]"
-                          size="sm"
-                        >
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Asignar
-                        </Button>
-                      </Card>
-                    ))}
+                          <Button 
+                            onClick={() => handleAsignarCamarero(selectedPedido, camarero)}
+                            className="w-full bg-[#1e3a5f] hover:bg-[#152a45]"
+                            size="sm"
+                          >
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Asignar
+                          </Button>
+                        </Card>
+                      );
+                    })}
 
                     {getCamarerosDisponibles(selectedPedido).length === 0 && (
                       <div className="col-span-full text-center py-12 text-slate-400">
