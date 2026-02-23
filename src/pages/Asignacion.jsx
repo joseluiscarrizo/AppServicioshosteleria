@@ -423,15 +423,6 @@ Sistema de Gestión de Camareros
         const sb = scoresAsignacion[b.id]?.score || 0;
         return sb - sa;
       });
-
-    return candidatos.filter(c => {
-      return true;
-    }).sort((a, b) => {
-      // Ordenar por score de idoneidad (usa scoresAsignacion si disponible)
-      const scoreA = scoresAsignacion[a.id]?.score ?? 0;
-      const scoreB = scoresAsignacion[b.id]?.score ?? 0;
-      return scoreB - scoreA;
-    });
   };
   
   // Obtener todas las habilidades únicas
