@@ -394,49 +394,37 @@ Sistema de Gestión de Camareros
     return true;
   };
 
-  // Obtener camareros disponibles para un pedido (con filtros de habilidades)
+  // Obtener camareros disponibles para un pedido (con filtros avanzados)
   const getCamarerosDisponibles = (pedido) => {
     const asignacionesPedido = getAsignacionesPedido(pedido.id);
-    const idsAsignados = asignacionesPedido.map(a => a.camarero_id);
-    
-    return camareros.filter(c => {
-      if (idsAsignados.includes(c.id)) return false;
-      if (!c.disponible) return false;
+    const idsAsignados = new Set(asignacionesPedido.map(a => a.camarero_id));
+
+    // Primero filtrar los no asignados y que pasan la regla de horarios
+    const candidatos = camareros.filter(c => {
+      if (idsAsignados.has(c.id)) return false;
       if (!puedoAsignarCamarero(c.id, pedido)) return false;
-      
-      // Filtro por especialidad requerida
+      // Requerimientos del evento
       if (pedido.especialidad_requerida && pedido.especialidad_requerida !== 'general') {
         if (c.especialidad !== pedido.especialidad_requerida) return false;
       }
-      
-      // Filtro por habilidades requeridas
       if (pedido.habilidades_requeridas?.length > 0) {
-        const tieneHabilidades = pedido.habilidades_requeridas.every(h => 
-          c.habilidades?.includes(h)
-        );
-        if (!tieneHabilidades) return false;
+        if (!pedido.habilidades_requeridas.every(h => c.habilidades?.includes(h))) return false;
       }
-      
-      // Filtro por idiomas requeridos
       if (pedido.idiomas_requeridos?.length > 0) {
-        const tieneIdiomas = pedido.idiomas_requeridos.every(i => 
-          c.idiomas?.includes(i)
-        );
-        if (!tieneIdiomas) return false;
+        if (!pedido.idiomas_requeridos.every(i => c.idiomas?.includes(i))) return false;
       }
-      
-      // Filtros manuales del coordinador
-      if (filtroEspecialidad && c.especialidad !== filtroEspecialidad) return false;
-      if (filtroHabilidad && !c.habilidades?.includes(filtroHabilidad)) return false;
-      
-      // Filtro de búsqueda por nombre o código
-      if (busquedaCamarero) {
-        const busqueda = busquedaCamarero.toLowerCase();
-        const coincide = c.nombre.toLowerCase().includes(busqueda) || 
-                         c.codigo?.toLowerCase().includes(busqueda);
-        if (!coincide) return false;
-      }
-      
+      return true;
+    });
+
+    // Luego aplicar filtros avanzados del coordinador
+    return aplicarFiltrosCamareros(candidatos, filtrosCamareros, asignaciones, pedido)
+      .sort((a, b) => {
+        const sa = scoresAsignacion[a.id]?.score || 0;
+        const sb = scoresAsignacion[b.id]?.score || 0;
+        return sb - sa;
+      });
+
+    return candidatos.filter(c => {
       return true;
     }).sort((a, b) => {
       // Ordenar por score de idoneidad (usa scoresAsignacion si disponible)
