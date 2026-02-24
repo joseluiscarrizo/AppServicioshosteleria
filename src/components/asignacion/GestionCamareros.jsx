@@ -172,22 +172,44 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
             </TabsList>
 
             <TabsContent value="info" className="space-y-4">
-              {/* Código automático */}
-              {!editingCamarero && (
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <Label className="text-xs text-slate-500">Código Automático del Camarero</Label>
-                  <p className="font-mono font-semibold text-lg text-[#1e3a5f]">
-                    {(() => {
+              {/* Selector de tipo de perfil */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-sm font-semibold">Tipo de Perfil *</Label>
+                  <Select value={tipoPerfil} onValueChange={setTipoPerfil} disabled={!!editingCamarero}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar perfil" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tiposPerfil.map(t => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-500">Código {editingCamarero ? 'actual' : 'asignado'}</Label>
+                  <p className="font-mono font-semibold text-lg text-[#1e3a5f] bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                    {editingCamarero ? formData.codigo : (() => {
+                      const perfilSeleccionado = tiposPerfil.find(t => t.value === tipoPerfil) || tiposPerfil[0];
+                      const prefix = perfilSeleccionado.prefix;
                       const maxCodigo = camareros.reduce((max, c) => {
-                        if (c.codigo && c.codigo.startsWith('CAM')) {
-                          const num = parseInt(c.codigo.substring(3));
+                        if (c.codigo && c.codigo.startsWith(prefix)) {
+                          const num = parseInt(c.codigo.substring(prefix.length));
                           return Math.max(max, isNaN(num) ? 0 : num);
                         }
                         return max;
                       }, 0);
-                      return `CAM${String(maxCodigo + 1).padStart(3, '0')}`;
+                      return `${prefix}${String(maxCodigo + 1).padStart(3, '0')}`;
                     })()}
                   </p>
+                </div>
+              </div>
+
+              {/* Código automático (hidden, replaced above) */}
+              {!editingCamarero && false && (
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <Label className="text-xs text-slate-500">Código Automático del Camarero</Label>
                 </div>
               )}
 
