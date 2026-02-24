@@ -16,6 +16,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { format, parseISO } from 'npm:date-fns@3.6.0';
 import { es } from 'npm:date-fns@3.6.0/locale';
+import Logger from '../utils/logger.ts';
+import { validateEmail, validatePhoneNumber, validateDate } from '../utils/validators.ts';
+import { retryDatabaseOperation } from '../utils/retryHandler.ts';
+import ErrorNotificationService from '../utils/errorNotificationService.ts';
+import {
+  executeDbOperation,
+  executeGmailOperation,
+  DatabaseError,
+  ValidationError
+} from '../utils/webhookImprovements.ts';
 
 const WA_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN');
 const WA_PHONE = Deno.env.get('WHATSAPP_PHONE_NUMBER');
@@ -30,7 +40,7 @@ async function sendWAMessage(to, payload) {
     body: JSON.stringify({ messaging_product: 'whatsapp', to, ...payload })
   });
   const data = await res.json();
-  if (!res.ok) console.error('Error WA:', JSON.stringify(data));
+  if (!res.ok) Logger.error('Error WA: ' + JSON.stringify(data));
   return data;
 }
 
@@ -90,9 +100,25 @@ const PASOS_PEDIDO = [
 async function handleFlujoPedido(base44, telefono, sesion, textoMensaje) {
   const pasoActual = sesion.paso;
 
-  // Guardar respuesta del paso actual
+  // Guardar respuesta del paso actual con validación
   if (pasoActual && pasoActual !== 'color_camisa' && pasoActual !== 'confirmar_envio') {
-    sesion.datos[pasoActual] = textoMensaje.trim();
+    try {
+      const valorTrimmed = textoMensaje.trim();
+      if (pasoActual === 'mail_contacto' && !validateEmail(valorTrimmed)) {
+        throw new ValidationError('Correo electrónico no válido');
+      }
+      if (pasoActual === 'telefono_contacto' && !validatePhoneNumber(valorTrimmed)) {
+        throw new ValidationError('Número de teléfono no válido');
+      }
+      sesion.datos[pasoActual] = valorTrimmed;
+    } catch (e) {
+      if (e instanceof ValidationError) {
+        Logger.warn('Validación fallida en paso ' + pasoActual + ': ' + e.message);
+        await sendTextMessage(telefono, `⚠️ ${e.message}. Por favor, inténtalo de nuevo.`);
+        return;
+      }
+      throw e;
+    }
   }
 
   // Determinar siguiente paso
@@ -156,37 +182,45 @@ async function handleFlujoCoordinador(base44, telefono, sesion, textoMensaje) {
     const nombre = textoMensaje.trim();
     sesion.datos.nombre = nombre;
 
-    // Crear grupo de chat cliente-coordinador
-    const grupo = await base44.asServiceRole.entities.GrupoChat.create({
-      nombre: `Chat con ${nombre}`,
-      descripcion: `Cliente WhatsApp: ${telefono}`,
-      fecha_evento: new Date().toISOString().split('T')[0],
-      hora_fin_evento: '23:59',
-      miembros: [],
-      activo: true
-    });
-    sesion.datos.grupo_id = grupo.id;
-    sesion.paso = 'mensaje_inicial';
-    setSesion(telefono, sesion);
+    try {
+      // Crear grupo de chat cliente-coordinador
+      const grupo = await executeDbOperation(() => base44.asServiceRole.entities.GrupoChat.create({
+        nombre: `Chat con ${nombre}`,
+        descripcion: `Cliente WhatsApp: ${telefono}`,
+        fecha_evento: new Date().toISOString().split('T')[0],
+        hora_fin_evento: '23:59',
+        miembros: [],
+        activo: true
+      }));
+      sesion.datos.grupo_id = grupo.id;
+      sesion.paso = 'mensaje_inicial';
+      setSesion(telefono, sesion);
 
-    // Notificar a todos los coordinadores
-    const coordinadores = await base44.asServiceRole.entities.Coordinador.list();
-    await base44.asServiceRole.entities.Notificacion.create({
-      tipo: 'alerta',
-      titulo: `💬 Nuevo chat de cliente: ${nombre}`,
-      mensaje: `El cliente ${nombre} (WhatsApp: ${telefono}) ha iniciado una conversación. Entra al Chat para responderle.`,
-      prioridad: 'alta'
-    });
+      // Notificar a todos los coordinadores
+      const coordinadores = await executeDbOperation(() => base44.asServiceRole.entities.Coordinador.list());
+      await executeDbOperation(() => base44.asServiceRole.entities.Notificacion.create({
+        tipo: 'alerta',
+        titulo: `💬 Nuevo chat de cliente: ${nombre}`,
+        mensaje: `El cliente ${nombre} (WhatsApp: ${telefono}) ha iniciado una conversación. Entra al Chat para responderle.`,
+        prioridad: 'alta'
+      }));
 
-    // Email a coordinadores
-    for (const coord of coordinadores) {
-      if (coord.email && coord.notificaciones_email) {
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: coord.email,
-          subject: `💬 Nuevo mensaje de cliente: ${nombre}`,
-          body: `Hola ${coord.nombre},\n\nEl cliente *${nombre}* (WhatsApp: ${telefono}) quiere hablar contigo.\n\nEntra a la app en la sección de Chat para responderle.\n\nSaludos,\nSistema de Gestión de Camareros`
-        });
+      // Email a coordinadores
+      for (const coord of coordinadores) {
+        if (coord.email && coord.notificaciones_email) {
+          await executeGmailOperation(() => base44.asServiceRole.integrations.Core.SendEmail({
+            to: coord.email,
+            subject: `💬 Nuevo mensaje de cliente: ${nombre}`,
+            body: `Hola ${coord.nombre},\n\nEl cliente *${nombre}* (WhatsApp: ${telefono}) quiere hablar contigo.\n\nEntra a la app en la sección de Chat para responderle.\n\nSaludos,\nSistema de Gestión de Camareros`
+          }));
+        }
       }
+    } catch (e) {
+      Logger.error('Error en handleFlujoCoordinador (nombre): ' + (e instanceof Error ? e.message : String(e)));
+      const notifier = new ErrorNotificationService(telefono);
+      notifier.notifyUser('⚠️ Hubo un problema al abrir el chat. Por favor, inténtalo de nuevo.');
+      await sendTextMessage(telefono, '⚠️ Hubo un problema al abrir el chat. Por favor, inténtalo de nuevo.');
+      return;
     }
 
     return sendTextMessage(telefono, `✅ ¡Hola ${nombre}! Tu chat con el coordinador ha sido abierto.\n\nEscribe tu mensaje y un coordinador te responderá muy pronto. 😊`);
@@ -199,15 +233,19 @@ async function handleFlujoCoordinador(base44, telefono, sesion, textoMensaje) {
     setSesion(telefono, sesion);
 
     if (sesion.datos.grupo_id) {
-      await base44.asServiceRole.entities.MensajeChat.create({
-        grupo_id: sesion.datos.grupo_id,
-        user_id: telefono,
-        nombre_usuario: sesion.datos.nombre || telefono,
-        rol_usuario: 'camarero',
-        mensaje: texto,
-        tipo: 'texto',
-        leido_por: []
-      });
+      try {
+        await executeDbOperation(() => base44.asServiceRole.entities.MensajeChat.create({
+          grupo_id: sesion.datos.grupo_id,
+          user_id: telefono,
+          nombre_usuario: sesion.datos.nombre || telefono,
+          rol_usuario: 'camarero',
+          mensaje: texto,
+          tipo: 'texto',
+          leido_por: []
+        }));
+      } catch (e) {
+        Logger.error('Error guardando mensaje de chat: ' + (e instanceof Error ? e.message : String(e)));
+      }
     }
     // No respondemos automáticamente; el coordinador responde desde la app
     return;
@@ -224,7 +262,22 @@ async function crearPedidoEnBD(base44, datos, telefono) {
     }
   }
 
-  return base44.asServiceRole.entities.Pedido.create({
+  // Validar email
+  if (datos.mail_contacto && !validateEmail(datos.mail_contacto)) {
+    throw new ValidationError(`Email inválido: ${datos.mail_contacto}`);
+  }
+
+  // Validar teléfono de contacto
+  if (datos.telefono_contacto && !validatePhoneNumber(datos.telefono_contacto)) {
+    Logger.warn('Teléfono de contacto con formato no estándar: ' + datos.telefono_contacto);
+  }
+
+  // Validar fecha convertida
+  if (diaFormateado && !validateDate(diaFormateado)) {
+    throw new ValidationError(`Fecha inválida: ${datos.fecha_evento}`);
+  }
+
+  return executeDbOperation(() => base44.asServiceRole.entities.Pedido.create({
     cliente: datos.cliente || 'Pedido WhatsApp',
     lugar_evento: datos.lugar_evento || '',
     dia: diaFormateado,
@@ -235,7 +288,7 @@ async function crearPedidoEnBD(base44, datos, telefono) {
     cliente_telefono_1: datos.telefono_contacto || telefono,
     origen_pedido: 'whatsapp',
     notas: `Pedido recibido vía WhatsApp desde ${telefono}`
-  });
+  }));
 }
 
 Deno.serve(async (req) => {
@@ -250,7 +303,7 @@ Deno.serve(async (req) => {
     const verifyToken = Deno.env.get('WHATSAPP_WEBHOOK_VERIFY_TOKEN');
 
     if (mode === 'subscribe' && token === verifyToken) {
-      console.log('✅ Webhook verificado por Meta');
+      Logger.info('✅ Webhook verificado por Meta');
       return new Response(challenge, { status: 200 });
     }
     return new Response('Forbidden', { status: 403 });
@@ -265,7 +318,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    console.log('📨 Webhook recibido:', JSON.stringify(body).slice(0, 500));
+    Logger.info('📨 Webhook recibido: ' + JSON.stringify(body).slice(0, 500));
 
     const entry   = body?.entry?.[0];
     const changes = entry?.changes?.[0];
@@ -356,7 +409,7 @@ Deno.serve(async (req) => {
 
       // ─── Mensajes interactivos (list_reply o button_reply) ────
       if (message.type !== 'interactive') {
-        console.log(`Mensaje tipo ${message.type} ignorado`);
+        Logger.info(`Mensaje tipo ${message.type} ignorado`);
         continue;
       }
 
@@ -489,10 +542,12 @@ Deno.serve(async (req) => {
         const sesion = getSesion(telefono);
         if (sesion.flujo === 'pedido') {
           try {
-            await crearPedidoEnBD(base44, sesion.datos, telefono);
+            await retryDatabaseOperation(() => crearPedidoEnBD(base44, sesion.datos, telefono));
             await sendTextMessage(telefono, '🎉 *¡Muchas gracias por confiar en nosotros!*\n\nTu solicitud ha sido registrada correctamente. Un coordinador se pondrá en contacto contigo muy pronto. 😊');
           } catch (e) {
-            console.error('Error creando pedido:', e);
+            Logger.error('Error creando pedido: ' + (e instanceof Error ? e.message : String(e)));
+            const notifier = new ErrorNotificationService(telefono);
+            notifier.notifyUser('⚠️ Hubo un problema al registrar tu solicitud. Por favor llámanos directamente.');
             await sendTextMessage(telefono, '⚠️ Hubo un problema al registrar tu solicitud. Por favor llámanos directamente.');
           }
           clearSesion(telefono);
@@ -512,32 +567,32 @@ Deno.serve(async (req) => {
       const asignacionId = parts[1];
 
       if (!asignacionId || !['confirmar', 'rechazar'].includes(accion)) {
-        console.warn('Button id no reconocido:', buttonId);
+        Logger.warn('Button id no reconocido: ' + buttonId);
         continue;
       }
 
-      console.log(`🔔 Acción: ${accion} | Asignación: ${asignacionId} | Tel: ${telefono}`);
+      Logger.info(`🔔 Acción: ${accion} | Asignación: ${asignacionId} | Tel: ${telefono}`);
 
       let asignaciones = [];
       try {
-        asignaciones = await base44.asServiceRole.entities.AsignacionCamarero.filter({ id: asignacionId });
+        asignaciones = await executeDbOperation(() => base44.asServiceRole.entities.AsignacionCamarero.filter({ id: asignacionId }));
       } catch (e) {
-        console.error('Error buscando asignación:', e);
+        Logger.error('Error buscando asignación: ' + (e instanceof Error ? e.message : String(e)));
         continue;
       }
 
       const asignacion = asignaciones[0];
       if (!asignacion) {
-        console.warn('Asignación no encontrada:', asignacionId);
+        Logger.warn('Asignación no encontrada: ' + asignacionId);
         continue;
       }
 
       let pedido = null;
       try {
-        const pedidos = await base44.asServiceRole.entities.Pedido.filter({ id: asignacion.pedido_id });
+        const pedidos = await executeDbOperation(() => base44.asServiceRole.entities.Pedido.filter({ id: asignacion.pedido_id }));
         pedido = pedidos[0];
       } catch (e) {
-        console.error('Error buscando pedido:', e);
+        Logger.error('Error buscando pedido: ' + (e instanceof Error ? e.message : String(e)));
       }
 
       const fechaFormateada = pedido?.dia
@@ -546,98 +601,98 @@ Deno.serve(async (req) => {
 
       if (accion === 'confirmar') {
         if (asignacion.estado === 'confirmado') {
-          console.log('Ya estaba confirmado, ignorando');
+          Logger.info('Ya estaba confirmado, ignorando');
           continue;
         }
 
-        await base44.asServiceRole.entities.AsignacionCamarero.update(asignacionId, { estado: 'confirmado' });
+        await executeDbOperation(() => base44.asServiceRole.entities.AsignacionCamarero.update(asignacionId, { estado: 'confirmado' }));
 
         if (asignacion.camarero_id) {
-          await base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, { estado_actual: 'ocupado' });
+          await executeDbOperation(() => base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, { estado_actual: 'ocupado' }));
         }
 
         try {
-          const notifs = await base44.asServiceRole.entities.NotificacionCamarero.filter({ asignacion_id: asignacionId });
+          const notifs = await executeDbOperation(() => base44.asServiceRole.entities.NotificacionCamarero.filter({ asignacion_id: asignacionId }));
           if (notifs[0]) {
-            await base44.asServiceRole.entities.NotificacionCamarero.update(notifs[0].id, {
+            await executeDbOperation(() => base44.asServiceRole.entities.NotificacionCamarero.update(notifs[0].id, {
               respondida: true, respuesta: 'aceptado', leida: true
-            });
+            }));
           }
         } catch (e) {
-          console.error('Error actualizando notificación:', e);
+          Logger.error('Error actualizando notificación: ' + (e instanceof Error ? e.message : String(e)));
         }
 
         if (pedido) {
-          const camareroData = await base44.asServiceRole.entities.Camarero.filter({ id: asignacion.camarero_id });
+          const camareroData = await executeDbOperation(() => base44.asServiceRole.entities.Camarero.filter({ id: asignacion.camarero_id }));
           const coordinadorId = camareroData[0]?.coordinador_id || pedido.coordinador_id;
           if (coordinadorId) {
-            await base44.asServiceRole.entities.Notificacion.create({
+            await executeDbOperation(() => base44.asServiceRole.entities.Notificacion.create({
               tipo: 'estado_cambio',
               titulo: '✅ Asignación Confirmada (vía WhatsApp)',
               mensaje: `${asignacion.camarero_nombre} ha confirmado el servicio de ${pedido.cliente} (${fechaFormateada}) respondiendo al WhatsApp.`,
               prioridad: 'media',
               pedido_id: pedido.id,
               email_enviado: false
-            });
+            }));
           }
         }
 
-        console.log(`✅ Asignación ${asignacionId} confirmada vía botón WhatsApp`);
+        Logger.info(`✅ Asignación ${asignacionId} confirmada vía botón WhatsApp`);
 
       } else if (accion === 'rechazar') {
         if (asignacion.camarero_id) {
-          await base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, { estado_actual: 'disponible' });
+          await executeDbOperation(() => base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, { estado_actual: 'disponible' }));
         }
 
         try {
-          const notifs = await base44.asServiceRole.entities.NotificacionCamarero.filter({ asignacion_id: asignacionId });
+          const notifs = await executeDbOperation(() => base44.asServiceRole.entities.NotificacionCamarero.filter({ asignacion_id: asignacionId }));
           if (notifs[0]) {
-            await base44.asServiceRole.entities.NotificacionCamarero.update(notifs[0].id, {
+            await executeDbOperation(() => base44.asServiceRole.entities.NotificacionCamarero.update(notifs[0].id, {
               respondida: true, respuesta: 'rechazado', leida: true
-            });
+            }));
           }
         } catch (e) {
-          console.error('Error actualizando notificación:', e);
+          Logger.error('Error actualizando notificación: ' + (e instanceof Error ? e.message : String(e)));
         }
 
         if (pedido) {
-          const camareroData = await base44.asServiceRole.entities.Camarero.filter({ id: asignacion.camarero_id });
+          const camareroData = await executeDbOperation(() => base44.asServiceRole.entities.Camarero.filter({ id: asignacion.camarero_id }));
           const coordinadorId = camareroData[0]?.coordinador_id || pedido.coordinador_id;
 
-          await base44.asServiceRole.entities.Notificacion.create({
+          await executeDbOperation(() => base44.asServiceRole.entities.Notificacion.create({
             tipo: 'alerta',
             titulo: '❌ Asignación Rechazada - Acción Requerida',
             mensaje: `❌ ${asignacion.camarero_nombre} ha RECHAZADO el servicio de ${pedido.cliente} (${fechaFormateada}) respondiendo al WhatsApp. Se requiere buscar reemplazo urgente.`,
             prioridad: 'alta',
             pedido_id: pedido.id,
             email_enviado: false
-          });
+          }));
 
           if (coordinadorId) {
             try {
-              const coords = await base44.asServiceRole.entities.Coordinador.filter({ id: coordinadorId });
+              const coords = await executeDbOperation(() => base44.asServiceRole.entities.Coordinador.filter({ id: coordinadorId }));
               const coord = coords[0];
               if (coord?.email && coord?.notificaciones_email) {
-                await base44.asServiceRole.integrations.Core.SendEmail({
+                await executeGmailOperation(() => base44.asServiceRole.integrations.Core.SendEmail({
                   to: coord.email,
                   subject: `❌ URGENTE: Rechazo WhatsApp - ${pedido.cliente}`,
                   body: `Hola ${coord.nombre},\n\n⚠️ ATENCIÓN: El camarero ${asignacion.camarero_nombre} ha rechazado el servicio respondiendo al botón WhatsApp.\n\n📋 Cliente: ${pedido.cliente}\n📅 Fecha: ${fechaFormateada}\n📍 Lugar: ${pedido.lugar_evento || 'Por confirmar'}\n\n⚠️ SE REQUIERE BUSCAR UN REEMPLAZO URGENTEMENTE.\n\nSaludos,\nSistema de Gestión de Camareros`
-                });
+                }));
               }
             } catch (e) {
-              console.error('Error enviando email de alerta:', e);
+              Logger.error('Error enviando email de alerta: ' + (e instanceof Error ? e.message : String(e)));
             }
           }
         }
 
-        await base44.asServiceRole.entities.AsignacionCamarero.delete(asignacionId);
-        console.log(`❌ Asignación ${asignacionId} rechazada y eliminada vía botón WhatsApp`);
+        await executeDbOperation(() => base44.asServiceRole.entities.AsignacionCamarero.delete(asignacionId));
+        Logger.info(`❌ Asignación ${asignacionId} rechazada y eliminada vía botón WhatsApp`);
       }
     }
 
     return Response.json({ ok: true });
   } catch (error) {
-    console.error('Error en webhookWhatsAppRespuestas:', error);
+    Logger.error('Error en webhookWhatsAppRespuestas: ' + (error instanceof Error ? error.message : String(error)));
     return Response.json({ ok: true, error: error.message });
   }
 });

@@ -44,4 +44,4 @@ const API_CONFIGURATIONS = {
     }
 };
 
-export { retryWithExponentialBackoff, API_CONFIGURATIONS };
+export { retryWithExponentialBackoff, retryWithExponentialBackoff as retryDatabaseOperation, API_CONFIGURATIONS };

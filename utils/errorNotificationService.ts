@@ -1,11 +1,11 @@
 // errorNotificationService.ts
+import Logger from './logger.ts';
 
 class ErrorNotificationService {
     constructor(private phoneNumber: string) {}
 
     notifyUser(message: string): void {
-        // Logic to send WhatsApp message to the user
-        console.log(`Sending message to ${this.phoneNumber}: ${message}`);
+        Logger.warn(`[ErrorNotification] ${this.phoneNumber}: ${message}`);
     }
 }
 
@@ -15,6 +15,5 @@ const errorMessages = {
     SERVER_ERROR: 'An error occurred on the server. Please try again later.',
 };
 
-// Example usage:
-const notificationService = new ErrorNotificationService('+123456789');
-notificationService.notifyUser(errorMessages.NETWORK_ERROR);
+export default ErrorNotificationService;
+export { errorMessages };
