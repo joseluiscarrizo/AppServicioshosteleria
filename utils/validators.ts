@@ -40,4 +40,4 @@ function validateRequiredFields(data, requiredFields) {
     return requiredFields.every(field => field in data);
 }
 
-module.exports = { validatePhoneNumber, validateEmail, validateDate, validateRequiredFields };
+export { validatePhoneNumber, validateEmail, validateDate, validateRequiredFields };
