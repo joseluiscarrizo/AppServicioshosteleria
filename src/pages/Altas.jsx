@@ -99,6 +99,16 @@ export default function Altas() {
     };
   }).sort((a, b) => (b.fecha > a.fecha ? 1 : -1));
 
+  const handleExportar = () => {
+    let filasFiltradas = filas;
+    if (exportFechaDesde) filasFiltradas = filasFiltradas.filter(f => f.fecha >= exportFechaDesde);
+    if (exportFechaHasta) filasFiltradas = filasFiltradas.filter(f => f.fecha <= exportFechaHasta);
+    if (exportCliente && exportCliente !== 'todos') filasFiltradas = filasFiltradas.filter(f => f.cliente === exportCliente);
+    exportarExcel(filasFiltradas);
+    setShowExportDialog(false);
+    toast.success(`Exportadas ${filasFiltradas.length} filas`);
+  };
+
   const handleDarAlta = (fila) => {
     updateMutation.mutate({ id: fila.id, estado: 'alta' });
   };
