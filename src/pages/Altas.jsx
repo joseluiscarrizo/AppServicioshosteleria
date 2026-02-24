@@ -72,6 +72,13 @@ export default function Altas() {
   const pedidoMap = Object.fromEntries(pedidos.map(p => [p.id, p]));
   const camareroMap = Object.fromEntries(camareros.map(c => [c.id, c]));
 
+  const clientesUnicos = [...new Set(
+    asignaciones.map(asig => {
+      const pedido = pedidoMap[asig.pedido_id] || {};
+      return pedido.cliente || '';
+    }).filter(Boolean)
+  )].sort();
+
   const filas = asignaciones.map(asig => {
     const pedido = pedidoMap[asig.pedido_id] || {};
     const camarero = camareroMap[asig.camarero_id] || {};
