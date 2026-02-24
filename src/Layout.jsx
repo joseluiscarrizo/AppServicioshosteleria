@@ -282,7 +282,7 @@ export default function Layout({ children, currentPageName }) {
                   }`}
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Camareros
+                  Personal
                 </Button>
               </Link>
             </div>
