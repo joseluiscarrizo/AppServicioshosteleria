@@ -226,7 +226,7 @@ export default function PerfilCamarero() {
         </Card>
 
         {/* Estadísticas */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <Card className="p-4">
             <p className="text-sm text-slate-500 mb-1">Total Eventos</p>
             <p className="text-3xl font-bold text-slate-800">{stats.total}</p>
@@ -242,6 +242,24 @@ export default function PerfilCamarero() {
           <Card className="p-4">
             <p className="text-sm text-slate-500 mb-1">Tasa Confirmación</p>
             <p className="text-3xl font-bold text-blue-600">{stats.tasaConfirmacion}%</p>
+          </Card>
+          <Card className="p-4 border-orange-200 bg-orange-50">
+            <div className="flex items-center gap-2 mb-1">
+              <AlertTriangle className="w-4 h-4 text-orange-500" />
+              <p className="text-sm text-orange-700 font-medium">Canc. &lt;2h</p>
+            </div>
+            <p className="text-3xl font-bold text-orange-600">
+              {(camarero.cancelaciones_last_minute || 0) + cancelacionesLastMinute}
+            </p>
+            <p className="text-xs text-orange-500 mt-1">cancelaciones de última hora</p>
+          </Card>
+          <Card className="p-4 border-slate-200 bg-slate-50">
+            <div className="flex items-center gap-2 mb-1">
+              <Archive className="w-4 h-4 text-slate-500" />
+              <p className="text-sm text-slate-600 font-medium">En Reserva</p>
+            </div>
+            <p className="text-3xl font-bold text-slate-600">{camarero.veces_en_reserva || 0}</p>
+            <p className="text-xs text-slate-400 mt-1">veces en lista de reserva</p>
           </Card>
         </div>
 
