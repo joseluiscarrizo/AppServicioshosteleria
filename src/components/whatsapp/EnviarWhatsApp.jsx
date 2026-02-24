@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import EnvioMasivoWhatsApp from './EnvioMasivoWhatsApp';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { MessageCircle, Loader2, Send, Upload, FileText } from 'lucide-react';
+import { MessageCircle, Loader2, Send, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GestionPlantillas from './GestionPlantillas';
+import Logger from '../../../utils/logger';
+import { validatePhoneNumber } from '../../../utils/validators';
+import ErrorNotificationService, { errorMessages } from '../../../utils/errorNotificationService';
+import { ValidationError, WhatsAppApiError, handleWebhookError } from '../../../utils/webhookImprovements';
 
 export default function EnviarWhatsApp({ pedido, asignaciones, camareros, buttonVariant, buttonSize, buttonText }) {
   const [open, setOpen] = useState(false);
@@ -80,7 +83,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
           horaEncuentro = `${horaEntradaDate.getHours().toString().padStart(2, '0')}:${horaEntradaDate.getMinutes().toString().padStart(2, '0')}`;
         }
       } catch (e) {
-        console.error('Error calculando hora de encuentro:', e);
+        Logger.error(`Error calculando hora de encuentro: ${e.message || e}`);
       }
     }
 
@@ -159,7 +162,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
             texto += `🚗 *Hora de encuentro:* ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}\n`;
           }
         } catch (e) {
-          console.error('Error calculando distancia:', e);
+          Logger.error(`Error calculando distancia: ${e.message || e}`);
           texto += `🚗 *Hora de encuentro:* Por confirmar\n`;
         }
       }
@@ -180,13 +183,30 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
   const enviarMutation = useMutation({
     mutationFn: async () => {
       if (!coordinadorId) {
-        throw new Error('Selecciona un coordinador');
+        throw new ValidationError('Selecciona un coordinador', 'coordinador');
       }
 
       const coordinador = coordinadores.find(c => c.id === coordinadorId);
       if (!coordinador?.telefono) {
-        throw new Error('El coordinador seleccionado no tiene teléfono configurado');
+        throw new ValidationError('El coordinador seleccionado no tiene teléfono configurado', 'coordinador_telefono');
       }
+
+      // Validate coordinator phone number
+      if (!validatePhoneNumber(coordinador.telefono)) {
+        throw new ValidationError(`El teléfono del coordinador (${coordinador.telefono}) no es válido`, 'coordinador_telefono');
+      }
+
+      // Validate selected camareros have valid phones
+      const camarerosSeleccionados = listaCamareros.filter(c =>
+        selectedCamareros.includes(c.id)
+      );
+      const camarerosInvalidos = camarerosSeleccionados.filter(c => c.telefono && !validatePhoneNumber(c.telefono));
+      if (camarerosInvalidos.length > 0) {
+        const nombres = camarerosInvalidos.map(c => c.nombre).join(', ');
+        throw new ValidationError(`Teléfonos inválidos para: ${nombres}`, 'camareros_telefono');
+      }
+
+      Logger.info(`Iniciando envío de WhatsApp a ${camarerosSeleccionados.length} camarero(s) para pedido ${pedido?.id}`);
 
       // Subir archivo si hay
       let urlArchivo = archivoUrl;
@@ -195,15 +215,12 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
           const resultado = await base44.integrations.Core.UploadFile({ file: archivoAdjunto });
           urlArchivo = resultado.file_url;
           setArchivoUrl(urlArchivo);
+          Logger.info('Archivo adjunto subido correctamente');
         } catch (error) {
-          console.error('Error subiendo archivo:', error);
+          Logger.error(`Error subiendo archivo: ${error.message || error}`);
           toast.error('Error al subir archivo adjunto');
         }
       }
-
-      const camarerosSeleccionados = listaCamareros.filter(c => 
-        selectedCamareros.includes(c.id)
-      );
 
       const asignacionesActualizadas = [];
       let enviadosDirectos = 0;
@@ -211,14 +228,19 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
 
       for (const camarero of camarerosSeleccionados) {
         if (!camarero.telefono) {
-          console.warn(`Camarero ${camarero.nombre} no tiene teléfono`);
+          Logger.warn(`Camarero ${camarero.nombre} no tiene teléfono, omitiendo`);
+          continue;
+        }
+
+        if (!validatePhoneNumber(camarero.telefono)) {
+          Logger.warn(`Teléfono inválido para camarero ${camarero.nombre}: ${camarero.telefono}`);
           continue;
         }
 
         // Buscar la asignación del camarero
         const asignacion = asignacionesArray.find(a => a.camarero_id === camarero.id);
         if (!asignacion) {
-          console.warn(`No se encontró asignación para ${camarero.nombre}`);
+          Logger.warn(`No se encontró asignación para ${camarero.nombre}`);
           continue;
         }
 
@@ -249,21 +271,21 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
               ? plantillas.find(p => p.id === plantillaSeleccionada)?.nombre
               : 'Manual'
           });
-          const resultado = response.data || response;
+          const resultadoEnvio = response.data || response;
           
           // Contar según método de envío
-          if (resultado.enviado_por_api) {
+          if (resultadoEnvio.enviado_por_api) {
             enviadosDirectos++;
-            console.log(`✅ Mensaje enviado directamente a ${camarero.nombre}`);
-          } else if (resultado.whatsapp_url) {
+            Logger.info(`✅ Mensaje enviado directamente a ${camarero.nombre} (${camarero.telefono})`);
+          } else if (resultadoEnvio.whatsapp_url) {
             enviadosPorWeb++;
             // Abrir WhatsApp Web como fallback
-            window.open(resultado.whatsapp_url, '_blank');
+            window.open(resultadoEnvio.whatsapp_url, '_blank');
             await new Promise(resolve => setTimeout(resolve, 1500));
           }
         } catch (error) {
-          console.error(`Error enviando WhatsApp a ${camarero.nombre}:`, error);
-          throw new Error(`Error al enviar mensaje a ${camarero.nombre}`);
+          Logger.error(`Error enviando WhatsApp a ${camarero.nombre}: ${error.message || error}`);
+          throw new WhatsAppApiError(`Error al enviar mensaje a ${camarero.nombre}`, error.status);
         }
         
         // Actualizar estado a "enviado" y crear notificación
@@ -276,7 +298,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
           pedido_id: pedido.id,
           tipo: 'nueva_asignacion',
           titulo: `Nueva Asignación: ${pedido.cliente}`,
-          mensaje: mensaje,
+          mensaje: mensajeFinal,
           cliente: pedido.cliente,
           lugar_evento: pedido.lugar_evento,
           fecha: pedido.dia,
@@ -292,7 +314,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
           const { NotificationService } = await import('../notificaciones/NotificationService');
           await NotificationService.notificarNuevaAsignacion(camarero, pedido, asignacion);
         } catch (e) {
-          console.error('Error enviando push:', e);
+          Logger.error(`Error enviando push a ${camarero.nombre}: ${e.message || e}`);
         }
 
         asignacionesActualizadas.push(asignacion.id);
@@ -301,6 +323,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
         await new Promise(resolve => setTimeout(resolve, 800));
       }
 
+      Logger.info(`Envío completado: ${enviadosDirectos} directos, ${enviadosPorWeb} por web`);
       return { asignacionesActualizadas, enviadosDirectos, enviadosPorWeb };
     },
     onSuccess: ({ enviadosDirectos, enviadosPorWeb }) => {
@@ -323,7 +346,18 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
       setArchivoUrl(null);
     },
     onError: (error) => {
-      toast.error(error.message || 'Error al enviar mensajes');
+      const { message, retryable } = handleWebhookError(error);
+      Logger.error(`Error en envío de WhatsApp: ${message}`);
+      if (error instanceof ValidationError) {
+        toast.error(`⚠️ ${message}`);
+      } else if (error instanceof WhatsAppApiError) {
+        toast.error(`❌ ${message}${retryable ? ' — Puedes intentarlo de nuevo' : ''}`);
+      } else {
+        const coord = coordinadores.find(c => c.id === coordinadorId);
+        const notifService = new ErrorNotificationService(coord?.telefono || '');
+        notifService.notifyUser(message);
+        toast.error(errorMessages.SERVER_ERROR);
+      }
     }
   });
 
@@ -508,7 +542,10 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
                     No hay camareros asignados a este evento
                   </p>
                 ) : (
-                  camarerosAsignados.map(camarero => (
+                  camarerosAsignados.map(camarero => {
+                    const isPhoneValid = !!camarero.telefono && validatePhoneNumber(camarero.telefono);
+                    const isPhoneInvalid = !!camarero.telefono && !isPhoneValid;
+                    return (
                     <div 
                       key={camarero.id}
                       className="flex items-center gap-3 p-3 border rounded-lg hover:bg-slate-50"
@@ -516,16 +553,26 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
                     <Checkbox
                       checked={selectedCamareros.includes(camarero.id)}
                       onCheckedChange={() => toggleCamarero(camarero.id)}
+                      disabled={!isPhoneValid}
                     />
                     <div className="flex-1">
                       <p className="font-medium">{camarero.nombre}</p>
-                      <p className="text-sm text-slate-500">{camarero.telefono || 'Sin teléfono'}</p>
+                      <p className={`text-sm ${isPhoneInvalid ? 'text-red-500' : 'text-slate-500'}`}>
+                        {camarero.telefono || 'Sin teléfono'}
+                      </p>
                     </div>
                     {!camarero.telefono && (
                       <span className="text-xs text-red-500">Sin teléfono</span>
                     )}
+                    {isPhoneInvalid && (
+                      <span className="text-xs text-red-500">⚠️ Teléfono inválido</span>
+                    )}
+                    {isPhoneValid && (
+                      <span className="text-xs text-green-600">✓</span>
+                    )}
                   </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -547,6 +594,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
                 toast.error('Por favor, selecciona al menos un camarero');
                 return;
               }
+              Logger.info(`Usuario inició envío de WhatsApp a ${selectedCamareros.length} camarero(s)`);
               enviarMutation.mutate();
             }}
             disabled={enviarMutation.isPending}
