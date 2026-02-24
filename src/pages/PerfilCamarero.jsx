@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Star, Award, Calendar, MapPin, Clock, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, Star, Award, Calendar, MapPin, Clock, Phone, Mail, AlertTriangle, Archive } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { format, parseISO } from 'date-fns';
