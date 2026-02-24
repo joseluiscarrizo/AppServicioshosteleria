@@ -349,7 +349,7 @@ export default function Camareros() {
             onClick={() => setMostrarReserva(false)}
             className={!mostrarReserva ? 'bg-[#1e3a5f] hover:bg-[#152a45]' : ''}
           >
-            Camareros Activos ({camarerosFiltradosActivos.length})
+            Perfiles Activos ({camarerosFiltradosActivos.length})
           </Button>
           <Button
             variant={mostrarReserva ? 'default' : 'outline'}
