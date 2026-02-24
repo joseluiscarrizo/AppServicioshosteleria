@@ -152,6 +152,49 @@ export default function Altas() {
           </Button>
         </div>
 
+        {/* Export Dialog */}
+        <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Exportar a Excel</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">Fecha desde</label>
+                  <Input type="date" value={exportFechaDesde} onChange={e => setExportFechaDesde(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">Fecha hasta</label>
+                  <Input type="date" value={exportFechaHasta} onChange={e => setExportFechaHasta(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1 block">Cliente</label>
+                <Select value={exportCliente} onValueChange={setExportCliente}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos los clientes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los clientes</SelectItem>
+                    {clientesUnicos.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-slate-400">Deja los campos vacíos para exportar todo sin filtro.</p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowExportDialog(false)}>Cancelar</Button>
+              <Button onClick={handleExportar} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Table */}
         <Card className="bg-white shadow-sm border-slate-100 overflow-hidden">
           <div className="overflow-x-auto">
