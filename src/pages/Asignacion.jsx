@@ -915,30 +915,8 @@ Sistema de Gestión de Camareros
                       )}
                     </h3>
                     
-                    {/* Buscador */}
-                    <div className="mb-3">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
-                        <Input
-                          value={busquedaCamarero}
-                          onChange={(e) => setBusquedaCamarero(e.target.value)}
-                          placeholder="Buscar por nombre o código..."
-                          className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 h-9"
-                        />
-                        {busquedaCamarero && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-white/60 hover:text-white hover:bg-white/20"
-                            onClick={() => setBusquedaCamarero('')}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-2">
+                    {/* Filtros avanzados */}
+                    <div className="mt-1">
                       <FiltrosAvanzadosCamareros
                         filtros={filtrosCamareros}
                         onFiltrosChange={setFiltrosCamareros}
