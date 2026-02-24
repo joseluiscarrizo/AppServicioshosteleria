@@ -40,6 +40,10 @@ function exportarExcel(filas) {
 
 export default function Altas() {
   const queryClient = useQueryClient();
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportFechaDesde, setExportFechaDesde] = useState('');
+  const [exportFechaHasta, setExportFechaHasta] = useState('');
+  const [exportCliente, setExportCliente] = useState('todos');
 
   const { data: pedidos = [] } = useQuery({
     queryKey: ['pedidos-altas'],
