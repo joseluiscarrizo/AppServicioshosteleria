@@ -70,6 +70,10 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
 
   React.useEffect(() => {
     if (editingCamarero) {
+      // Detectar tipo de perfil por prefijo del código
+      const codigo = editingCamarero.codigo || '';
+      const perfilDetectado = tiposPerfil.find(t => codigo.startsWith(t.prefix)) || tiposPerfil[0];
+      setTipoPerfil(perfilDetectado.value);
       setFormData({
         ...editingCamarero,
         habilidades: editingCamarero.habilidades || [],
@@ -79,6 +83,7 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
         nivel_experiencia: editingCamarero.nivel_experiencia || 'intermedio'
       });
     } else {
+      setTipoPerfil('camarero');
       setFormData({
         codigo: '',
         nombre: '',
