@@ -13,6 +13,15 @@ import { Star } from 'lucide-react';
 import { toast } from 'sonner';
 import HabilidadesEditor from '../camareros/HabilidadesEditor';
 
+const tiposPerfil = [
+  { value: 'camarero', label: 'Camarero', prefix: 'CAM' },
+  { value: 'cocinero', label: 'Cocinero', prefix: 'COC' },
+  { value: 'ayudante_cocina', label: 'Ayudante de cocina', prefix: 'AYU' },
+  { value: 'pica', label: 'Pica', prefix: 'PIC' },
+  { value: 'jamonero', label: 'Jamonero', prefix: 'JAM' },
+  { value: 'coctelero', label: 'Coctelero', prefix: 'EXT' },
+];
+
 const especialidades = [
   { value: 'general', label: 'General' },
   { value: 'cocteleria', label: 'Coctelería' },
