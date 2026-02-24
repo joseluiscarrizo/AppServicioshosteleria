@@ -256,9 +256,9 @@ export default function Camareros() {
           <div>
             <h1 className="text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
               <User className="w-8 h-8 text-[#1e3a5f]" />
-              Gestión de Camareros
+              Gestión de Personal
             </h1>
-            <p className="text-slate-500 mt-1">Gestiona tu equipo de camareros, habilidades y valoraciones</p>
+            <p className="text-slate-500 mt-1">Gestiona tu equipo de personal, habilidades y valoraciones</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
