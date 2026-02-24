@@ -306,7 +306,7 @@ export default function Camareros() {
               className="bg-[#1e3a5f] hover:bg-[#152a45] text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Nuevo Camarero
+              Nuevo Perfil
             </Button>
           </div>
         </div>
