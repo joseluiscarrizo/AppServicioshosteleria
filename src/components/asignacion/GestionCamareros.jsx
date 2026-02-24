@@ -153,7 +153,7 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {editingCamarero ? 'Editar Camarero' : 'Nuevo Camarero'}
+            {editingCamarero ? 'Editar Perfil' : 'Nuevo Perfil'}
             {editingCamarero?.valoracion_promedio > 0 && (
               <span className="flex items-center gap-1 text-sm font-normal text-amber-600">
                 <Star className="w-4 h-4 fill-amber-400" />
