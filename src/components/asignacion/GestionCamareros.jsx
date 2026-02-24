@@ -213,14 +213,7 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
                 </div>
               )}
 
-              {editingCamarero && (
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <Label className="text-xs text-slate-500">Código del Camarero</Label>
-                  <p className="font-mono font-semibold text-lg text-[#1e3a5f]">
-                    {formData.codigo}
-                  </p>
-                </div>
-              )}
+
 
               <div className="space-y-2">
                 <Label htmlFor="nombre">Nombre *</Label>
