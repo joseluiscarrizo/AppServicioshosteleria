@@ -67,6 +67,28 @@ export default function PerfilCamarero() {
     return { total, confirmados, pendientes, tasaConfirmacion };
   }, [asignaciones]);
 
+  // Calcular cancelaciones last-minute dinámicamente desde asignaciones
+  const cancelacionesLastMinute = useMemo(() => {
+    return asignaciones.filter(asig => {
+      if (asig.estado !== 'pendiente' && asig.estado !== 'enviado') return false;
+      const pedido = pedidos.find(p => p.id === asig.pedido_id);
+      if (!pedido?.dia) return false;
+      // Buscamos si la asignación fue cancelada/revertida muy tarde
+      // Como proxy: estado enviado/pendiente con fecha del evento ya pasada y hora_entrada conocida
+      // Se detecta si el updated_date ocurrió menos de 2h antes del evento
+      const horaEntrada = asig.hora_entrada || '00:00';
+      const [h, m] = horaEntrada.split(':').map(Number);
+      const fechaEvento = new Date(pedido.dia + 'T00:00:00');
+      fechaEvento.setHours(h, m || 0, 0, 0);
+      const updatedAt = asig.updated_date ? new Date(asig.updated_date) : null;
+      if (!updatedAt) return false;
+      const diffMs = fechaEvento - updatedAt;
+      const diffHoras = diffMs / (1000 * 60 * 60);
+      // Si el evento ya pasó y la última actualización fue menos de 2h antes del evento
+      return fechaEvento < new Date() && diffHoras >= 0 && diffHoras < 2;
+    }).length;
+  }, [asignaciones, pedidos]);
+
   // Historial de eventos con detalles
   const historialEventos = useMemo(() => {
     return asignaciones.map(asig => {
