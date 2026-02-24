@@ -289,13 +289,51 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
                   <Switch
                     id="en_reserva"
                     checked={formData.en_reserva}
-                    onCheckedChange={(v) => setFormData({ ...formData, en_reserva: v })}
+                    onCheckedChange={(v) => {
+                      // Si se activa en_reserva, incrementar contador
+                      const nuevasVeces = v && !formData.en_reserva
+                        ? (formData.veces_en_reserva || 0) + 1
+                        : (formData.veces_en_reserva || 0);
+                      setFormData({ ...formData, en_reserva: v, veces_en_reserva: nuevasVeces });
+                    }}
                   />
                   <Label htmlFor="en_reserva" className="cursor-pointer">
                     En Reserva (no aparece en lista activa)
                   </Label>
                 </div>
               </div>
+
+              {/* Contadores de incidencias */}
+              {editingCamarero && (
+                <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500">Cancelaciones &lt;2h</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={formData.cancelaciones_last_minute || 0}
+                        onChange={(e) => setFormData({ ...formData, cancelaciones_last_minute: parseInt(e.target.value) || 0 })}
+                        className="w-20 h-8 text-sm"
+                      />
+                      <span className="text-xs text-slate-400">veces</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500">Veces en Reserva</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={formData.veces_en_reserva || 0}
+                        onChange={(e) => setFormData({ ...formData, veces_en_reserva: parseInt(e.target.value) || 0 })}
+                        className="w-20 h-8 text-sm"
+                      />
+                      <span className="text-xs text-slate-400">veces</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="coordinador">Coordinador Asignado</Label>
