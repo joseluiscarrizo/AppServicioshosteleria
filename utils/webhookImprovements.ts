@@ -74,6 +74,8 @@ export async function executeGmailOperation<T>(operation: () => Promise<T>, retr
 
 /**
  * Handle a webhook error and return a consistent JSON response.
+ * Note: Returns `ok: true` intentionally – WhatsApp retries delivery on non-2xx responses,
+ * so we acknowledge receipt while still surfacing the error message in the body.
  */
 export function handleWebhookError(error: unknown): Response {
   const message = error instanceof Error ? error.message : String(error);

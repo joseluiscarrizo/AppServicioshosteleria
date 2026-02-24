@@ -276,9 +276,9 @@ async function crearPedidoEnBD(base44, datos, telefono) {
     throw new ValidationError(`El email "${datos.mail_contacto}" no es válido`);
   }
 
-  // Validar teléfono de contacto
+  // Validar teléfono de contacto (informativo: números de WhatsApp pueden tener formatos variados)
   if (datos.telefono_contacto && !validatePhoneNumber(datos.telefono_contacto)) {
-    Logger.warn(`Teléfono de contacto no estándar: ${datos.telefono_contacto}`);
+    Logger.warn(`Teléfono de contacto con formato no estándar: ${datos.telefono_contacto}`);
   }
 
   // Parsear fecha DD/MM/AAAA → YYYY-MM-DD
