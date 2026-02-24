@@ -38,6 +38,7 @@ const nivelesExperiencia = [
 ];
 
 export default function GestionCamareros({ open, onOpenChange, editingCamarero }) {
+  const [tipoPerfil, setTipoPerfil] = useState('camarero');
   const [formData, setFormData] = useState({
     codigo: '',
     nombre: '',
