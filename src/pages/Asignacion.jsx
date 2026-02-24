@@ -127,6 +127,16 @@ export default function Asignacion() {
     queryFn: () => base44.entities.Disponibilidad.list('-fecha', 500)
   });
 
+  // Detectar conflictos de horario entre asignaciones
+  useConflictosHorario({ asignaciones, pedidos, enabled: !loadingPedidos });
+
+  // Scores de idoneidad para el pedido seleccionado
+  const scoresAsignacion = useScoresAsignacion({
+    pedido: selectedPedido,
+    camareros,
+    asignaciones
+  });
+
   const createAsignacionMutation = useMutation({
     mutationFn: async (data) => {
       const asignacion = await base44.entities.AsignacionCamarero.create(data);
