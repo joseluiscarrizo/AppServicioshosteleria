@@ -1,32 +1,72 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import Logger from '../utils/logger.ts';
+import { validateEmail } from '../utils/validators.ts';
+import { retryWithExponentialBackoff } from '../utils/retryHandler.ts';
+import ErrorNotificationService from '../utils/errorNotificationService.ts';
+import {
+    executeGmailOperation,
+    executeDbOperation,
+    GmailApiError,
+    DatabaseError,
+    handleWebhookError,
+    ValidationError,
+} from '../utils/webhookImprovements.ts';
 
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
-        const user = await base44.auth.me();
 
+        // Autenticación
+        const user = await base44.auth.me();
         if (!user) {
             return Response.json({ error: 'No autenticado' }, { status: 401 });
         }
 
+        Logger.info(`[enviarHojaAsistenciaGmail] Solicitud recibida — usuario: ${user.email}`);
+
         const { pedido_id } = await req.json();
 
-        // Obtener datos del pedido
-        const pedido = await base44.entities.Pedido.get(pedido_id);
-        if (!pedido) {
-            return Response.json({ error: 'Pedido no encontrado' }, { status: 404 });
+        if (!pedido_id) {
+            throw new ValidationError('El campo pedido_id es requerido', 'pedido_id');
         }
 
-        // Obtener asignaciones y camareros
-        const asignaciones = await base44.entities.AsignacionCamarero.filter({
-            pedido_id: pedido_id,
-            estado: 'confirmado'
-        });
+        // --- Obtener datos del pedido (BD) ---
+        let pedido: Record<string, unknown>;
+        try {
+            pedido = await executeDbOperation(() => base44.entities.Pedido.get(pedido_id));
+            if (!pedido) {
+                return Response.json({ error: 'Pedido no encontrado' }, { status: 404 });
+            }
+            Logger.info(`[enviarHojaAsistenciaGmail] Pedido obtenido: ${pedido_id} — cliente: ${pedido.cliente}`);
+        } catch (dbErr) {
+            Logger.error(`[enviarHojaAsistenciaGmail] Error obteniendo pedido: ${dbErr}`);
+            throw new DatabaseError(`No se pudo obtener el pedido ${pedido_id}`);
+        }
 
-        const camarerosIds = [...new Set(asignaciones.map(a => a.camarero_id))];
-        const camareros = await Promise.all(
-            camarerosIds.map(id => base44.entities.Camarero.get(id))
-        );
+        // --- Obtener asignaciones y camareros (BD) ---
+        let asignaciones: Record<string, unknown>[];
+        let camareros: Record<string, unknown>[];
+        try {
+            asignaciones = await executeDbOperation(() =>
+                base44.entities.AsignacionCamarero.filter({
+                    pedido_id: pedido_id,
+                    estado: 'confirmado',
+                })
+            );
+
+            const camarerosIds = [...new Set(asignaciones.map((a) => a.camarero_id))];
+            camareros = await Promise.all(
+                camarerosIds.map((id) =>
+                    executeDbOperation(() => base44.entities.Camarero.get(id))
+                ),
+            );
+            Logger.info(
+                `[enviarHojaAsistenciaGmail] Asignaciones: ${asignaciones.length}, Camareros: ${camareros.length}`,
+            );
+        } catch (dbErr) {
+            Logger.error(`[enviarHojaAsistenciaGmail] Error obteniendo asignaciones/camareros: ${dbErr}`);
+            throw new DatabaseError('No se pudieron obtener asignaciones o camareros');
+        }
 
         // Generar HTML de la hoja de asistencia
         const htmlContent = `
@@ -66,10 +106,10 @@ Deno.serve(async (req) => {
             <span class="label">Lugar:</span> ${pedido.lugar_evento || 'N/A'}
         </div>
         <div class="info-row">
-            <span class="label">Hora entrada:</span> ${pedido.entrada || pedido.turnos?.[0]?.entrada || 'N/A'}
+            <span class="label">Hora entrada:</span> ${pedido.entrada || (pedido.turnos as Record<string, unknown>[])?.[0]?.entrada || 'N/A'}
         </div>
         <div class="info-row">
-            <span class="label">Hora salida:</span> ${pedido.salida || pedido.turnos?.[0]?.salida || 'N/A'}
+            <span class="label">Hora salida:</span> ${pedido.salida || (pedido.turnos as Record<string, unknown>[])?.[0]?.salida || 'N/A'}
         </div>
     </div>
 
@@ -110,89 +150,149 @@ Deno.serve(async (req) => {
 </html>
         `;
 
-        // Obtener emails del cliente
+        // --- Obtener emails del cliente (BD) ---
         let emailsDestinatarios: string[] = [];
 
-        // Primero intentar desde el cliente relacionado
         if (pedido.cliente_id) {
             try {
-                const clienteData = await base44.entities.Cliente.get(pedido.cliente_id);
-                if (clienteData?.email_1) emailsDestinatarios.push(clienteData.email_1);
-                if (clienteData?.email_2) emailsDestinatarios.push(clienteData.email_2);
+                const clienteData = await executeDbOperation(() =>
+                    retryWithExponentialBackoff(
+                        () => base44.entities.Cliente.get(pedido.cliente_id),
+                        2,
+                        500,
+                    )
+                );
+                if (clienteData?.email_1 && validateEmail(clienteData.email_1)) {
+                    emailsDestinatarios.push(clienteData.email_1);
+                }
+                if (clienteData?.email_2 && validateEmail(clienteData.email_2)) {
+                    emailsDestinatarios.push(clienteData.email_2);
+                }
+                Logger.info(
+                    `[enviarHojaAsistenciaGmail] Emails del cliente obtenidos: ${emailsDestinatarios.length}`,
+                );
             } catch (e) {
-                console.error('Error obteniendo cliente:', e);
+                Logger.error(`[enviarHojaAsistenciaGmail] Error obteniendo cliente: ${e}`);
             }
         }
 
         // Fallback: usar emails desnormalizados en el pedido
         if (emailsDestinatarios.length === 0) {
-            if (pedido.cliente_email_1) emailsDestinatarios.push(pedido.cliente_email_1);
-            if (pedido.cliente_email_2) emailsDestinatarios.push(pedido.cliente_email_2);
+            if (pedido.cliente_email_1 && validateEmail(String(pedido.cliente_email_1))) {
+                emailsDestinatarios.push(String(pedido.cliente_email_1));
+            }
+            if (pedido.cliente_email_2 && validateEmail(String(pedido.cliente_email_2))) {
+                emailsDestinatarios.push(String(pedido.cliente_email_2));
+            }
         }
 
         // Si no hay emails del cliente, enviar al coordinador autenticado como fallback
         const sinEmailCliente = emailsDestinatarios.length === 0;
         if (sinEmailCliente) {
+            if (!validateEmail(user.email)) {
+                throw new ValidationError(
+                    `Email del coordinador no válido: ${user.email}`,
+                    'user.email',
+                );
+            }
             emailsDestinatarios.push(user.email);
-            console.warn(`Cliente ${pedido.cliente} sin email registrado — enviando al coordinador ${user.email}`);
+            Logger.warn(
+                `[enviarHojaAsistenciaGmail] Cliente ${pedido.cliente} sin email registrado — enviando al coordinador ${user.email}`,
+            );
         }
 
-        // Obtener token de Gmail
-        const accessToken = await base44.asServiceRole.connectors.getAccessToken("gmail");
+        // --- Obtener token de Gmail ---
+        let accessToken: string;
+        try {
+            accessToken = await retryWithExponentialBackoff(
+                () => base44.asServiceRole.connectors.getAccessToken('gmail'),
+                2,
+                1000,
+            );
+        } catch (e) {
+            Logger.error(`[enviarHojaAsistenciaGmail] Error obteniendo token de Gmail: ${e}`);
+            throw new GmailApiError('No se pudo obtener el token de Gmail');
+        }
 
-        // Construir y enviar un email por destinatario
+        // --- Enviar emails usando Gmail API ---
         const subject = `Hoja de Asistencia - ${pedido.cliente} - ${pedido.dia}`;
         const resultados: { to: string; ok: boolean }[] = [];
 
         for (const to of emailsDestinatarios) {
-            const emailContent = [
-                'Content-Type: text/html; charset=utf-8',
-                'MIME-Version: 1.0',
-                `To: ${to}`,
-                `Subject: ${subject}`,
-                '',
-                htmlContent
-            ].join('\r\n');
+            Logger.info(`[enviarHojaAsistenciaGmail] Enviando hoja a: ${to}`);
+            try {
+                await executeGmailOperation(() =>
+                    retryWithExponentialBackoff(
+                        async () => {
+                            const emailContent = [
+                                'Content-Type: text/html; charset=utf-8',
+                                'MIME-Version: 1.0',
+                                `To: ${to}`,
+                                `Subject: ${subject}`,
+                                '',
+                                htmlContent,
+                            ].join('\r\n');
 
-            const encodedEmail = btoa(emailContent)
-                .replace(/\+/g, '-')
-                .replace(/\//g, '_')
-                .replace(/=+$/, '');
+                            const encodedEmail = btoa(emailContent)
+                                .replace(/\+/g, '-')
+                                .replace(/\//g, '_')
+                                .replace(/=+$/, '');
 
-            const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ raw: encodedEmail })
-            });
+                            const response = await fetch(
+                                'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+                                {
+                                    method: 'POST',
+                                    headers: {
+                                        Authorization: `Bearer ${accessToken}`,
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ raw: encodedEmail }),
+                                },
+                            );
 
-            if (!response.ok) {
-                const error = await response.text();
-                console.error(`Error enviando a ${to}:`, error);
-                resultados.push({ to, ok: false });
-            } else {
+                            if (!response.ok) {
+                                const errorText = await response.text();
+                                throw new GmailApiError(
+                                    `Error enviando email a ${to}`,
+                                    response.status,
+                                    errorText,
+                                );
+                            }
+                        },
+                        2,
+                        1000,
+                    )
+                );
+                Logger.info(`[enviarHojaAsistenciaGmail] Email enviado correctamente a: ${to}`);
                 resultados.push({ to, ok: true });
+            } catch (gmailErr) {
+                Logger.error(`[enviarHojaAsistenciaGmail] Fallo al enviar a ${to}: ${gmailErr}`);
+                resultados.push({ to, ok: false });
             }
         }
 
-        const exitosos = resultados.filter(r => r.ok).map(r => r.to);
+        const exitosos = resultados.filter((r) => r.ok).map((r) => r.to);
         if (exitosos.length === 0) {
-            throw new Error('No se pudo enviar a ningún destinatario');
+            // Best-effort user notification (phone not available in this context)
+            const notifier = new ErrorNotificationService('');
+            notifier.notifyUser(
+                `No se pudo enviar la hoja de asistencia del pedido ${pedido_id} a ningún destinatario.`,
+            );
+            throw new GmailApiError('No se pudo enviar a ningún destinatario');
         }
+
+        Logger.info(
+            `[enviarHojaAsistenciaGmail] Proceso completado — enviados a: ${exitosos.join(', ')}`,
+        );
 
         return Response.json({
             success: true,
             message: 'Hoja de asistencia enviada correctamente',
             destinatarios: exitosos,
-            sin_email_cliente: sinEmailCliente
+            sin_email_cliente: sinEmailCliente,
         });
-
     } catch (error) {
-        console.error('Error:', error);
-        return Response.json({
-            error: error.message
-        }, { status: 500 });
+        Logger.error(`[enviarHojaAsistenciaGmail] Error: ${error}`);
+        return handleWebhookError(error);
     }
 });

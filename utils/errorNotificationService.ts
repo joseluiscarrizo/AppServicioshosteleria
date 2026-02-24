@@ -15,6 +15,5 @@ const errorMessages = {
     SERVER_ERROR: 'An error occurred on the server. Please try again later.',
 };
 
-// Example usage:
-const notificationService = new ErrorNotificationService('+123456789');
-notificationService.notifyUser(errorMessages.NETWORK_ERROR);
+export { errorMessages };
+export default ErrorNotificationService;
