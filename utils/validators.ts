@@ -1,13 +1,21 @@
 // validators.ts
 
+export class ValidationError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'ValidationError';
+    }
+}
+
 /**
  * Validate if the given phone number is valid.
+ * Accepts 9–12 digit numbers, optionally preceded by a country code prefix.
  * @param {string} phoneNumber - Phone number to validate.
  * @returns {boolean} - True if valid, false otherwise.
  */
-function validatePhoneNumber(phoneNumber) {
-    const phoneRegex = /^(\+\d{1,3}[- ]?)?\d{10}$/;
-    return phoneRegex.test(phoneNumber);
+function validatePhoneNumber(phoneNumber: string): boolean {
+    const phoneRegex = /^(\+\d{1,3}[- ]?)?\d{9,12}$/;
+    return phoneRegex.test(phoneNumber.trim());
 }
 
 /**
@@ -40,4 +48,4 @@ function validateRequiredFields(data, requiredFields) {
     return requiredFields.every(field => field in data);
 }
 
-module.exports = { validatePhoneNumber, validateEmail, validateDate, validateRequiredFields };
+export { validatePhoneNumber, validateEmail, validateDate, validateRequiredFields };
