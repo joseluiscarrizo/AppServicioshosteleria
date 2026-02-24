@@ -127,16 +127,18 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
     
     let dataToSubmit = { ...formData };
     
-    // Generar código automático si es nuevo camarero
+    // Generar código automático si es nuevo perfil
     if (!editingCamarero) {
+      const perfilSeleccionado = tiposPerfil.find(t => t.value === tipoPerfil) || tiposPerfil[0];
+      const prefix = perfilSeleccionado.prefix;
       const maxCodigo = camareros.reduce((max, c) => {
-        if (c.codigo && c.codigo.startsWith('CAM')) {
-          const num = parseInt(c.codigo.substring(3));
+        if (c.codigo && c.codigo.startsWith(prefix)) {
+          const num = parseInt(c.codigo.substring(prefix.length));
           return Math.max(max, isNaN(num) ? 0 : num);
         }
         return max;
       }, 0);
-      dataToSubmit.codigo = `CAM${String(maxCodigo + 1).padStart(3, '0')}`;
+      dataToSubmit.codigo = `${prefix}${String(maxCodigo + 1).padStart(3, '0')}`;
     }
     
     if (editingCamarero) {
