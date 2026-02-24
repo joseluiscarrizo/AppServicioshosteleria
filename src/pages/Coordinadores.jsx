@@ -13,6 +13,12 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfiguracionRecordatorios from '../components/recordatorios/ConfiguracionRecordatorios';
 import NotificacionesMasivas from '../components/notificaciones/NotificacionesMasivas';
+import Logger from '../utils/logger';
+import { validateEmail, validatePhoneNumber } from '../utils/validators';
+import ErrorNotificationService from '../utils/errorNotificationService';
+import { DatabaseError, handleWebhookError } from '../utils/webhookImprovements';
+
+const errorNotifier = new ErrorNotificationService('');
 
 export default function Coordinadores() {
   const [showForm, setShowForm] = useState(false);
@@ -26,6 +32,7 @@ export default function Coordinadores() {
     notificaciones_email: true,
     notificaciones_app: true
   });
+  const [formErrors, setFormErrors] = useState({});
 
   const queryClient = useQueryClient();
 
@@ -35,39 +42,64 @@ export default function Coordinadores() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Coordinador.create(data),
+    mutationFn: async (data) => {
+      try {
+        return await base44.entities.Coordinador.create(data);
+      } catch (error) {
+        throw new DatabaseError(error.message || 'Error al crear coordinador en la base de datos', { data });
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['coordinadores'] });
       resetForm();
       toast.success('Coordinador añadido');
+      Logger.info('Coordinador creado exitosamente');
     },
     onError: (error) => {
-      console.error('Error al crear coordinador:', error);
+      Logger.error('Error al crear coordinador', { error: error.message });
+      handleWebhookError(error, { operation: 'createCoordinador' });
+      errorNotifier.notifyUser('Error al crear coordinador: ' + (error.message || 'Error desconocido'));
       toast.error('Error al crear coordinador: ' + (error.message || 'Error desconocido'));
     }
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Coordinador.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      try {
+        return await base44.entities.Coordinador.update(id, data);
+      } catch (error) {
+        throw new DatabaseError(error.message || 'Error al actualizar coordinador en la base de datos', { id, data });
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['coordinadores'] });
       resetForm();
       toast.success('Coordinador actualizado');
+      Logger.info('Coordinador actualizado exitosamente');
     },
     onError: (error) => {
-      console.error('Error al actualizar coordinador:', error);
+      Logger.error('Error al actualizar coordinador', { error: error.message });
+      handleWebhookError(error, { operation: 'updateCoordinador' });
       toast.error('Error al actualizar coordinador: ' + (error.message || 'Error desconocido'));
     }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Coordinador.delete(id),
+    mutationFn: async (id) => {
+      try {
+        return await base44.entities.Coordinador.delete(id);
+      } catch (error) {
+        throw new DatabaseError(error.message || 'Error al eliminar coordinador en la base de datos', { id });
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['coordinadores'] });
       toast.success('Coordinador eliminado');
+      Logger.info('Coordinador eliminado exitosamente');
     },
     onError: (error) => {
-      console.error('Error al eliminar coordinador:', error);
+      Logger.error('Error al eliminar coordinador', { error: error.message });
+      handleWebhookError(error, { operation: 'deleteCoordinador' });
       toast.error('Error al eliminar coordinador: ' + (error.message || 'Error desconocido'));
     }
   });
@@ -83,6 +115,8 @@ export default function Coordinadores() {
       notificaciones_email: true,
       notificaciones_app: true
     });
+    setFormErrors({});
+    Logger.info('Formulario de coordinador reiniciado');
   };
 
   const handleEdit = (coord) => {
@@ -95,11 +129,39 @@ export default function Coordinadores() {
       notificaciones_email: coord.notificaciones_email ?? true,
       notificaciones_app: coord.notificaciones_app ?? true
     });
+    setFormErrors({});
     setShowForm(true);
+    Logger.info('Editando coordinador', { id: coord.id, nombre: coord.nombre });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const errors = {};
+
+    if (!formData.codigo.trim()) {
+      errors.codigo = 'El código es obligatorio';
+    }
+    if (!formData.nombre.trim()) {
+      errors.nombre = 'El nombre es obligatorio';
+    }
+    if (!formData.email.trim()) {
+      errors.email = 'El email es obligatorio';
+    } else if (!validateEmail(formData.email)) {
+      errors.email = 'El formato del email no es válido';
+    }
+    if (formData.telefono && !validatePhoneNumber(formData.telefono)) {
+      errors.telefono = 'El formato del teléfono no es válido';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      Logger.warn('Validación de formulario fallida', { errors });
+      return;
+    }
+
+    setFormErrors({});
+    Logger.info(editingCoord ? 'Actualizando coordinador' : 'Creando coordinador', { nombre: formData.nombre });
+
     if (editingCoord) {
       updateMutation.mutate({ id: editingCoord.id, data: formData });
     } else {
@@ -177,8 +239,9 @@ export default function Coordinadores() {
                         value={formData.codigo}
                         onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
                         placeholder="C001"
-                        required
+                        className={formErrors.codigo ? 'border-red-500' : formData.codigo.trim() ? 'border-emerald-500' : ''}
                       />
+                      {formErrors.codigo && <p className="text-xs text-red-500">{formErrors.codigo}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="nombre">Nombre</Label>
@@ -187,8 +250,9 @@ export default function Coordinadores() {
                         value={formData.nombre}
                         onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                         placeholder="Nombre del coordinador"
-                        required
+                        className={formErrors.nombre ? 'border-red-500' : formData.nombre.trim() ? 'border-emerald-500' : ''}
                       />
+                      {formErrors.nombre && <p className="text-xs text-red-500">{formErrors.nombre}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
@@ -198,8 +262,9 @@ export default function Coordinadores() {
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         placeholder="email@ejemplo.com"
-                        required
+                        className={formErrors.email ? 'border-red-500' : formData.email && validateEmail(formData.email) ? 'border-emerald-500' : ''}
                       />
+                      {formErrors.email && <p className="text-xs text-red-500">{formErrors.email}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="telefono">Teléfono</Label>
@@ -208,7 +273,9 @@ export default function Coordinadores() {
                         value={formData.telefono}
                         onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
                         placeholder="+34 600 000 000"
+                        className={formErrors.telefono ? 'border-red-500' : formData.telefono && validatePhoneNumber(formData.telefono) ? 'border-emerald-500' : ''}
                       />
+                      {formErrors.telefono && <p className="text-xs text-red-500">{formErrors.telefono}</p>}
                     </div>
                   </div>
 
