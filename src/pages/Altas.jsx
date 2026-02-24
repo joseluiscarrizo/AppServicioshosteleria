@@ -144,7 +144,7 @@ export default function Altas() {
             </p>
           </div>
           <Button
-            onClick={() => exportarExcel(filas)}
+            onClick={() => setShowExportDialog(true)}
             className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
           >
             <Download className="w-4 h-4 mr-2" />
