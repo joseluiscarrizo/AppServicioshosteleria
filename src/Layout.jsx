@@ -161,7 +161,7 @@ export default function Layout({ children, currentPageName }) {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-[#2d5a8f] flex items-center justify-center shadow-lg shadow-[#1e3a5f]/20">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-700 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-700/20">
                 <ClipboardList className="w-5 h-5 text-white" />
               </div>
               <div className="hidden sm:block">
