@@ -6,7 +6,7 @@
  * - Botón para generar QR del evento y mostrar link en el chat
  * - Vista de QR individual por camarero
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { QrCode, Clock, LogIn, LogOut, Pencil, Check, X, Loader2, Copy, ExternalLink, AlertCircle } from 'lucide-react';
+import { QrCode, LogIn, LogOut, Pencil, Check, X, Loader2, Copy, ExternalLink, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 function calcularHoras(entrada, salida) {

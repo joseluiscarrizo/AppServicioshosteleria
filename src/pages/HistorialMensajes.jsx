@@ -1,4 +1,3 @@
-import React from 'react';
 import HistorialWhatsApp from '../components/whatsapp/HistorialWhatsApp';
 import EnviosProgramados from '../components/whatsapp/EnviosProgramados';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

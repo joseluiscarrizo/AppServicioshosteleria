@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, Plus, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SelectorCliente from '../crm/SelectorCliente';
-import InfoCliente from '../crm/InfoCliente';
 
 export default function PedidoFormNuevo({ pedido, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({

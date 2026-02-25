@@ -3,7 +3,7 @@
  * El camarero escanea su QR y ve esta página para registrar entrada/salida.
  * No requiere login.
  */
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
