@@ -197,7 +197,53 @@ export default function Altas() {
           </DialogContent>
         </Dialog>
 
-        {/* Table */}
+        {/* Table / Card list */}
+        {isMobile ? (
+          <div className="space-y-3">
+            {isLoading && <p className="text-center text-slate-400 py-8">Cargando...</p>}
+            {!isLoading && filas.length === 0 && <p className="text-center text-slate-400 py-8">No hay asignaciones registradas</p>}
+            {filas.map(fila => (
+              <div key={fila.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-slate-800">{fila.camarero}</p>
+                    <p className="text-xs font-mono text-slate-400">{fila.codCamarero}</p>
+                  </div>
+                  {estadoBadge(fila.alta ? 'alta' : fila.estado)}
+                </div>
+                <div className="text-sm text-slate-600 space-y-1">
+                  <p><span className="text-slate-400">Cliente:</span> {fila.cliente}</p>
+                  <p><span className="text-slate-400">Evento:</span> {fila.evento}</p>
+                  <p><span className="text-slate-400">Fecha:</span> {fila.fecha} · {fila.dia}</p>
+                  {fila.horaEntrada && <p><span className="text-slate-400">Entrada:</span> {fila.horaEntrada}</p>}
+                </div>
+                <div className="flex gap-2 pt-1 border-t border-slate-100">
+                  <Button
+                    size="sm"
+                    onClick={() => handleDarAlta(fila)}
+                    disabled={fila.alta || updateMutation.isPending}
+                    className={`flex-1 min-h-[44px] ${fila.alta ? 'bg-green-200 text-green-800 cursor-not-allowed hover:bg-green-200' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    {fila.alta ? 'Alta Dada' : 'Dar Alta'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleDarBaja(fila)}
+                    disabled={!fila.alta || updateMutation.isPending}
+                    className={`flex-1 min-h-[44px] ${!fila.alta ? 'bg-slate-100 text-slate-400 cursor-not-allowed hover:bg-slate-100' : 'bg-red-500 hover:bg-red-600 text-white'}`}
+                  >
+                    <UserMinus className="w-4 h-4 mr-1" />
+                    Baja
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {filas.length > 0 && (
+              <p className="text-center text-xs text-slate-400 py-2">{filas.length} asignaciones · {filas.filter(f => f.alta).length} con alta</p>
+            )}
+          </div>
+        ) : (
         <Card className="bg-white shadow-sm border-slate-100 overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
@@ -231,63 +277,26 @@ export default function Altas() {
                 ) : (
                   filas.map((fila) => (
                     <TableRow key={fila.id} className="hover:bg-slate-50 transition-colors">
-                      <TableCell className="whitespace-nowrap text-sm font-medium text-slate-700">
-                        {fila.fecha}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-slate-600">
-                        {fila.dia}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-slate-700 max-w-[140px] truncate">
-                        {fila.cliente}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-slate-600 max-w-[150px] truncate">
-                        {fila.evento}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm font-mono text-slate-600">
-                        {fila.codCamarero}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-slate-700">
-                        {fila.camarero}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-slate-600">
-                        {fila.horaEntrada || '—'}
-                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-sm font-medium text-slate-700">{fila.fecha}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm text-slate-600">{fila.dia}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm text-slate-700 max-w-[140px] truncate">{fila.cliente}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm text-slate-600 max-w-[150px] truncate">{fila.evento}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm font-mono text-slate-600">{fila.codCamarero}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm text-slate-700">{fila.camarero}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm text-slate-600">{fila.horaEntrada || '—'}</TableCell>
                       <TableCell className="text-center">
-                        <Button
-                          size="sm"
-                          onClick={() => handleDarAlta(fila)}
-                          disabled={fila.alta || updateMutation.isPending}
-                          className={fila.alta
-                            ? 'bg-green-200 text-green-800 cursor-not-allowed hover:bg-green-200'
-                            : 'bg-green-500 hover:bg-green-600 text-white'
-                          }
-                        >
-                          <CheckCircle className="w-3.5 h-3.5 mr-1" />
-                          {fila.alta ? 'Dado' : 'Dar Alta'}
+                        <Button size="sm" onClick={() => handleDarAlta(fila)} disabled={fila.alta || updateMutation.isPending}
+                          className={fila.alta ? 'bg-green-200 text-green-800 cursor-not-allowed hover:bg-green-200' : 'bg-green-500 hover:bg-green-600 text-white'}>
+                          <CheckCircle className="w-3.5 h-3.5 mr-1" />{fila.alta ? 'Dado' : 'Dar Alta'}
                         </Button>
                       </TableCell>
                       <TableCell className="text-center">
-                        {fila.alta ? (
-                          <Badge className="bg-blue-600 hover:bg-blue-600 text-white border-0">
-                            <UserCheck className="w-3 h-3 mr-1" />
-                            Alta
-                          </Badge>
-                        ) : (
-                          estadoBadge(fila.estado)
-                        )}
+                        {fila.alta ? (<Badge className="bg-blue-600 hover:bg-blue-600 text-white border-0"><UserCheck className="w-3 h-3 mr-1" />Alta</Badge>) : estadoBadge(fila.estado)}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Button
-                          size="sm"
-                          onClick={() => handleDarBaja(fila)}
-                          disabled={!fila.alta || updateMutation.isPending}
-                          className={!fila.alta
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed hover:bg-slate-100'
-                            : 'bg-red-500 hover:bg-red-600 text-white'
-                          }
-                        >
-                          <UserMinus className="w-3.5 h-3.5 mr-1" />
-                          Baja
+                        <Button size="sm" onClick={() => handleDarBaja(fila)} disabled={!fila.alta || updateMutation.isPending}
+                          className={!fila.alta ? 'bg-slate-100 text-slate-400 cursor-not-allowed hover:bg-slate-100' : 'bg-red-500 hover:bg-red-600 text-white'}>
+                          <UserMinus className="w-3.5 h-3.5 mr-1" />Baja
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -303,6 +312,7 @@ export default function Altas() {
             </div>
           )}
         </Card>
+        )}
       </div>
     </div>
   );
