@@ -5,7 +5,7 @@
  *  - Drag & drop de camareros a slots de eventos
  *  - Panel lateral contextual al seleccionar un día/evento
  */
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  ChevronLeft, ChevronRight, AlertTriangle, AlertCircle,
+  ChevronLeft, ChevronRight, AlertTriangle,
   Users, MapPin, Clock, X, GripVertical, Star, UserPlus, Calendar, CheckCircle2
 } from 'lucide-react';
 import ScoreBadge from './ScoreBadge';

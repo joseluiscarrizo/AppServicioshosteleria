@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bell, Check, CheckCheck, AlertTriangle, Clock, RefreshCw, Mail, Settings } from 'lucide-react';
+import { Bell, CheckCheck, AlertTriangle, Clock, RefreshCw, Mail, Settings } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';

@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bell, Settings, History, Send } from 'lucide-react';
+import { Bell, Settings, History } from 'lucide-react';
 import ConfiguracionNotificaciones from '../components/notificaciones/ConfiguracionNotificaciones';
 import HistorialNotificaciones from '../components/notificaciones/HistorialNotificaciones';
 import NotificacionesMasivas from '../components/notificaciones/NotificacionesMasivas';

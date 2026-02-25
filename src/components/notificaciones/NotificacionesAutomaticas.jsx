@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { differenceInHours, differenceInDays, addDays, format } from 'date-fns';
+import { differenceInHours, differenceInDays, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 

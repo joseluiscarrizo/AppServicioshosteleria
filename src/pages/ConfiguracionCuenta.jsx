@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, User, Bell, Shield, Trash2, ChevronRight, LogOut, Moon, Globe, Lock, AlertTriangle } from 'lucide-react';
+import { Settings, Bell, Shield, Trash2, ChevronRight, LogOut, Moon, Globe, Lock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 

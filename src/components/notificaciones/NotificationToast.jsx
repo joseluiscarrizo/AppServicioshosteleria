@@ -1,4 +1,3 @@
-import React from 'react';
 import { toast } from 'sonner';
 import { Bell, CheckCircle, AlertTriangle, Clock, RefreshCw } from 'lucide-react';
 

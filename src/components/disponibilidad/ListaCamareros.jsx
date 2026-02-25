@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Search, Check, X, Calendar, AlertCircle } from 'lucide-react';
+import { Users, Search, AlertCircle } from 'lucide-react';
 import { format, isToday, isTomorrow, addDays } from 'date-fns';
 import { motion } from 'framer-motion';
 

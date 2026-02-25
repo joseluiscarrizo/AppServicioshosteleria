@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -10,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { UserCheck, UserX, Search, Filter, Calendar, Plus, Trash2, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Calendar, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addDays, startOfWeek, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';

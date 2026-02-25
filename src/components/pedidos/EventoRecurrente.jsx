@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Repeat, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, addDays, addWeeks, addMonths, eachDayOfInterval } from 'date-fns';
+import { format, addWeeks, addMonths, eachDayOfInterval } from 'date-fns';
 
 const diasSemana = [
   { value: 1, label: 'Lunes' },

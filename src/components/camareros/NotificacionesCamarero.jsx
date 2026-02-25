@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bell, Check, X, MapPin, Clock, Calendar, AlertCircle, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Bell, Check, MapPin, Clock, Calendar, AlertCircle, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
