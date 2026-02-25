@@ -72,8 +72,9 @@ export default function ParteServicio({ pedido, open, onOpenChange }) {
     : '';
 
   const exportarPDF = () => {
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageW = 210;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageW = 297;
+    const pageH = 210;
     const margin = 14;
     const colW = pageW - margin * 2;
     let y = 14;
@@ -88,37 +89,43 @@ export default function ParteServicio({ pedido, open, onOpenChange }) {
     doc.setTextColor(0, 0, 0);
     y = 26;
 
-    // ---- INFO CABECERA ----
+    // ---- INFO CABECERA en dos columnas ----
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
 
+    const labelW = 32;
+    const col1X = margin;
+    const col2X = pageW / 2 + 5;
+
+    // Columna izquierda
     const infoLeft = [
-      [`CLIENTE:`, pedido.cliente || ''],
-      [`EVENTO:`, fechaFormateada],
-      [`HORA EVENTO:`, horaEvento],
+      ['CLIENTE:', pedido.cliente || ''],
+      ['EVENTO:', fechaFormateada],
+      ['HORA EVENTO:', horaEvento || '—'],
     ];
+    let yLeft = y;
     infoLeft.forEach(([label, val]) => {
       doc.setFont('helvetica', 'bold');
-      doc.text(label, margin, y);
+      doc.text(label, col1X, yLeft);
       doc.setFont('helvetica', 'normal');
-      doc.text(val, margin + 30, y);
-      y += 5.5;
+      doc.text(val, col1X + labelW, yLeft);
+      yLeft += 5.5;
     });
 
-    // Coordinador al lado derecho
-    const coordY = 26;
+    // Columna derecha
     doc.setFont('helvetica', 'bold');
-    doc.text('COORDINADOR:', pageW / 2 + 5, coordY);
+    doc.text('COORDINADOR:', col2X, y);
     doc.setFont('helvetica', 'normal');
-    doc.text(coordinadores[0]?.nombre || '', pageW / 2 + 38, coordY);
+    doc.text(coordinadores[0]?.nombre || '—', col2X + labelW + 2, y);
 
-    y += 2;
-    // Dirección
+    y = Math.max(yLeft, y + 5.5) + 2;
+
+    // Dirección (ancho completo)
     doc.setFont('helvetica', 'bold');
     doc.text('DIRECCIÓN:', margin, y);
     doc.setFont('helvetica', 'normal');
-    const dirLines = doc.splitTextToSize(pedido.lugar_evento || pedido.direccion_completa || '', colW - 30);
-    doc.text(dirLines, margin + 30, y);
+    const dirLines = doc.splitTextToSize(pedido.lugar_evento || pedido.direccion_completa || '—', colW - labelW);
+    doc.text(dirLines, margin + labelW, y);
     y += dirLines.length * 5 + 4;
 
     // Línea separadora
@@ -127,15 +134,15 @@ export default function ParteServicio({ pedido, open, onOpenChange }) {
     doc.line(margin, y, pageW - margin, y);
     y += 5;
 
-    // ---- TABLA ----
+    // ---- TABLA (más ancha en landscape) ----
     const cols = [
       { label: 'Nº', w: 8 },
-      { label: 'Código', w: 18 },
-      { label: 'Perfil / Nombre', w: 52 },
-      { label: 'H. Entrada', w: 22 },
-      { label: 'H. Salida', w: 22 },
-      { label: 'Observaciones', w: 40 },
-      { label: 'Firma', w: 20 },
+      { label: 'Código', w: 20 },
+      { label: 'Perfil / Nombre', w: 72 },
+      { label: 'H. Entrada', w: 25 },
+      { label: 'H. Salida', w: 25 },
+      { label: 'Observaciones', w: 65 },
+      { label: 'Firma', w: 54 },
     ];
 
     // Cabecera tabla
