@@ -1,5 +1,6 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { createPageUrl } from './utils';
 import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users, LayoutDashboard, Bell, MessageCircle, ChevronDown, Smartphone, CalendarRange, ShieldCheck, Settings } from 'lucide-react';
 
