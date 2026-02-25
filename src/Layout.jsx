@@ -1,7 +1,44 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users, LayoutDashboard, Bell, MessageCircle, ChevronDown, Smartphone, CalendarRange, ShieldCheck } from 'lucide-react';
+import { ClipboardList, FileText, Menu, X, UserCog, UserPlus, CalendarDays, Clock, Users, LayoutDashboard, Bell, MessageCircle, ChevronDown, Smartphone, CalendarRange, ShieldCheck, Settings } from 'lucide-react';
+
+// ── Bottom Tabs para móvil ────────────────────────────────
+const BOTTOM_TABS = [
+  { label: 'Dashboard', page: 'DashboardCoordinador', icon: LayoutDashboard },
+  { label: 'Pedidos',   page: 'Pedidos',              icon: ClipboardList },
+  { label: 'Personal',  page: 'Camareros',            icon: Users },
+  { label: 'Chat',      page: 'Comunicacion',         icon: MessageCircle },
+  { label: 'Ajustes',   page: 'ConfiguracionCuenta',  icon: Settings },
+];
+
+function BottomNav({ currentPageName }) {
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-slate-200 bottom-nav flex items-stretch">
+      {BOTTOM_TABS.map(tab => {
+        const Icon = tab.icon;
+        const active = currentPageName === tab.page;
+        return (
+          <Link
+            key={tab.page}
+            to={createPageUrl(tab.page)}
+            className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors relative ${
+              active ? 'text-[#1e3a5f]' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5]' : 'stroke-[1.5]'}`} />
+            <span className={`text-[10px] font-medium ${active ? 'text-[#1e3a5f]' : 'text-slate-400'}`}>
+              {tab.label}
+            </span>
+            {active && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#1e3a5f] rounded-b-full" />
+            )}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -57,7 +94,7 @@ export default function Layout({ children, currentPageName }) {
       <RateLimitHandler />
       
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 safe-area-top">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -347,10 +384,13 @@ export default function Layout({ children, currentPageName }) {
             )}
       </header>
 
-      {/* Main Content */}
-      <main>
+      {/* Main Content — pb-16 evita que el bottom nav tape contenido en móvil */}
+      <main className="pb-16 md:pb-0">
         {children}
       </main>
+
+      {/* Bottom Navigation — solo visible en móvil */}
+      <BottomNav currentPageName={currentPageName} />
     </div>
   );
 }

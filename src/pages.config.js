@@ -53,6 +53,7 @@ import Camareros from './pages/Camareros';
 import Chat from './pages/Chat';
 import Clientes from './pages/Clientes';
 import Comunicacion from './pages/Comunicacion';
+import ConfiguracionCuenta from './pages/ConfiguracionCuenta';
 import ConfiguracionNotificaciones from './pages/ConfiguracionNotificaciones';
 import ConfirmarServicio from './pages/ConfirmarServicio';
 import Coordinadores from './pages/Coordinadores';
@@ -78,6 +79,7 @@ export const PAGES = {
     "Chat": Chat,
     "Clientes": Clientes,
     "Comunicacion": Comunicacion,
+    "ConfiguracionCuenta": ConfiguracionCuenta,
     "ConfiguracionNotificaciones": ConfiguracionNotificaciones,
     "ConfirmarServicio": ConfirmarServicio,
     "Coordinadores": Coordinadores,
