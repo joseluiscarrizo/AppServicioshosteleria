@@ -110,27 +110,42 @@ export default function Pedidos() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Pedido.create(data),
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries({ queryKey: ['pedidos'] });
+      const previous = queryClient.getQueryData(['pedidos']);
+      const optimistic = { ...newData, id: `temp-${Date.now()}` };
+      queryClient.setQueryData(['pedidos'], old => [...(old || []), optimistic].sort((a, b) => (a.dia || '').localeCompare(b.dia || '')));
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       resetForm();
       toast.success('Pedido creado');
     },
-    onError: (error) => {
-      console.error('Error al crear pedido:', error);
+    onError: (error, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['pedidos'], ctx.previous);
       toast.error('Error al crear pedido: ' + (error.message || 'Error desconocido'));
     }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Pedido.update(id, data),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['pedidos'] });
+      const previous = queryClient.getQueryData(['pedidos']);
+      queryClient.setQueryData(['pedidos'], old =>
+        (old || []).map(p => p.id === id ? { ...p, ...data } : p)
+      );
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       resetForm();
       setEditingSalida({ pedidoId: null, turnoIndex: null, camareroIndex: null });
       toast.success('Pedido actualizado');
     },
-    onError: (error) => {
-      console.error('Error al actualizar pedido:', error);
+    onError: (error, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['pedidos'], ctx.previous);
       toast.error('Error al actualizar pedido: ' + (error.message || 'Error desconocido'));
     }
   });
