@@ -22,6 +22,7 @@ import PedidoFormNuevo from '../components/pedidos/PedidoFormNuevo';
 import GenerarDocumentacion from '../components/pedidos/GenerarDocumentacion';
 import ParteServicio from '../components/pedidos/ParteServicio';
 import SugerenciasInteligentes from '../components/asignacion/SugerenciasInteligentes';
+import PullToRefresh from '../components/ui/PullToRefresh';
 
 export default function Pedidos() {
   const [showForm, setShowForm] = useState(false);
