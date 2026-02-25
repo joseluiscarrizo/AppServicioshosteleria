@@ -23,8 +23,11 @@ import GenerarDocumentacion from '../components/pedidos/GenerarDocumentacion';
 import ParteServicio from '../components/pedidos/ParteServicio';
 import SugerenciasInteligentes from '../components/asignacion/SugerenciasInteligentes';
 import PullToRefresh from '../components/ui/PullToRefresh';
+import PedidoCardMobile from '../components/pedidos/PedidoCardMobile';
+import { useIsMobile } from '../components/ui/useIsMobile';
 
 export default function Pedidos() {
+  const isMobile = useIsMobile();
   const [showForm, setShowForm] = useState(false);
   const [showAIExtractor, setShowAIExtractor] = useState(false);
   const [showEntradaAuto, setShowEntradaAuto] = useState(false);
