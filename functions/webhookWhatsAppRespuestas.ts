@@ -25,6 +25,7 @@ import {
   handleWebhookError,
   ValidationError
 } from '../utils/webhookImprovements.ts';
+import { confirmCamareroAssignment } from '../utils/confirmationService.ts';
 
 const WA_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN');
 const WA_PHONE = Deno.env.get('WHATSAPP_PHONE_NUMBER');
@@ -611,8 +612,27 @@ Deno.serve(async (req) => {
           }
         }
 
-        Logger.info(`✅ Asignación ${asignacionId} confirmada vía botón WhatsApp`);
+        // Enviar mensaje de confirmación con QR al camarero
+        try {
+          await confirmCamareroAssignment({
+            telefono,
+            camareroNombre: asignacion.camarero_nombre || '',
+            pedido: {
+              id: pedido?.id || asignacion.pedido_id,
+              cliente: pedido?.cliente || '',
+              dia: pedido?.dia || '',
+              entrada: pedido?.entrada || '',
+              nombre: pedido?.nombre || '',
+            },
+            waToken: WA_TOKEN,
+            waPhone: WA_PHONE,
+            appUrl: Deno.env.get('APP_URL'),
+          });
+        } catch (e) {
+          Logger.error('Error enviando confirmación WhatsApp al camarero: ' + e);
+        }
 
+        Logger.info(`✅ Asignación ${asignacionId} confirmada vía botón WhatsApp`);
       } else if (accion === 'rechazar') {
         if (asignacion.camarero_id) {
           await executeDbOperation(() => base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, { estado_actual: 'disponible' }));
