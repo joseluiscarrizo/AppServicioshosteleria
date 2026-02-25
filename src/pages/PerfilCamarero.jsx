@@ -23,6 +23,7 @@ const especialidadColors = {
 };
 
 export default function PerfilCamarero() {
+  const isMobile = useIsMobile();
   const urlParams = new URLSearchParams(window.location.search);
   const camareroId = urlParams.get('id');
 
