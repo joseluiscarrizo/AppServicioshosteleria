@@ -182,13 +182,19 @@ export default function Pedidos() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Pedido.delete(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['pedidos'] });
+      const previous = queryClient.getQueryData(['pedidos']);
+      queryClient.setQueryData(['pedidos'], old => (old || []).filter(p => p.id !== id));
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       toast.success('Pedido eliminado');
     },
-    onError: (error) => {
-      console.error('Error al eliminar pedido:', error);
-      toast.error('Error al eliminar pedido: ' + (error.message || 'Error desconocido'));
+    onError: (_err, _id, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['pedidos'], ctx.previous);
+      toast.error('Error al eliminar pedido');
     }
   });
 
