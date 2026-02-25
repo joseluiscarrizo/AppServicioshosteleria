@@ -425,7 +425,9 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Main Content — pb-16 evita que el bottom nav tape contenido en móvil */}
       <main className="pb-16 md:pb-0">
-        {children}
+        <PageTransitionWrapper currentPageName={currentPageName}>
+          {children}
+        </PageTransitionWrapper>
       </main>
 
       {/* Bottom Navigation — solo visible en móvil */}
