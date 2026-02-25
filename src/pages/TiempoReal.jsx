@@ -663,7 +663,7 @@ export default function TiempoReal() {
         />
       )}
       </div>
-    </div>
+      </div>
     </PullToRefresh>
   );
 }
