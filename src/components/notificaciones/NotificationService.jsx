@@ -37,7 +37,7 @@ export class NotificationService {
   /**
    * Envía una notificación push usando la API de notificaciones del navegador
    */
-  static async enviarPush(titulo, mensaje, icono = '/icon.png', data = {}) {
+  static enviarPush(titulo, mensaje, icono = '/icon.png', data = {}) {
     if (!('Notification' in window)) {
       console.warn('Notificaciones push no soportadas');
       return false;

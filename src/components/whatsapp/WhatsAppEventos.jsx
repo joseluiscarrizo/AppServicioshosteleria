@@ -97,7 +97,7 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
 
   const deseleccionarTodos = () => setSelectedCamareros([]);
 
-  const generarMensaje = async (asignacion, camarero) => {
+  const generarMensaje = (asignacion, camarero) => {
     const pedido = eventoSeleccionado;
     const baseUrl = window.location.origin;
     const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;

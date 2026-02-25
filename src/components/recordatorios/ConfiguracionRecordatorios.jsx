@@ -51,7 +51,7 @@ export default function ConfiguracionRecordatorios() {
   }, [config]);
 
   const saveMutation = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: (data) => {
       if (config) {
         return base44.entities.ConfiguracionRecordatorios.update(config.id, data);
       } else {

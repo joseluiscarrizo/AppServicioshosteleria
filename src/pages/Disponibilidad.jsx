@@ -36,7 +36,7 @@ export default function Disponibilidad() {
     : [];
 
   const saveMutation = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: (data) => {
       // Buscar si ya existe una disponibilidad para esa fecha y camarero
       const existing = disponibilidades.find(d => 
         d.camarero_id === data.camarero_id && 
