@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import Logger from '../utils/logger';
-import { validatePhoneNumber, validateEmail, validateRequiredFields } from '../utils/validators';
+import { validatePhoneNumber, validateEmail } from '../utils/validators';
 import GestionCamareros from '../components/asignacion/GestionCamareros';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import ValoracionesHistorial from '../components/camareros/ValoracionesHistorial';
@@ -100,7 +100,15 @@ export default function Camareros() {
 
     Logger.info(`Iniciando importación de CSV: ${file.name}`);
 
-    const text = await file.text();
+    let text;
+    try {
+      text = await file.text();
+    } catch (err) {
+      Logger.error(`Error leyendo el archivo CSV: ${err?.message || 'Error desconocido'}`);
+      toast.error('No se pudo leer el archivo. Comprueba que no está dañado.');
+      return;
+    }
+
     const lines = text.split('\n').filter(l => l.trim());
     if (lines.length < 2) {
       Logger.warn('El archivo CSV no tiene datos suficientes');
@@ -111,8 +119,8 @@ export default function Camareros() {
     const sep = lines[0].includes(';') ? ';' : ',';
     const headers = lines[0].split(sep).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
 
-    // Validate CSV structure: must contain a nombre column (exact match after lowercasing)
-    const hasNombreHeader = headers.some(h => h === 'nombre');
+    // Validate CSV structure: must contain a "nombre" column (using same includes-based matching as idx)
+    const hasNombreHeader = headers.some(h => h.includes('nombre'));
     if (!hasNombreHeader) {
       Logger.error('CSV inválido: falta la columna "nombre" requerida');
       toast.error('El archivo CSV no tiene la columna "nombre" requerida');
