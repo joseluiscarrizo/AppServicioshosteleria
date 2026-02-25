@@ -84,5 +84,6 @@ export default function Comunicacion() {
         </Tabs>
       </div>
     </div>
+    </PullToRefresh>
   );
 }
