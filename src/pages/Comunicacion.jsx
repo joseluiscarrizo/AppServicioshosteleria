@@ -83,7 +83,7 @@ export default function Comunicacion() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+      </div>
     </PullToRefresh>
   );
 }
