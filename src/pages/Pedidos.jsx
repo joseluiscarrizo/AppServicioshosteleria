@@ -628,6 +628,15 @@ export default function Pedidos() {
                                         window.location.href = `/Asignacion?pedido_id=${pedido.id}`;
                                       }}
                                     />
+                                    <Button
+                                       variant="ghost"
+                                       size="icon"
+                                       onClick={() => setParteDialog({ open: true, pedido })}
+                                       className="h-8 w-8"
+                                       title="Parte de servicio"
+                                     >
+                                       <FileText className="w-4 h-4" />
+                                     </Button>
                                     <GenerarDocumentacion pedido={pedido} variant="ghost" size="icon" />
                                     <Button 
                                       variant="ghost" 
