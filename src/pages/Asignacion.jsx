@@ -295,34 +295,52 @@ Sistema de Gestión de Camareros
 
   const updateAsignacionMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.AsignacionCamarero.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['asignaciones'] });
+      const previous = queryClient.getQueryData(['asignaciones']);
+      queryClient.setQueryData(['asignaciones'], old =>
+        (old || []).map(a => a.id === id ? { ...a, ...data } : a)
+      );
+      return { previous };
     },
-    onError: (error) => {
-      console.error('Error al actualizar asignación:', error);
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['asignaciones'] }),
+    onError: (error, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['asignaciones'], ctx.previous);
       toast.error('Error al actualizar asignación: ' + (error.message || 'Error desconocido'));
     }
   });
 
   const deleteAsignacionMutation = useMutation({
     mutationFn: async (asignacion) => {
-      // Eliminar tareas asociadas primero
       await TareasService.eliminarTareasAsignacion(asignacion.id);
-      // Eliminar asignación
       await base44.entities.AsignacionCamarero.delete(asignacion.id);
+    },
+    onMutate: async (asignacion) => {
+      await queryClient.cancelQueries({ queryKey: ['asignaciones'] });
+      const previous = queryClient.getQueryData(['asignaciones']);
+      queryClient.setQueryData(['asignaciones'], old => (old || []).filter(a => a.id !== asignacion.id));
+      return { previous };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
       toast.success('Asignación eliminada');
     },
-    onError: (error) => {
-      console.error('Error al eliminar asignación:', error);
-      toast.error('Error al eliminar asignación: ' + (error.message || 'Error desconocido'));
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['asignaciones'], ctx.previous);
+      toast.error('Error al eliminar asignación');
     }
   });
 
   const updatePedidoMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Pedido.update(id, data),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['pedidos'] });
+      const previous = queryClient.getQueryData(['pedidos']);
+      queryClient.setQueryData(['pedidos'], old =>
+        (old || []).map(p => p.id === id ? { ...p, ...data } : p)
+      );
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       setEditingSalida({ pedidoId: null, turnoIndex: null, camareroIndex: null });
@@ -330,21 +348,27 @@ Sistema de Gestión de Camareros
       setEditingPedido(null);
       toast.success('Pedido actualizado');
     },
-    onError: (error) => {
-      console.error('Error al actualizar pedido:', error);
-      toast.error('Error al actualizar pedido: ' + (error.message || 'Error desconocido'));
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['pedidos'], ctx.previous);
+      toast.error('Error al actualizar pedido');
     }
   });
 
   const deletePedidoMutation = useMutation({
     mutationFn: (id) => base44.entities.Pedido.delete(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['pedidos'] });
+      const previous = queryClient.getQueryData(['pedidos']);
+      queryClient.setQueryData(['pedidos'], old => (old || []).filter(p => p.id !== id));
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       toast.success('Pedido eliminado');
     },
-    onError: (error) => {
-      console.error('Error al eliminar pedido:', error);
-      toast.error('Error al eliminar pedido: ' + (error.message || 'Error desconocido'));
+    onError: (_err, _id, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['pedidos'], ctx.previous);
+      toast.error('Error al eliminar pedido');
     }
   });
 
