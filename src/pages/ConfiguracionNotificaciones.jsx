@@ -1,4 +1,3 @@
-import React from 'react';
 import ConfiguracionPushNotificaciones from '../components/notificaciones/ConfiguracionPushNotificaciones';
 
 export default function ConfiguracionNotificaciones() {

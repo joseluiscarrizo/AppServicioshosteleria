@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,15 +11,15 @@ import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import ParteServicio from '../pedidos/ParteServicio';
 
-export default function PartesTrabajos({ user }) {
-  const [vistaPrevia, setVistaPrevia] = useState(null);
+export default function PartesTrabajos({ _user }) {
+  const [_vistaPrevia, _setVistaPrevia] = useState(null);
   const [parteAbierto, setParteAbierto] = useState(null);
   const [enviando, setEnviando] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ['pedidos-partes'],
-    queryFn: async () => {
+    queryFn: () => {
       const hoy = new Date();
       const desde = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
       const hasta = new Date(hoy.getFullYear(), hoy.getMonth() + 3, 0);
@@ -50,7 +50,7 @@ export default function PartesTrabajos({ user }) {
     };
   });
 
-  const formatDia = (dia) => {
+  const _formatDia = (dia) => {
     if (!dia) return '-';
     const d = parseISO(dia);
     return format(d, "EEE, dd MMM yyyy", { locale: es });
@@ -79,7 +79,7 @@ export default function PartesTrabajos({ user }) {
     }
   };
 
-  const asCamareros = (pedidoId) =>
+  const _asCamareros = (pedidoId) =>
     asignaciones.filter(a => a.pedido_id === pedidoId && a.estado === 'confirmado');
 
   if (isLoading) {

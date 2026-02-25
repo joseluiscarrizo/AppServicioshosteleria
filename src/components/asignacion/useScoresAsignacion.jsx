@@ -168,7 +168,7 @@ export function useScoresAsignacion({ pedido, camareros, asignaciones }) {
       // ── 5. Historial con el cliente (10 pts) ──────────────────────────
       let historialPts = 5; // neutral
 
-      const trabajosCliente = asignaciones?.filter(
+      const _trabajosCliente = asignaciones?.filter(
         a => a.camarero_id === cam.id && a.pedido_id !== pedidoClienteId
         // Idealmente filtraríamos por cliente, pero sin los pedidos aquí usamos 0 como base
       ).length || 0;

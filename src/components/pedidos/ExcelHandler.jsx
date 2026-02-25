@@ -1,7 +1,6 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
 export default function ExcelHandler({ pedidos, onImport }) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -51,7 +51,7 @@ export default function ConfiguracionRecordatorios() {
   }, [config]);
 
   const saveMutation = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: (data) => {
       if (config) {
         return base44.entities.ConfiguracionRecordatorios.update(config.id, data);
       } else {

@@ -35,7 +35,7 @@ const REFETCH_RECORDATORIOS_MS  = 5  * 60 * 1000;  // 5 min (antes 60s × 3 serv
 const RUN_INTERVAL_MS           = 5  * 60 * 1000;  // ciclo de verificación global
 
 export function useBackgroundServices({ showPushNotifications } = {}) {
-  const queryClient   = useQueryClient();
+  const _queryClient   = useQueryClient();
   const isRunningRef  = useRef(false);
   const lastRunRef    = useRef(null);
   const intervalRef   = useRef(null);
@@ -119,7 +119,7 @@ export function useBackgroundServices({ showPushNotifications } = {}) {
 
       const fechaEvento = parseISO(pedido.dia);
       const horasHasta  = differenceInHours(fechaEvento, ahora);
-      const diasHasta   = differenceInDays(fechaEvento, ahora);
+      const _diasHasta   = differenceInDays(fechaEvento, ahora);
 
       // 1a. Eventos próximos — 24h antes
       if (horasHasta > 23 && horasHasta < 25) {

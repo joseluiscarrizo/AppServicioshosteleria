@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -18,7 +18,7 @@ function diasHastaEvento(dia) {
 }
 
 // --- Subcomponente: Sugerencia IA ---
-function SugerenciaIA({ sugerencia, onAplicar, onDescartar }) {
+function _SugerenciaIA({ sugerencia, onAplicar, onDescartar }) {
   return (
     <div className="mx-3 mb-2 p-3 rounded-xl border border-violet-200 bg-violet-50 text-sm">
       <div className="flex items-center gap-1.5 mb-2">
@@ -116,7 +116,7 @@ El mensaje debe:
   );
 }
 
-export default function ChatClientes({ user }) {
+export default function ChatClientes({ _user }) {
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [mensaje, setMensaje] = useState('');
   const [generandoIA, setGenerandoIA] = useState(false);

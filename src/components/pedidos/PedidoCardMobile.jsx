@@ -5,7 +5,7 @@ import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
-export default function PedidoCardMobile({ pedido, asignaciones, onEdicionRapida, onDuplicar, onRecurrente, onEdit, onDelete, onParte, onAsignar }) {
+export default function PedidoCardMobile({ pedido, asignaciones, onEdicionRapida, onDuplicar, onRecurrente, onEdit, onDelete, onParte, _onAsignar }) {
   const asignacionesPedido = asignaciones.filter(a => a.pedido_id === pedido.id);
   const turnos = pedido.turnos?.length > 0
     ? pedido.turnos

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -81,7 +81,7 @@ export default function InformesProgramados() {
   const guardar = () => {
     if (!form.cliente) return toast.error('Selecciona un cliente');
     if (!form.destinatarios.length) return toast.error('Añade al menos un destinatario');
-    const { emailInput, ...data } = form;
+    const { emailInput: _emailInput, ...data } = form;
     crearMutation.mutate(data);
   };
 

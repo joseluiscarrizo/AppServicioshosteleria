@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { differenceInHours, differenceInDays, addDays, format } from 'date-fns';
+import { differenceInHours, differenceInDays, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 
@@ -46,7 +46,7 @@ export default function NotificacionesAutomaticas({ showPushNotifications }) {
         
         const fechaEvento = new Date(pedido.dia);
         const horasHastaEvento = differenceInHours(fechaEvento, ahora);
-        const diasHastaEvento = differenceInDays(fechaEvento, ahora);
+        const _diasHastaEvento = differenceInDays(fechaEvento, ahora);
         
         // Notificar 24 horas antes (entre 23 y 25 horas para dar margen)
         if (horasHastaEvento > 23 && horasHastaEvento < 25) {

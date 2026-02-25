@@ -1,7 +1,5 @@
-import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { MapPin, Navigation, Calendar, Clock, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -17,7 +15,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-export default function MapaEventos({ pedidos, camareroNombre }) {
+export default function MapaEventos({ pedidos, _camareroNombre }) {
   // Filtrar pedidos con coordenadas
   const pedidosConUbicacion = pedidos.filter(p => p.latitud && p.longitud);
   const pedidosSinUbicacion = pedidos.filter(p => !p.latitud || !p.longitud);

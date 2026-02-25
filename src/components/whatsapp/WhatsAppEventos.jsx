@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { Search, Send, Users, Calendar, MapPin, Clock, CheckCheck, MessageCircle, Loader2, ChevronRight, Phone, Upload, FileText, X } from 'lucide-react';
+import { Search, Send, Users, Calendar, MapPin, Clock, CheckCheck, MessageCircle, Loader2, Phone, Upload, FileText, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -20,7 +19,7 @@ const estadoBadge = {
   alta: { label: 'Alta', className: 'bg-blue-100 text-blue-700' },
 };
 
-function getEventoStatus(asignacionesPedido, cantidadSlots) {
+function getEventoStatus(asignacionesPedido, _cantidadSlots) {
   if (!asignacionesPedido.length) return 'sin_asignar';
   if (asignacionesPedido.every(a => a.estado === 'confirmado' || a.estado === 'alta')) return 'completo';
   if (asignacionesPedido.some(a => a.estado === 'enviado')) return 'enviado';
@@ -98,11 +97,11 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
 
   const deseleccionarTodos = () => setSelectedCamareros([]);
 
-  const generarMensaje = async (asignacion, camarero) => {
+  const generarMensaje = (asignacion, camarero) => {
     const pedido = eventoSeleccionado;
     const baseUrl = window.location.origin;
-    const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
-    const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
+    const _linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
+    const _linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
 
     const reemplazar = (contenido) => contenido
       .replace(/\{\{cliente\}\}/g, pedido.cliente || '')

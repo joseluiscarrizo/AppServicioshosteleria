@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     };
 
     // Obtener coordinador para el número de envío
-    let coordinador = null;
+    const _coordinador = null;
     if (coordinador_id) {
       coordinador = await base44.asServiceRole.entities.Coordinador.get(coordinador_id);
     }

@@ -1,6 +1,5 @@
 // PageNotFound.jsx
 
-import React from 'react';
 
 const PageNotFound = () => {
     // other code...

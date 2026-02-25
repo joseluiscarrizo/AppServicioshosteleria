@@ -52,7 +52,7 @@ export function useConflictosHorario({ asignaciones = [], pedidos = [], enabled 
       if (stored) {
         JSON.parse(stored).forEach(k => yaNotificadosRef.current.add(k));
       }
-    } catch (_) {}
+    } catch (_) { /* empty */ }
 
     // Agrupar asignaciones por camarero
     const porCamarero = {};
@@ -66,7 +66,7 @@ export function useConflictosHorario({ asignaciones = [], pedidos = [], enabled 
 
     const conflictos = [];
 
-    Object.entries(porCamarero).forEach(([camareroId, asigs]) => {
+    Object.entries(porCamarero).forEach(([_camareroId, asigs]) => {
       for (let i = 0; i < asigs.length; i++) {
         for (let j = i + 1; j < asigs.length; j++) {
           const a1 = asigs[i];
@@ -107,7 +107,7 @@ export function useConflictosHorario({ asignaciones = [], pedidos = [], enabled 
     // Persistir en sessionStorage
     try {
       sessionStorage.setItem(NOTIFICADOS_KEY, JSON.stringify([...yaNotificadosRef.current]));
-    } catch (_) {}
+    } catch (_) { /* empty */ }
 
   }, [asignaciones, pedidos, enabled]);
 }

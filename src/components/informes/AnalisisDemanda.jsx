@@ -1,29 +1,28 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, TrendingUp, Clock, Calendar } from 'lucide-react';
-import { format, parseISO, getDay, getHours } from 'date-fns';
+import { format, parseISO, getDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 
 const COLORES_DIA = ['#1e3a5f', '#2d5a8f', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe'];
-const COLORES_HORA = ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#f59e0b', '#fbbf24', '#fcd34d'];
+const _COLORES_HORA = ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#f59e0b', '#fbbf24', '#fcd34d'];
 
 export default function AnalisisDemanda() {
   const [fechaInicio, setFechaInicio] = useState(format(new Date(2025, 0, 1), 'yyyy-MM-dd'));
   const [fechaFin, setFechaFin] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [tipoEvento, setTipoEvento] = useState('todos');
+  const [_tipoEvento, _setTipoEvento] = useState('todos');
 
   const { data: pedidos = [] } = useQuery({
     queryKey: ['pedidos'],
     queryFn: () => base44.entities.Pedido.list('-dia', 1000)
   });
 
-  const { data: asignaciones = [] } = useQuery({
+  const { data: _asignaciones = [] } = useQuery({
     queryKey: ['asignaciones'],
     queryFn: () => base44.entities.AsignacionCamarero.list('-created_date', 3000)
   });
@@ -296,7 +295,7 @@ export default function AnalisisDemanda() {
                   outerRadius={100}
                   dataKey="value"
                 >
-                  {demandaPorTipo.map((entry, index) => (
+                  {demandaPorTipo.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORES_DIA[index % COLORES_DIA.length]} />
                   ))}
                 </Pie>

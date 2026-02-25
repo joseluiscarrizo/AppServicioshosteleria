@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
         try {
           const [y, m, d] = pedido.dia.split('-');
           fechaFormato = `${d}/${m}/${y}`;
-        } catch (e) {
+        } catch (_e) {
           fechaFormato = pedido.dia;
         }
       }

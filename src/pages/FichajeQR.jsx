@@ -3,7 +3,7 @@
  * El camarero escanea su QR y ve esta página para registrar entrada/salida.
  * No requiere login.
  */
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,7 +36,7 @@ export default function FichajeQR() {
       const res = await base44.functions.invoke('registrarFichajeQR', { token }, { method: 'GET' });
       setDatos(res.data);
       setEstado('listo');
-    } catch (e) {
+    } catch (_e) {
       setEstado('error');
       setMensaje('No se pudo cargar la información. Token inválido o expirado.');
     }
@@ -58,7 +58,7 @@ export default function FichajeQR() {
         setMensaje(res.data.error || 'Error al registrar fichaje');
         setEstado('error_leve');
       }
-    } catch (e) {
+    } catch (_e) {
       setMensaje('Error de conexión. Inténtalo de nuevo.');
       setEstado('error_leve');
     } finally {

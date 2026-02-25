@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -60,7 +60,7 @@ export default function InformeCamarero() {
     .map(a => {
       const pedido = pedidos.find(p => p.id === a.pedido_id);
       if (!pedido) return null;
-      let horas = pedido.turnos?.length > 0
+      const horas = pedido.turnos?.length > 0
         ? pedido.turnos.reduce((sum, t) => sum + (t.t_horas || 0), 0)
         : (pedido.t_horas || 0);
       return {

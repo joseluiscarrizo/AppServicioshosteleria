@@ -34,7 +34,7 @@ async function sendWAMessage(to, payload) {
   return data;
 }
 
-async function sendMenuPrincipal(to) {
+function sendMenuPrincipal(to) {
   return sendWAMessage(to, {
     type: 'interactive',
     interactive: {
@@ -58,7 +58,7 @@ async function sendMenuPrincipal(to) {
   });
 }
 
-async function sendTextMessage(to, text) {
+function sendTextMessage(to, text) {
   return sendWAMessage(to, { type: 'text', text: { body: text } });
 }
 
@@ -87,7 +87,7 @@ const PASOS_PEDIDO = [
   { id: 'telefono_contacto',  prompt: '8️⃣ ¿Cuál es tu *número de teléfono*?' },
 ];
 
-async function handleFlujoPedido(base44, telefono, sesion, textoMensaje) {
+function handleFlujoPedido(_base44, telefono, sesion, textoMensaje) {
   const pasoActual = sesion.paso;
 
   // Guardar respuesta del paso actual
@@ -214,7 +214,7 @@ async function handleFlujoCoordinador(base44, telefono, sesion, textoMensaje) {
   }
 }
 
-async function crearPedidoEnBD(base44, datos, telefono) {
+function crearPedidoEnBD(base44, datos, telefono) {
   // Parsear fecha DD/MM/AAAA → YYYY-MM-DD
   let diaFormateado = null;
   if (datos.fecha_evento) {

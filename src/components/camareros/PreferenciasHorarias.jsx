@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Settings } from 'lucide-react';
 import { toast } from 'sonner';
@@ -46,7 +45,7 @@ export default function PreferenciasHorarias({ open, onClose, camarero }) {
   const [turnosSeleccionados, setTurnosSeleccionados] = useState(prefs.turnos_preferidos || []);
   const [diasSeleccionados, setDiasSeleccionados] = useState(prefs.dias_preferidos || []);
   const [tiposPreferidos, setTiposPreferidos] = useState(camarero?.tipos_evento_preferidos || []);
-  const [zonaHoraria, setZonaHoraria] = useState(camarero?.zona_horaria || 'Europe/Madrid');
+  const [zonaHoraria, _setZonaHoraria] = useState(camarero?.zona_horaria || 'Europe/Madrid');
 
   const queryClient = useQueryClient();
 
@@ -70,7 +69,7 @@ export default function PreferenciasHorarias({ open, onClose, camarero }) {
     }
   });
 
-  const toggle = (arr, setArr, val) =>
+  const toggle = (_arr, setArr, val) =>
     setArr(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
 
   return (

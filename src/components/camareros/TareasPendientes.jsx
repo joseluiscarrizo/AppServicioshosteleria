@@ -1,12 +1,11 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Circle, Clock, AlertTriangle, Calendar, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, AlertTriangle, Calendar } from 'lucide-react';
 import { format, parseISO, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
