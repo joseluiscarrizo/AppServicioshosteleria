@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import { Settings, Bell, Shield, Trash2, ChevronRight, LogOut, Moon, Globe, Lock, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings, Bell, Shield, Trash2, LogOut, Moon, Globe, Lock, AlertTriangle, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { base44 } from '@/api/base44Client';
+import PasswordManager from '@/components/PasswordManager';
+import RoleAttributeManager from '@/components/RoleAttributeManager';
 
 export default function ConfiguracionCuenta() {
   const [darkMode, setDarkMode] = useState(false);
@@ -10,6 +13,11 @@ export default function ConfiguracionCuenta() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleted, setDeleted] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => setCurrentUser(null));
+  }, []);
 
   function handleDeleteAccount() {
     if (deleteConfirm.toLowerCase() !== 'eliminar') return;
@@ -53,13 +61,13 @@ export default function ConfiguracionCuenta() {
           </div>
           <div className="p-4 flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#1e3a5f] to-[#2d5a8f] flex items-center justify-center text-white text-xl font-bold">
-              C
+              {currentUser?.full_name?.charAt(0)?.toUpperCase() || currentUser?.email?.charAt(0)?.toUpperCase() || 'U'}
             </div>
             <div>
-              <p className="font-semibold text-slate-800">Coordinador</p>
-              <p className="text-sm text-slate-500">info@staffcoordinator.es</p>
+              <p className="font-semibold text-slate-800">{currentUser?.full_name || 'Usuario'}</p>
+              <p className="text-sm text-slate-500">{currentUser?.email || ''}</p>
               <span className="inline-block mt-1 text-xs bg-[#1e3a5f]/10 text-[#1e3a5f] font-medium px-2 py-0.5 rounded-full">
-                Plan Professional
+                {currentUser?.role === 'admin' ? 'Administrador' : 'Plan Professional'}
               </span>
             </div>
           </div>
@@ -117,6 +125,28 @@ export default function ConfiguracionCuenta() {
           </div>
         </div>
 
+        {/* Contraseña */}
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">🔐 Contraseña</p>
+          </div>
+          <div className="p-4">
+            <p className="text-xs text-slate-500 mb-3">Gestiona tu contraseña de acceso</p>
+            <PasswordManager userId={currentUser?.id} />
+          </div>
+        </div>
+
+        {/* Roles y Atributos */}
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+            <Users className="w-3.5 h-3.5 text-slate-400" />
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Atributos / Roles</p>
+          </div>
+          <div className="p-4">
+            <RoleAttributeManager user={currentUser} isAdmin={currentUser?.role === 'admin'} />
+          </div>
+        </div>
+
         {/* Seguridad */}
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
@@ -125,21 +155,19 @@ export default function ConfiguracionCuenta() {
           <div className="divide-y divide-slate-100">
             <button className="w-full flex items-center justify-between px-4 py-4 hover:bg-slate-50 transition-colors">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                  <Lock className="w-4 h-4 text-amber-600" />
-                </div>
-                <p className="text-sm font-medium text-slate-700">Cambiar contraseña</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-            </button>
-            <button className="w-full flex items-center justify-between px-4 py-4 hover:bg-slate-50 transition-colors">
-              <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
                   <Shield className="w-4 h-4 text-purple-600" />
                 </div>
                 <p className="text-sm font-medium text-slate-700">Política de privacidad</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+            </button>
+            <button className="w-full flex items-center justify-between px-4 py-4 hover:bg-slate-50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                  <Lock className="w-4 h-4 text-amber-600" />
+                </div>
+                <p className="text-sm font-medium text-slate-700">Autenticación en dos pasos</p>
+              </div>
             </button>
           </div>
         </div>
