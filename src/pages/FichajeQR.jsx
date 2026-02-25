@@ -11,18 +11,24 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, Clock, LogIn, LogOut, AlertCircle, Calendar, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import Logger from '../utils/logger';
+import { validateToken } from '../utils/validators';
+import ErrorNotificationService from '../utils/errorNotificationService';
+import { ValidationError, handleWebhookError } from '../utils/webhookImprovements';
 
 export default function FichajeQR() {
   const urlParams = new URLSearchParams(window.location.search);
   const token = urlParams.get('token');
 
-  const [estado, setEstado] = useState('cargando'); // cargando | listo | exito | error
+  // cargando | listo | exito | error | error_leve
+  const [estado, setEstado] = useState('cargando');
   const [datos, setDatos] = useState(null);
   const [mensaje, setMensaje] = useState('');
   const [procesando, setProcesando] = useState(false);
 
   useEffect(() => {
-    if (!token) {
+    if (!validateToken(token)) {
+      Logger.error('Token de fichaje inválido o ausente', { token });
       setEstado('error');
       setMensaje('Token no válido. Escanea el código QR correcto.');
       return;
@@ -32,44 +38,91 @@ export default function FichajeQR() {
 
   const cargarDatos = async () => {
     setEstado('cargando');
+    setMensaje('');
     try {
       const res = await base44.functions.invoke('registrarFichajeQR', { token }, { method: 'GET' });
+      if (!res || !res.data) {
+        throw new ValidationError('Respuesta de API vacía o inválida');
+      }
+      const asignacion = res.data.asignacion;
+      const pedido = res.data.pedido;
+      if (!asignacion) {
+        throw new ValidationError('No se encontró la asignación para este token');
+      }
+      Logger.info('Datos de fichaje cargados correctamente', { token, pedido: !!pedido });
       setDatos(res.data);
       setEstado('listo');
     } catch (e) {
+      const mensajeError = e instanceof ValidationError
+        ? e.message
+        : 'No se pudo cargar la información. Token inválido o expirado.';
+      Logger.error('Error al cargar datos de fichaje', { token, error: e?.message });
+      ErrorNotificationService.notify(mensajeError);
       setEstado('error');
-      setMensaje('No se pudo cargar la información. Token inválido o expirado.');
+      setMensaje(mensajeError);
     }
   };
 
+  const validarFichaje = (tipo, asig) => {
+    if (!validateToken(token)) return 'Token no válido. No se puede registrar el fichaje.';
+    if (tipo !== 'entrada' && tipo !== 'salida') return 'Tipo de fichaje no reconocido.';
+    if (tipo === 'salida' && !asig?.hora_entrada_real) return 'Debes registrar la entrada antes de registrar la salida.';
+    if (tipo === 'entrada' && asig?.hora_entrada_real) return 'La entrada ya ha sido registrada.';
+    if (tipo === 'salida' && asig?.hora_salida_real) return 'La salida ya ha sido registrada.';
+    return null;
+  };
+
   const registrarFichaje = async (tipo) => {
+    const asig = datos?.asignacion;
+    const errorValidacion = validarFichaje(tipo, asig);
+    if (errorValidacion) {
+      Logger.error('Validación de fichaje fallida', { tipo, error: errorValidacion });
+      setMensaje(errorValidacion);
+      setEstado('error_leve');
+      return;
+    }
+
+    Logger.info('Intentando registrar fichaje', { token, tipo });
     setProcesando(true);
+    setMensaje('');
     try {
       const res = await base44.functions.invoke('registrarFichajeQR', { token, tipo });
+      if (!res || !res.data) {
+        throw new Error('Respuesta vacía del servidor');
+      }
       if (res.data.ok) {
-        setMensaje(tipo === 'entrada'
-          ? `✅ Entrada registrada a las ${res.data.hora}`
-          : `✅ Salida registrada a las ${res.data.hora}${res.data.horas_reales ? ` · ${res.data.horas_reales.toFixed(1)}h trabajadas` : ''}`
-        );
+        const hora = res.data.hora || '';
+        const horasTrabajadas = res.data.horas_reales != null ? ` · ${res.data.horas_reales.toFixed(1)}h trabajadas` : '';
+        const mensajeExito = tipo === 'entrada'
+          ? `✅ Entrada registrada a las ${hora}`
+          : `✅ Salida registrada a las ${hora}${horasTrabajadas}`;
+        Logger.info('Fichaje registrado correctamente', { tipo, hora });
+        setMensaje(mensajeExito);
         setEstado('exito');
-        // Recargar datos
         setTimeout(cargarDatos, 1500);
       } else {
-        setMensaje(res.data.error || 'Error al registrar fichaje');
+        const mensajeError = res.data.error || 'Error al registrar fichaje';
+        Logger.warn('Error leve al registrar fichaje', { tipo, error: mensajeError });
+        ErrorNotificationService.notify(mensajeError);
+        setMensaje(mensajeError);
         setEstado('error_leve');
       }
     } catch (e) {
-      setMensaje('Error de conexión. Inténtalo de nuevo.');
+      const mensajeError = handleWebhookError(e);
+      Logger.error('Excepción al registrar fichaje', { tipo, error: e?.message });
+      ErrorNotificationService.notify(mensajeError);
+      setMensaje(mensajeError);
       setEstado('error_leve');
     } finally {
       setProcesando(false);
     }
   };
 
-  const asig = datos?.asignacion;
-  const pedido = datos?.pedido;
+  const asig = datos?.asignacion ?? null;
+  const pedido = datos?.pedido ?? null;
   const tieneEntrada = !!asig?.hora_entrada_real;
   const tieneSalida = !!asig?.hora_salida_real;
+  const tokenValido = validateToken(token);
   const horaActual = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
   return (
@@ -109,11 +162,11 @@ export default function FichajeQR() {
             <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center font-bold text-xl">
-                  {asig.camarero_nombre?.charAt(0)}
+                  {asig.camarero_nombre?.charAt(0) ?? '?'}
                 </div>
                 <div>
-                  <p className="font-bold text-lg">{asig.camarero_nombre}</p>
-                  <p className="text-white/70 text-sm font-mono">#{asig.camarero_codigo}</p>
+                  <p className="font-bold text-lg">{asig.camarero_nombre ?? 'Camarero'}</p>
+                  <p className="text-white/70 text-sm font-mono">#{asig.camarero_codigo ?? '-'}</p>
                 </div>
               </div>
             </div>
@@ -122,7 +175,7 @@ export default function FichajeQR() {
               {/* Info evento */}
               {pedido && (
                 <div className="bg-slate-50 rounded-xl p-4 space-y-2">
-                  <p className="font-semibold text-slate-800">{pedido.cliente}</p>
+                  <p className="font-semibold text-slate-800">{pedido.cliente ?? '-'}</p>
                   {pedido.lugar_evento && (
                     <div className="flex items-center gap-2 text-sm text-slate-500">
                       <MapPin className="w-3.5 h-3.5" />
@@ -142,11 +195,11 @@ export default function FichajeQR() {
               <div className="flex justify-between text-sm">
                 <div className="text-center">
                   <p className="text-slate-400 text-xs mb-1">Entrada planificada</p>
-                  <p className="font-mono font-semibold text-slate-700">{asig.hora_entrada || '-'}</p>
+                  <p className="font-mono font-semibold text-slate-700">{asig.hora_entrada ?? '-'}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-slate-400 text-xs mb-1">Salida planificada</p>
-                  <p className="font-mono font-semibold text-slate-700">{asig.hora_salida || '-'}</p>
+                  <p className="font-mono font-semibold text-slate-700">{asig.hora_salida ?? '-'}</p>
                 </div>
               </div>
 
@@ -176,7 +229,7 @@ export default function FichajeQR() {
                   )}
                 </div>
 
-                {asig.horas_reales && (
+                {asig.horas_reales != null && (
                   <div className="text-center pt-1">
                     <Badge className="bg-purple-100 text-purple-700 text-sm px-4">
                       ⏱ {asig.horas_reales.toFixed(1)}h trabajadas
@@ -186,7 +239,7 @@ export default function FichajeQR() {
               </div>
 
               {/* Mensaje de éxito/error */}
-              {(estado === 'exito' || estado === 'error_leve') && (
+              {(estado === 'exito' || estado === 'error_leve') && mensaje && (
                 <div className={`rounded-lg p-3 text-sm text-center font-medium ${estado === 'exito' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
                   {mensaje}
                 </div>
@@ -197,7 +250,7 @@ export default function FichajeQR() {
                 {!tieneEntrada && (
                   <Button
                     onClick={() => registrarFichaje('entrada')}
-                    disabled={procesando}
+                    disabled={procesando || !tokenValido}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-base font-semibold"
                   >
                     {procesando ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <LogIn className="w-5 h-5 mr-2" />}
@@ -208,7 +261,7 @@ export default function FichajeQR() {
                 {tieneEntrada && !tieneSalida && (
                   <Button
                     onClick={() => registrarFichaje('salida')}
-                    disabled={procesando}
+                    disabled={procesando || !tokenValido}
                     className="w-full bg-[#1e3a5f] hover:bg-[#152a45] h-12 text-base font-semibold"
                   >
                     {procesando ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <LogOut className="w-5 h-5 mr-2" />}
