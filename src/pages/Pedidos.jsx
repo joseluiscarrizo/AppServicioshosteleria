@@ -475,7 +475,7 @@ export default function Pedidos() {
             ))}
           </div>
         ) : (
-        <Card className="overflow-hidden">
+        <><Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
