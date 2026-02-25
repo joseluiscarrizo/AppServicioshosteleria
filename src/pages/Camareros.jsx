@@ -177,7 +177,9 @@ export default function Camareros() {
           advertencias++;
         }
 
-        Logger.info(`Fila ${i}: procesando camarero "${data.nombre}"`);
+        if (i % 100 === 0) {
+          Logger.info(`Fila ${i}: procesando camarero "${data.nombre}"`);
+        }
 
         const existente = camareros.find(c => c.codigo === data.codigo || c.email === data.email);
         if (existente) {
@@ -188,7 +190,7 @@ export default function Camareros() {
           creados++;
         }
       } catch (err) {
-        Logger.error(`Error procesando fila ${i}: ${err.message}`);
+        Logger.error(`Error procesando fila ${i}: ${err?.message || 'Error desconocido'}`);
         errores++;
       }
     }
@@ -205,7 +207,7 @@ export default function Camareros() {
       try {
         return await base44.entities.Camarero.list('-created_date');
       } catch (error) {
-        Logger.error(`Error cargando camareros: ${error.message}`);
+        Logger.error(`Error cargando camareros: ${error?.message || 'Error desconocido'}`);
         return [];
       }
     }
@@ -230,8 +232,8 @@ export default function Camareros() {
       toast.success('Camarero eliminado correctamente');
     },
     onError: (error) => {
-      Logger.error(`Error al eliminar camarero: ${error.message}`);
-      toast.error('Error al eliminar camarero: ' + error.message);
+      Logger.error(`Error al eliminar camarero: ${error?.message || 'Error desconocido'}`);
+      toast.error('Error al eliminar camarero: ' + (error?.message || 'Error desconocido'));
     }
   });
 
