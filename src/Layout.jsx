@@ -342,8 +342,8 @@ export default function Layout({ children, currentPageName }) {
               <Button
                 variant={currentPageName === 'DashboardCoordinador' ? 'default' : 'ghost'}
                 className={`w-full justify-start mb-1 ${currentPageName === 'DashboardCoordinador'
-                  ? 'bg-[#1e3a5f] text-white' 
-                  : 'text-slate-600'
+                  ? 'bg-orange-700 text-white' 
+                  : 'text-stone-600'
                 }`}
               >
                 <LayoutDashboard className="w-4 h-4 mr-2" />
