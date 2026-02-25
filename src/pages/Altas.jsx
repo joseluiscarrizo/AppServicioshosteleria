@@ -40,6 +40,7 @@ function exportarExcel(filas) {
 }
 
 export default function Altas() {
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportFechaDesde, setExportFechaDesde] = useState('');
