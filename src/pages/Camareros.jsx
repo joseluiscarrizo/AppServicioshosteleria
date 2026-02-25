@@ -13,6 +13,8 @@ import { Plus, Pencil, User, Star, Search, MessageSquare, CalendarDays, UserChec
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
+import Logger from '../utils/logger';
+import { validatePhoneNumber, validateEmail, validateRequiredFields } from '../utils/validators';
 import GestionCamareros from '../components/asignacion/GestionCamareros';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import ValoracionesHistorial from '../components/camareros/ValoracionesHistorial';
@@ -96,12 +98,28 @@ export default function Camareros() {
     if (!file) return;
     e.target.value = '';
 
+    Logger.info(`Iniciando importación de CSV: ${file.name}`);
+
     const text = await file.text();
     const lines = text.split('\n').filter(l => l.trim());
-    if (lines.length < 2) { toast.error('El archivo no tiene datos'); return; }
+    if (lines.length < 2) {
+      Logger.warn('El archivo CSV no tiene datos suficientes');
+      toast.error('El archivo no tiene datos');
+      return;
+    }
 
     const sep = lines[0].includes(';') ? ';' : ',';
     const headers = lines[0].split(sep).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+
+    // Validate CSV structure: must contain a nombre column (exact match after lowercasing)
+    const hasNombreHeader = headers.some(h => h === 'nombre');
+    if (!hasNombreHeader) {
+      Logger.error('CSV inválido: falta la columna "nombre" requerida');
+      toast.error('El archivo CSV no tiene la columna "nombre" requerida');
+      return;
+    }
+
+    Logger.info(`CSV válido. ${lines.length - 1} filas a procesar. Separador: "${sep}"`);
 
     const parsear = (row) => {
       const vals = [];
@@ -117,7 +135,7 @@ export default function Camareros() {
 
     const idx = (name) => headers.findIndex(h => h.includes(name));
 
-    let creados = 0, actualizados = 0, errores = 0;
+    let creados = 0, actualizados = 0, errores = 0, advertencias = 0;
     for (let i = 1; i < lines.length; i++) {
       const vals = parsear(lines[i]);
       if (!vals[idx('nombre')] && !vals[0]) continue;
@@ -139,6 +157,26 @@ export default function Camareros() {
         };
         if (!data.nombre) continue;
 
+        // Validate required fields
+        if (!validateRequiredFields(data, ['nombre'])) {
+          Logger.warn(`Fila ${i}: campo "nombre" vacío, omitiendo`);
+          continue;
+        }
+
+        // Validate email format if provided
+        if (data.email && !validateEmail(data.email)) {
+          Logger.warn(`Fila ${i}: email inválido "${data.email}" para ${data.nombre}`);
+          advertencias++;
+        }
+
+        // Validate phone format if provided
+        if (data.telefono && !validatePhoneNumber(data.telefono)) {
+          Logger.warn(`Fila ${i}: teléfono inválido "${data.telefono}" para ${data.nombre}`);
+          advertencias++;
+        }
+
+        Logger.info(`Fila ${i}: procesando camarero "${data.nombre}"`);
+
         const existente = camareros.find(c => c.codigo === data.codigo || c.email === data.email);
         if (existente) {
           await base44.entities.Camarero.update(existente.id, data);
@@ -147,11 +185,16 @@ export default function Camareros() {
           await base44.entities.Camarero.create(data);
           creados++;
         }
-      } catch { errores++; }
+      } catch (err) {
+        Logger.error(`Error procesando fila ${i}: ${err.message}`);
+        errores++;
+      }
     }
 
     queryClient.invalidateQueries({ queryKey: ['camareros'] });
-    toast.success(`Importación: ${creados} creados, ${actualizados} actualizados${errores ? `, ${errores} errores` : ''}`);
+    Logger.info(`Importación completada: ${creados} creados, ${actualizados} actualizados, ${errores} errores, ${advertencias} advertencias`);
+    const mensajeAdvertencias = advertencias > 0 ? `, ${advertencias} datos de contacto inválidos` : '';
+    toast.success(`Importación: ${creados} creados, ${actualizados} actualizados${errores ? `, ${errores} errores` : ''}${mensajeAdvertencias}`);
   };
 
   const { data: camareros = [] } = useQuery({
@@ -160,7 +203,7 @@ export default function Camareros() {
       try {
         return await base44.entities.Camarero.list('-created_date');
       } catch (error) {
-        console.error('Error cargando camareros:', error);
+        Logger.error(`Error cargando camareros: ${error.message}`);
         return [];
       }
     }
@@ -173,7 +216,7 @@ export default function Camareros() {
       toast.success('Disponibilidad actualizada');
     },
     onError: (error) => {
-      console.error('Error al actualizar disponibilidad:', error);
+      Logger.error(`Error al actualizar disponibilidad: ${error.message}`);
       toast.error('Error al actualizar disponibilidad: ' + (error.message || 'Error desconocido'));
     }
   });
@@ -185,6 +228,7 @@ export default function Camareros() {
       toast.success('Camarero eliminado correctamente');
     },
     onError: (error) => {
+      Logger.error(`Error al eliminar camarero: ${error.message}`);
       toast.error('Error al eliminar camarero: ' + error.message);
     }
   });
