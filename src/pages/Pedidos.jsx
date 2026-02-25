@@ -778,7 +778,7 @@ export default function Pedidos() {
           pedidoBase={recurrenteDialog.pedido}
         />
         </div>
-        </div>
+      </div>
     </PullToRefresh>
-        );
-        }
+  );
+}
