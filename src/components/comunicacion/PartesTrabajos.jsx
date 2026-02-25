@@ -19,7 +19,7 @@ export default function PartesTrabajos({ user }) {
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ['pedidos-partes'],
-    queryFn: async () => {
+    queryFn: () => {
       const hoy = new Date();
       const desde = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
       const hasta = new Date(hoy.getFullYear(), hoy.getMonth() + 3, 0);

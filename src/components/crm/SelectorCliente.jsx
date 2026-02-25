@@ -37,7 +37,7 @@ export default function SelectorCliente({ onSelectCliente, clienteActual }) {
   });
 
   const crearClienteMutation = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: (data) => {
       // Generar código automático
       const maxCodigo = clientes.reduce((max, c) => {
         const num = parseInt(c.codigo?.replace('CL', '') || '0');
