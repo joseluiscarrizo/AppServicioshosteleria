@@ -157,12 +157,6 @@ export default function Camareros() {
         };
         if (!data.nombre) continue;
 
-        // Validate required fields
-        if (!validateRequiredFields(data, ['nombre'])) {
-          Logger.warn(`Fila ${i}: campo "nombre" vacío, omitiendo`);
-          continue;
-        }
-
         // Validate email format if provided
         if (data.email && !validateEmail(data.email)) {
           Logger.warn(`Fila ${i}: email inválido "${data.email}" para ${data.nombre}`);
