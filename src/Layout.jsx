@@ -24,7 +24,7 @@ function BottomNav({ currentPageName }) {
             key={tab.page}
             to={createPageUrl(tab.page)}
             className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors relative ${
-              active ? 'text-[#1e3a5f]' : 'text-slate-400 hover:text-slate-600'
+              active ? 'text-orange-700' : 'text-stone-400 hover:text-stone-600'
             }`}
           >
             <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5]' : 'stroke-[1.5]'}`} />
