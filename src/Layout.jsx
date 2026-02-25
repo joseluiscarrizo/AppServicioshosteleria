@@ -71,9 +71,47 @@ const adminSubmenu = [
   { name: 'Altas', page: 'Altas', icon: ClipboardList },
 ];
 
+// Dark mode: apply 'dark' class based on system preference
+function useDarkMode() {
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = (e) => {
+      document.documentElement.classList.toggle('dark', e.matches);
+    };
+    apply(mq);
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+}
+
+// Bottom-tab pages that get slide transitions
+const TRANSITION_PAGES = ['DashboardCoordinador', 'Pedidos', 'Camareros', 'Comunicacion', 'TiempoReal'];
+const TAB_ORDER = BOTTOM_TABS.map(t => t.page);
+
+function PageTransitionWrapper({ children, currentPageName }) {
+  const location = useLocation();
+  const idx = TAB_ORDER.indexOf(currentPageName);
+  const isTabPage = idx !== -1;
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location.pathname + location.search}
+        initial={isTabPage ? { x: 20, opacity: 0 } : { opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={isTabPage ? { x: -20, opacity: 0 } : { opacity: 0 }}
+        transition={{ duration: 0.18, ease: 'easeOut' }}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 export default function Layout({ children, currentPageName }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { showNotification, isAllowed, requestPermission } = useWebPushNotifications();
+  useDarkMode();
 
   // Servicios background unificados (reemplaza NotificacionesAutomaticas + ServicioRecordatorios + RecordatoriosProactivos)
   useBackgroundServices({ showPushNotifications: isAllowed ? showNotification : null });
