@@ -17,7 +17,7 @@ import ErrorNotificationService from '../utils/errorNotificationService';
 import { ValidationError, handleWebhookError } from '../utils/webhookImprovements';
 
 export default function FichajeQR() {
-  const urlParams = new URLSearchParams(window.location.search);
+  const urlParams = new URLSearchParams(globalThis.location.search);
   const token = urlParams.get('token');
 
   // cargando | listo | exito | error | error_leve

@@ -30,7 +30,7 @@ export default function TiempoReal() {
   const [busqueda, setBusqueda] = useState('');
   const [vistaCalendario, setVistaCalendario] = useState('dia'); // 'dia', 'semana', 'mes'
   const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
-  const [filtroFecha, setFiltroFecha] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [_filtroFecha, _setFiltroFecha] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [valoracionModal, setValoracionModal] = useState({ open: false, camarero: null, pedido: null });
   const [detalleEventoModal, setDetalleEventoModal] = useState({ open: false, pedido: null });
 
@@ -512,7 +512,7 @@ export default function TiempoReal() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filas.map((fila, index) => {
+                  {filas.map((fila, _index) => {
                     const bgColor = fila.asignacion ? estadoColors[fila.asignacion.estado] : 'bg-white';
                     
                     return (

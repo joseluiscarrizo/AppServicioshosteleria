@@ -19,7 +19,7 @@ const estadoBadge = {
   alta: { label: 'Alta', className: 'bg-blue-100 text-blue-700' },
 };
 
-function getEventoStatus(asignacionesPedido, cantidadSlots) {
+function getEventoStatus(asignacionesPedido, _cantidadSlots) {
   if (!asignacionesPedido.length) return 'sin_asignar';
   if (asignacionesPedido.every(a => a.estado === 'confirmado' || a.estado === 'alta')) return 'completo';
   if (asignacionesPedido.some(a => a.estado === 'enviado')) return 'enviado';
@@ -99,9 +99,9 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
 
   const generarMensaje = (asignacion, camarero) => {
     const pedido = eventoSeleccionado;
-    const baseUrl = window.location.origin;
-    const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
-    const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
+    const baseUrl = globalThis.location.origin;
+    const _linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
+    const _linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
 
     const reemplazar = (contenido) => contenido
       .replace(/\{\{cliente\}\}/g, pedido.cliente || '')
@@ -157,11 +157,9 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
         let mensaje = await generarMensaje(asignacion, camarero);
         if (urlArchivo) mensaje += `\n\n📎 *Archivo adjunto:*\n${urlArchivo}`;
 
-        const baseUrl = window.location.origin;
+        const baseUrl = globalThis.location.origin;
         const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
         const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
-
-        const response = await base44.functions.invoke('enviarWhatsAppDirecto', {
           telefono: camarero.telefono,
           mensaje,
           camarero_id: camarero.id,

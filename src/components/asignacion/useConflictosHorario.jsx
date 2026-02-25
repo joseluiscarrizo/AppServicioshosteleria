@@ -52,9 +52,7 @@ export function useConflictosHorario({ asignaciones = [], pedidos = [], enabled 
       if (stored) {
         JSON.parse(stored).forEach(k => yaNotificadosRef.current.add(k));
       }
-    } catch (_) {}
-
-    // Agrupar asignaciones por camarero
+    } catch (_) { /* empty */ }
     const porCamarero = {};
     asignaciones.forEach(a => {
       if (!porCamarero[a.camarero_id]) porCamarero[a.camarero_id] = [];
@@ -66,7 +64,7 @@ export function useConflictosHorario({ asignaciones = [], pedidos = [], enabled 
 
     const conflictos = [];
 
-    Object.entries(porCamarero).forEach(([camareroId, asigs]) => {
+    Object.entries(porCamarero).forEach(([_camareroId, asigs]) => {
       for (let i = 0; i < asigs.length; i++) {
         for (let j = i + 1; j < asigs.length; j++) {
           const a1 = asigs[i];
@@ -107,7 +105,5 @@ export function useConflictosHorario({ asignaciones = [], pedidos = [], enabled 
     // Persistir en sessionStorage
     try {
       sessionStorage.setItem(NOTIFICADOS_KEY, JSON.stringify([...yaNotificadosRef.current]));
-    } catch (_) {}
-
-  }, [asignaciones, pedidos, enabled]);
+    } catch (_) { /* empty */ }
 }

@@ -82,7 +82,7 @@ export default function NotificacionesMasivas() {
           const whatsappURL = `https://wa.me/${telefonoCamarero}?text=${mensajeEncoded}`;
           
           // Abrir WhatsApp en nueva pestaña
-          window.open(whatsappURL, '_blank');
+          globalThis.open(whatsappURL, '_blank');
           
           // Pequeña pausa entre mensajes
           await new Promise(resolve => setTimeout(resolve, 1000));

@@ -56,9 +56,9 @@ export class NotificationService {
         });
 
         notification.onclick = () => {
-          window.focus();
+          globalThis.focus();
           if (data.url) {
-            window.location.hash = data.url;
+            globalThis.location.hash = data.url;
           }
           notification.close();
         };

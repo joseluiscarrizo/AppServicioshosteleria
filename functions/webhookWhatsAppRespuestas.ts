@@ -48,7 +48,7 @@ async function sendWAMessage(to, payload) {
   });
 }
 
-async function sendMenuPrincipal(to) {
+function sendMenuPrincipal(to) {
   return sendWAMessage(to, {
     type: 'interactive',
     interactive: {
@@ -72,7 +72,7 @@ async function sendMenuPrincipal(to) {
   });
 }
 
-async function sendTextMessage(to, text) {
+function sendTextMessage(to, text) {
   return sendWAMessage(to, { type: 'text', text: { body: text } });
 }
 

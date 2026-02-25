@@ -25,7 +25,7 @@ export default function EventoContextBanner({ grupo }) {
 
   const asignacionesConQR = asignaciones.filter(a => a.qr_token);
   const fichajeUrl = asignacionesConQR.length > 0
-    ? `${window.location.origin}/FichajeQR?pedido_id=${grupo.pedido_id}`
+    ? `${globalThis.location.origin}/FichajeQR?pedido_id=${grupo.pedido_id}`
     : null;
 
   const copiarLink = () => {

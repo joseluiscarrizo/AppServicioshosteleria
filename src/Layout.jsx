@@ -137,7 +137,7 @@ const BACK_LABELS = {
 
 function useDarkMode() {
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const mq = globalThis.matchMedia('(prefers-color-scheme: dark)');
     const apply = (e) => document.documentElement.classList.toggle('dark', e.matches);
     apply(mq);
     mq.addEventListener('change', apply);
@@ -182,7 +182,7 @@ export default function Layout({ children, currentPageName }) {
 
   const handleBack = () => {
     // Try browser back first; fall back to parent page
-    if (window.history.length > 1) {
+    if (globalThis.history.length > 1) {
       navigate(-1);
     } else if (parentPage) {
       navigate(createPageUrl(parentPage));
