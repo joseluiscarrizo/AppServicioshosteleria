@@ -743,6 +743,7 @@ export default function Pedidos() {
             </Table>
           </div>
         </Card>
+        )}
 
         {/* Modal Form */}
         <AnimatePresence>
