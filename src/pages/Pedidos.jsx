@@ -676,7 +676,7 @@ export default function Pedidos() {
                                       pedido={pedido}
                                       onAsignar={(_camarero) => {
                                         // Navigate to Asignacion page with pedido selected
-                                        window.location.href = `/Asignacion?pedido_id=${pedido.id}`;
+                                        globalThis.location.href = `/Asignacion?pedido_id=${pedido.id}`;
                                       }}
                                     />
                                     <Button

@@ -163,7 +163,7 @@ export default function VisualEditAgent() {
 			e.stopImmediatePropagation();
 
 			// Send message to parent to close all dropdowns
-			window.parent.postMessage({
+			globalThis.parent?.postMessage({
 				type: 'close-dropdowns'
 			}, '*');
 			return;
@@ -239,7 +239,7 @@ export default function VisualEditAgent() {
 			filename: element.dataset.filename, // Keep for backward compatibility
 			position: elementPosition // Add position data for popover
 		};
-		window.parent.postMessage(elementData, '*');
+		globalThis.parent?.postMessage(elementData, '*');
 	};
 
 	// Unselect the current element
@@ -401,7 +401,7 @@ export default function VisualEditAgent() {
 						centerY: rect.top + rect.height / 2
 					};
 
-					window.parent.postMessage({
+					globalThis.parent?.postMessage({
 						type: 'element-position-update',
 						position: elementPosition,
 						isInViewport: isInViewport,
@@ -441,7 +441,7 @@ export default function VisualEditAgent() {
 					break;
 
 				case 'refresh-page':
-					window.location.reload();
+					globalThis.location.reload();
 					break;
 
 				case 'update-content':
@@ -485,7 +485,7 @@ export default function VisualEditAgent() {
 								centerY: rect.top + rect.height / 2
 							};
 
-							window.parent.postMessage({
+							globalThis.parent?.postMessage({
 								type: 'element-position-update',
 								position: elementPosition,
 								isInViewport: isInViewport,
@@ -531,7 +531,7 @@ export default function VisualEditAgent() {
 		document.addEventListener('scroll', handleScroll, true); // Also listen on document
 
 		// Send ready message to parent
-		window.parent.postMessage({ type: 'visual-edit-agent-ready' }, '*');
+		globalThis.parent?.postMessage({ type: 'visual-edit-agent-ready' }, '*');
 
 		return () => {
 			globalThis.removeEventListener('message', handleMessage);

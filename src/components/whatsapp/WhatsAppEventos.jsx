@@ -99,7 +99,7 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
 
   const generarMensaje = (asignacion, camarero) => {
     const pedido = eventoSeleccionado;
-    const baseUrl = window.location.origin;
+    const baseUrl = globalThis.location.origin;
     const _linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
     const _linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
 
@@ -157,7 +157,7 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
         let mensaje = await generarMensaje(asignacion, camarero);
         if (urlArchivo) mensaje += `\n\n📎 *Archivo adjunto:*\n${urlArchivo}`;
 
-        const baseUrl = window.location.origin;
+        const baseUrl = globalThis.location.origin;
         const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
         const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
 
