@@ -13,6 +13,7 @@ import ParteServicio from '../pedidos/ParteServicio';
 
 export default function PartesTrabajos({ user }) {
   const [vistaPrevia, setVistaPrevia] = useState(null);
+  const [parteAbierto, setParteAbierto] = useState(null);
   const [enviando, setEnviando] = useState(null);
   const queryClient = useQueryClient();
 
