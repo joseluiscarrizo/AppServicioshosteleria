@@ -218,8 +218,8 @@ export default function Layout({ children, currentPageName }) {
                 <Button
                   variant={currentPageName === 'Camareros' ? 'default' : 'ghost'}
                   className={currentPageName === 'Camareros'
-                    ? 'bg-[#1e3a5f] text-white hover:bg-[#152a45]' 
-                    : 'text-slate-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/5'
+                    ? 'bg-orange-700 text-white hover:bg-orange-800' 
+                    : 'text-stone-600 hover:text-orange-700 hover:bg-orange-50'
                   }
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
