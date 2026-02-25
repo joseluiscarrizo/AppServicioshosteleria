@@ -20,6 +20,7 @@ import DuplicarEvento from '../components/pedidos/DuplicarEvento';
 import EventoRecurrente from '../components/pedidos/EventoRecurrente';
 import PedidoFormNuevo from '../components/pedidos/PedidoFormNuevo';
 import GenerarDocumentacion from '../components/pedidos/GenerarDocumentacion';
+import ParteServicio from '../components/pedidos/ParteServicio';
 import SugerenciasInteligentes from '../components/asignacion/SugerenciasInteligentes';
 
 export default function Pedidos() {
