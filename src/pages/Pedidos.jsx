@@ -356,7 +356,13 @@ export default function Pedidos() {
     setShowForm(true);
   };
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+    await queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+  };
+
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
