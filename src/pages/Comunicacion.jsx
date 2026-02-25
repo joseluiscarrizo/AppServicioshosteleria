@@ -11,10 +11,17 @@ import PartesTrabajos from '../components/comunicacion/PartesTrabajos';
 
 export default function Comunicacion() {
   const [user, setUser] = useState(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => setUser(null));
   }, []);
+
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['grupos-chat'] });
+    await queryClient.invalidateQueries({ queryKey: ['mensajes'] });
+    await queryClient.invalidateQueries({ queryKey: ['pedidos-partes'] });
+  };
 
   if (!user) {
     return (
