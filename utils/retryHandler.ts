@@ -9,7 +9,7 @@ const DEFAULT_DELAY = 1000; // 1 second
  * @param retries - Number of retries.
  * @param delay - Delay between retries in milliseconds.
  */
-async function retryWithExponentialBackoff(operation: () => Promise<any>, retries: number = DEFAULT_RETRIES, delay: number = DEFAULT_DELAY): Promise<any> {
+async function retryWithExponentialBackoff<T>(operation: () => Promise<T>, retries: number = DEFAULT_RETRIES, delay: number = DEFAULT_DELAY): Promise<T> {
     try {
         return await operation();
     } catch (error) {
