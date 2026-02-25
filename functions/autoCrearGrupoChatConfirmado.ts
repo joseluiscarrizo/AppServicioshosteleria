@@ -1,10 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import Logger from '../utils/logger.ts';
-import { retryWithExponentialBackoff } from '../utils/retryHandler.ts';
-import {
-  executeDbOperation,
-  DatabaseError
-} from '../utils/webhookImprovements.ts';
 
 Deno.serve(async (req) => {
   try {

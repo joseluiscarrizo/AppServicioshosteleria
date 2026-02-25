@@ -1,11 +1,7 @@
 import { createClientFromRequest } from '@base44/sdk';
 import Logger from '../utils/logger.ts';
 import { validatePhoneNumber } from '../utils/validators.ts';
-import { retryWithExponentialBackoff } from '../utils/retryHandler.ts';
-import ErrorNotificationService from '../utils/errorNotificationService.ts';
 import {
-  executeWhatsAppOperation,
-  WhatsAppApiError,
   handleWebhookError
 } from '../utils/webhookImprovements.ts';
 
