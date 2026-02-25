@@ -17,6 +17,7 @@ import EnviarWhatsApp from '../components/whatsapp/EnviarWhatsApp';
 import WhatsAppEventos from '../components/whatsapp/WhatsAppEventos';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import PullToRefresh from '../components/ui/PullToRefresh';
 
 const estadoColors = {
   pendiente: 'bg-slate-100',
