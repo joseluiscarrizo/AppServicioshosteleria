@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
         `;
 
         // Obtener emails del cliente
-        let emailsDestinatarios: string[] = [];
+        const emailsDestinatarios: string[] = [];
 
         // Primero intentar desde el cliente relacionado
         if (pedido.cliente_id) {

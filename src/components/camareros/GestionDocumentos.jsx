@@ -191,7 +191,7 @@ export default function GestionDocumentos({ open, onClose, camarero }) {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => window.open(doc.url, '_blank')}
+                        onClick={() => globalThis.open(doc.url, '_blank')}
                         title="Ver documento"
                       >
                         <Eye className="w-4 h-4" />

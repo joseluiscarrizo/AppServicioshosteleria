@@ -127,7 +127,7 @@ export default function ServicioRecordatorios() {
       const whatsappURL = `https://wa.me/${telefonoCamarero}?text=${mensajeEncoded}`;
       
       // Abrir WhatsApp
-      window.open(whatsappURL, '_blank');
+      globalThis.open(whatsappURL, '_blank');
       
       // Registrar recordatorio enviado
       await base44.entities.RecordatorioEnviado.create({

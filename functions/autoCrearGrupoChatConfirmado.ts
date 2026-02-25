@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import Logger from '../utils/logger.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -33,7 +34,7 @@ Deno.serve(async (req) => {
     let grupo;
     if (gruposExistentes.length > 0) {
       grupo = gruposExistentes[0];
-      console.log(`✅ Grupo existente encontrado: ${grupo.nombre}`);
+      Logger.info(`✅ Grupo existente encontrado: ${grupo.nombre}`);
     } else {
       // Obtener TODAS las asignaciones del pedido (confirmadas y no confirmadas)
       const todasAsignaciones = await base44.asServiceRole.entities.AsignacionCamarero.filter({
@@ -59,7 +60,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      console.log(`✅ Todos los camareros confirmados (${asignacionesConfirmadas.length}/${todasAsignaciones.length}). Creando grupo...`);
+      Logger.info(`✅ Todos los camareros confirmados (${asignacionesConfirmadas.length}/${todasAsignaciones.length}). Creando grupo...`);
 
       // Obtener datos de camareros y coordinadores
       const camareros = await base44.asServiceRole.entities.Camarero.list();
@@ -120,7 +121,7 @@ Deno.serve(async (req) => {
         fecha_eliminacion_programada: fechaEliminacion
       });
 
-      console.log(`📱 Grupo de chat creado: ${grupo.nombre}`);
+      Logger.info(`📱 Grupo de chat creado: ${grupo.nombre}`);
 
       // Crear mensaje inicial del sistema
       await base44.asServiceRole.entities.MensajeChat.create({
@@ -168,9 +169,9 @@ Deno.serve(async (req) => {
             plantilla_usada: 'Notificación Grupo Chat'
           });
           
-          console.log(`📲 WhatsApp enviado a ${camarero.nombre}`);
+          Logger.info(`📲 WhatsApp enviado a ${camarero.nombre}`);
         } catch (e) {
-          console.error('Error enviando WhatsApp:', e);
+        Logger.error('Error enviando WhatsApp:', e);
         }
       }
 
@@ -201,7 +202,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error en autoCrearGrupoChatConfirmado:', error);
+    Logger.error('Error en autoCrearGrupoChatConfirmado:', error);
     return Response.json({ 
       error: error.message,
       stack: error.stack 

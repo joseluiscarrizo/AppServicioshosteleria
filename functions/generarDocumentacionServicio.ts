@@ -58,8 +58,7 @@ Deno.serve(async (req) => {
     if (pedido.cliente_id) {
       try {
         clienteInfo = await base44.asServiceRole.entities.Cliente.get(pedido.cliente_id);
-      } catch (e) {
-        console.log('Cliente no encontrado');
+      } catch (_e) {
       }
     }
 

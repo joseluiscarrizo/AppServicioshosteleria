@@ -1,4 +1,9 @@
 import { createClientFromRequest } from '@base44/sdk';
+import Logger from '../utils/logger.ts';
+import { validatePhoneNumber } from '../utils/validators.ts';
+import {
+  handleWebhookError
+} from '../utils/webhookImprovements.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -13,6 +18,10 @@ Deno.serve(async (req) => {
     
     if (!telefono || !mensaje) {
       return Response.json({ error: 'Teléfono y mensaje son requeridos' }, { status: 400 });
+    }
+
+    if (!validatePhoneNumber(telefono)) {
+      return Response.json({ error: 'Número de teléfono con formato inválido' }, { status: 400 });
     }
     
     // Limpiar el número de teléfono (solo dígitos)
@@ -90,11 +99,11 @@ Deno.serve(async (req) => {
         if (apiResponse.ok && resultado.messages?.[0]?.id) {
           enviadoPorAPI = true;
           mensajeIdProveedor = resultado.messages[0].id;
-          console.log(`✅ Mensaje enviado por API a ${numeroWhatsApp}: ${mensajeIdProveedor}`);
+          Logger.info(`✅ Mensaje enviado por API a ${numeroWhatsApp}: ${mensajeIdProveedor}`);
         } else {
           // Si falla el interactivo (ej: cuenta no soporta), intentar como texto plano
           if (tieneLinks) {
-            console.warn('Interactivo falló, intentando texto plano:', resultado.error?.message);
+            Logger.warn('Interactivo falló, intentando texto plano:', resultado.error?.message);
             const fallbackResponse = await fetch(
               `https://graph.facebook.com/v21.0/${whatsappPhone}/messages`,
               {
@@ -115,19 +124,19 @@ Deno.serve(async (req) => {
             if (fallbackResponse.ok && fallbackResult.messages?.[0]?.id) {
               enviadoPorAPI = true;
               mensajeIdProveedor = fallbackResult.messages[0].id;
-              console.log(`✅ Mensaje texto plano enviado a ${numeroWhatsApp}`);
+              Logger.info(`✅ Mensaje texto plano enviado a ${numeroWhatsApp}`);
             } else {
               errorAPI = fallbackResult.error?.message || resultado.error?.message || 'Error desconocido';
-              console.error('Error en fallback texto plano:', fallbackResult);
+              Logger.error('Error en fallback texto plano:', fallbackResult);
             }
           } else {
             errorAPI = resultado.error?.message || 'Error desconocido de la API';
-            console.error('Error en API de WhatsApp:', resultado);
+            Logger.error('Error en API de WhatsApp:', resultado);
           }
         }
       } catch (e) {
         errorAPI = e.message;
-        console.error('Error llamando a la API de WhatsApp:', e);
+        Logger.error('Error llamando a la API de WhatsApp:', e);
       }
     }
     
@@ -152,7 +161,7 @@ Deno.serve(async (req) => {
         coordinador_id: user.id
       });
     } catch (e) {
-      console.error('Error registrando en historial:', e);
+      Logger.error('Error registrando en historial:', e);
     }
     
     return Response.json({
@@ -166,7 +175,7 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error en enviarWhatsAppDirecto:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    Logger.error(`Error en enviarWhatsAppDirecto: ${(error as Error).message}`);
+    return handleWebhookError(error as Error, 500);
   }
 });

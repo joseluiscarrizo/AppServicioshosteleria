@@ -39,7 +39,7 @@ const estadosConfig = {
 
 export default function TableroEventos() {
   const [vistaActual, setVistaActual] = useState('semana'); // dia, semana
-  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
+  const [fechaSeleccionada, _setFechaSeleccionada] = useState(new Date());
 
   const queryClient = useQueryClient();
 

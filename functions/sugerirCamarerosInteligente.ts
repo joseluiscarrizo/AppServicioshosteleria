@@ -167,8 +167,7 @@ Deno.serve(async (req) => {
           diferencia_dias: Math.abs((new Date(e.fecha_pedido) - fechaEvento) / (1000 * 60 * 60 * 24))
         })),
         rendimiento_reciente: rendimientoReciente,
-        valoraciones_recientes_count: valoracionesRecientes.length,
-        preferencias_horarias: cam.preferencias_horarias
+        valoraciones_recientes_count: valoracionesRecientes.length
       };
     });
 

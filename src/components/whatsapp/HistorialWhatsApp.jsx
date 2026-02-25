@@ -59,7 +59,7 @@ export default function HistorialWhatsApp() {
       const mensajeCodificado = encodeURIComponent(mensaje);
       const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${mensajeCodificado}`;
       
-      window.open(whatsappUrl, '_blank');
+      globalThis.open(whatsappUrl, '_blank');
       
       await base44.entities.HistorialWhatsApp.create({
         telefono: numeroWhatsApp,

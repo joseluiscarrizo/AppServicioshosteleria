@@ -218,7 +218,7 @@ export default function GestionDocumentosCamarero({ camarero, soloLectura = fals
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(doc.url, '_blank')}
+                  onClick={() => globalThis.open(doc.url, '_blank')}
                 >
                   <Eye className="w-3 h-3 mr-1" />
                   Ver

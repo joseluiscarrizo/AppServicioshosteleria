@@ -24,7 +24,7 @@ const especialidadColors = {
 
 export default function PerfilCamarero() {
   const isMobile = useIsMobile();
-  const urlParams = new URLSearchParams(window.location.search);
+  const urlParams = new URLSearchParams(globalThis.location.search);
   const camareroId = urlParams.get('id');
 
   const { data: camarero, isLoading } = useQuery({

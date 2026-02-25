@@ -17,7 +17,7 @@ export default function ConfirmarServicio() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.location.search);
     const id = params.get('asignacion');
     const action = params.get('action');
     

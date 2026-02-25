@@ -10,7 +10,7 @@ export default function PullToRefresh({ onRefresh, children }) {
   const containerRef = useRef(null);
 
   const handleTouchStart = useCallback((e) => {
-    const scrollTop = containerRef.current?.scrollTop ?? window.scrollY;
+    const scrollTop = containerRef.current?.scrollTop ?? globalThis.scrollY;
     if (scrollTop <= 0) {
       startY.current = e.touches[0].clientY;
     }
@@ -20,7 +20,7 @@ export default function PullToRefresh({ onRefresh, children }) {
     if (startY.current === null || refreshing) return;
     const delta = e.touches[0].clientY - startY.current;
     if (delta > 0) {
-      if (window.scrollY === 0) {
+      if (globalThis.scrollY === 0) {
         e.preventDefault?.();
       }
       setPullDistance(Math.min(delta * 0.5, THRESHOLD * 1.2));

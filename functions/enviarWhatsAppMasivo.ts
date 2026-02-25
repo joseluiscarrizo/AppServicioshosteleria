@@ -53,9 +53,9 @@ Deno.serve(async (req) => {
     };
 
     // Obtener coordinador para el número de envío
-    let coordinador = null;
+    let _coordinador = null;
     if (coordinador_id) {
-      coordinador = await base44.asServiceRole.entities.Coordinador.get(coordinador_id);
+      _coordinador = await base44.asServiceRole.entities.Coordinador.get(coordinador_id);
     }
 
     // Enviar a cada camarero

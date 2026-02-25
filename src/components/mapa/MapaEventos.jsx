@@ -27,11 +27,11 @@ export default function MapaEventos({ pedidos, camareroNombre }) {
 
   const abrirNavegacion = (pedido) => {
     if (pedido.latitud && pedido.longitud) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${pedido.latitud},${pedido.longitud}`, '_blank');
+      globalThis.open(`https://www.google.com/maps/dir/?api=1&destination=${pedido.latitud},${pedido.longitud}`, '_blank');
     } else if (pedido.direccion_completa) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(pedido.direccion_completa)}`, '_blank');
+      globalThis.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(pedido.direccion_completa)}`, '_blank');
     } else if (pedido.lugar_evento) {
-      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pedido.lugar_evento)}`, '_blank');
+      globalThis.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pedido.lugar_evento)}`, '_blank');
     }
   };
 
@@ -130,7 +130,7 @@ export default function MapaEventos({ pedidos, camareroNombre }) {
                     <Button 
                       size="sm" 
                       variant="ghost"
-                      onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pedido.lugar_evento)}`, '_blank')}
+                      onClick={() => globalThis.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pedido.lugar_evento)}`, '_blank')}
                     >
                       <ExternalLink className="w-4 h-4" />
                     </Button>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import Logger from '../../utils/logger';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +43,7 @@ export default function Coordinadores() {
       toast.success('Coordinador añadido');
     },
     onError: (error) => {
-      console.error('Error al crear coordinador:', error);
+      Logger.error('Error al crear coordinador:', error);
       toast.error('Error al crear coordinador: ' + (error.message || 'Error desconocido'));
     }
   });
@@ -55,7 +56,7 @@ export default function Coordinadores() {
       toast.success('Coordinador actualizado');
     },
     onError: (error) => {
-      console.error('Error al actualizar coordinador:', error);
+      Logger.error('Error al actualizar coordinador:', error);
       toast.error('Error al actualizar coordinador: ' + (error.message || 'Error desconocido'));
     }
   });
@@ -67,7 +68,7 @@ export default function Coordinadores() {
       toast.success('Coordinador eliminado');
     },
     onError: (error) => {
-      console.error('Error al eliminar coordinador:', error);
+      Logger.error('Error al eliminar coordinador:', error);
       toast.error('Error al eliminar coordinador: ' + (error.message || 'Error desconocido'));
     }
   });

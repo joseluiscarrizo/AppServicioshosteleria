@@ -46,8 +46,7 @@ Deno.serve(async (req) => {
           const fecha = new Date(year, month - 1, day);
           fechaFormato = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
           diaSemana = DIAS_SEMANA[fecha.getDay()];
-        } catch (e) {
-          fechaFormato = pedido.dia;
+        } catch (_e) {
         }
       }
 

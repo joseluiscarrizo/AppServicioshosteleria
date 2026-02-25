@@ -7,8 +7,8 @@ Deno.serve(async (req) => {
         // Autenticar como service role para acceso completo
         const ahora = new Date();
         const en24h = new Date(ahora.getTime() + 24 * 60 * 60 * 1000);
-        const en2h = new Date(ahora.getTime() + 2 * 60 * 60 * 1000);
-        const en1h = new Date(ahora.getTime() + 60 * 60 * 1000);
+        const _en2h = new Date(ahora.getTime() + 2 * 60 * 60 * 1000);
+        const _en1h = new Date(ahora.getTime() + 60 * 60 * 1000);
         
         const hoy = ahora.toISOString().split('T')[0];
         const manana = en24h.toISOString().split('T')[0];
