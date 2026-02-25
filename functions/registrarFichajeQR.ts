@@ -6,7 +6,7 @@
  * GET  /?token=XXX          → devuelve info de la asignación
  * POST { token, tipo }      → tipo: "entrada" | "salida"  → registra fichaje
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from '@base44/sdk';
 
 function calcularHoras(entrada, salida) {
   if (!entrada || !salida) return null;
