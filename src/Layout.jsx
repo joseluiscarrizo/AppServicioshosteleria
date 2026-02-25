@@ -32,7 +32,7 @@ function BottomNav({ currentPageName }) {
               {tab.label}
             </span>
             {active && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#1e3a5f] rounded-b-full" />
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-orange-700 rounded-b-full" />
             )}
           </Link>
         );
