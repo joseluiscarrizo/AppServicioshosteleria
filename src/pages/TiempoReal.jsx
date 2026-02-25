@@ -66,12 +66,20 @@ export default function TiempoReal() {
 
   const updateAsignacionMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.AsignacionCamarero.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['asignaciones'] });
+      const previous = queryClient.getQueryData(['asignaciones']);
+      queryClient.setQueryData(['asignaciones'], (old = []) =>
+        old.map(a => a.id === id ? { ...a, ...data } : a)
+      );
+      return { previous };
     },
-    onError: (error) => {
-      console.error('Error al actualizar asignación:', error);
+    onError: (error, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['asignaciones'], ctx.previous);
       toast.error('Error al actualizar asignación: ' + (error.message || 'Error desconocido'));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
     }
   });
 
