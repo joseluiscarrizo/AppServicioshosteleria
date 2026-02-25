@@ -1,4 +1,12 @@
 import { base44 } from '@/api/base44Client';
+import Logger from '../../utils/logger';
+import { validateEmail, validatePhoneNumber } from '../../utils/validators';
+import ErrorNotificationService from '../../utils/errorNotificationService';
+import {
+  ValidationError,
+  DatabaseError,
+  handleWebhookError
+} from '../../utils/webhookImprovements';
 
 /**
  * Servicio centralizado para enviar notificaciones push a camareros
@@ -29,7 +37,7 @@ export class NotificationService {
       const campo = mapaTipos[tipoNotificacion];
       return campo ? (pref[campo] ?? true) : true;
     } catch (error) {
-      console.error('Error verificando preferencias:', error);
+      Logger.error('Error verificando preferencias:', error);
       return true;
     }
   }
@@ -39,7 +47,7 @@ export class NotificationService {
    */
   static enviarPush(titulo, mensaje, icono = '/icon.png', data = {}) {
     if (!('Notification' in window)) {
-      console.warn('Notificaciones push no soportadas');
+      Logger.warn('Notificaciones push no soportadas');
       return false;
     }
 
@@ -73,7 +81,7 @@ export class NotificationService {
 
         return true;
       } catch (error) {
-        console.error('Error enviando notificación:', error);
+        Logger.error('Error enviando notificación:', error);
         return false;
       }
     }
@@ -106,7 +114,7 @@ export class NotificationService {
 
       return true;
     } catch (error) {
-      console.error('Error notificando nueva asignación:', error);
+      Logger.error('Error notificando nueva asignación:', error);
       return false;
     }
   }
@@ -135,7 +143,7 @@ export class NotificationService {
 
       return true;
     } catch (error) {
-      console.error('Error notificando cambio:', error);
+      Logger.error('Error notificando cambio:', error);
       return false;
     }
   }
@@ -164,7 +172,7 @@ export class NotificationService {
 
       return true;
     } catch (error) {
-      console.error('Error notificando cancelación:', error);
+      Logger.error('Error notificando cancelación:', error);
       return false;
     }
   }
@@ -193,7 +201,7 @@ export class NotificationService {
 
       return true;
     } catch (error) {
-      console.error('Error notificando recordatorio:', error);
+      Logger.error('Error notificando recordatorio:', error);
       return false;
     }
   }
@@ -206,7 +214,7 @@ export class NotificationService {
       await base44.entities.Notificacion.update(notificacionId, { leida: true });
       return true;
     } catch (error) {
-      console.error('Error marcando como leída:', error);
+      Logger.error('Error marcando como leída:', error);
       return false;
     }
   }
@@ -247,7 +255,7 @@ export class NotificationService {
 
       return true;
     } catch (error) {
-      console.error('Error verificando eventos próximos:', error);
+      Logger.error('Error verificando eventos próximos:', error);
       return false;
     }
   }
