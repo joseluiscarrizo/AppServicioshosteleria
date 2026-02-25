@@ -28,7 +28,7 @@ function BottomNav({ currentPageName }) {
             }`}
           >
             <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5]' : 'stroke-[1.5]'}`} />
-            <span className={`text-[10px] font-medium ${active ? 'text-[#1e3a5f]' : 'text-slate-400'}`}>
+            <span className={`text-[10px] font-medium ${active ? 'text-orange-700' : 'text-stone-400'}`}>
               {tab.label}
             </span>
             {active && (
