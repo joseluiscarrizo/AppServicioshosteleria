@@ -20,7 +20,9 @@ export default function PullToRefresh({ onRefresh, children }) {
     if (startY.current === null || refreshing) return;
     const delta = e.touches[0].clientY - startY.current;
     if (delta > 0) {
-      e.preventDefault();
+      if (window.scrollY === 0) {
+        e.preventDefault?.();
+      }
       setPullDistance(Math.min(delta * 0.5, THRESHOLD * 1.2));
     }
   }, [refreshing]);
@@ -29,8 +31,13 @@ export default function PullToRefresh({ onRefresh, children }) {
     if (pullDistance >= THRESHOLD) {
       setRefreshing(true);
       setPullDistance(THRESHOLD);
-      await onRefresh();
-      setRefreshing(false);
+      try {
+        await onRefresh();
+      } catch (err) {
+        console.error('Error al actualizar:', err);
+      } finally {
+        setRefreshing(false);
+      }
     }
     setPullDistance(0);
     startY.current = null;
@@ -45,8 +52,12 @@ export default function PullToRefresh({ onRefresh, children }) {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className="relative"
-      style={{ touchAction: showing ? 'none' : 'auto' }}
+      className="relative w-full"
+      style={{
+        touchAction: showing ? 'none' : 'auto',
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+      }}
     >
       {/* Pull indicator */}
       <div
