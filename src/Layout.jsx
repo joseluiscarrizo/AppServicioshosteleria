@@ -359,8 +359,8 @@ export default function Layout({ children, currentPageName }) {
                   <Button
                     variant={currentPageName === item.page ? 'default' : 'ghost'}
                     className={`w-full justify-start mb-1 ${currentPageName === item.page 
-                      ? 'bg-[#1e3a5f] text-white' 
-                      : 'text-slate-600'
+                      ? 'bg-orange-700 text-white' 
+                      : 'text-stone-600'
                     }`}
                   >
                     <item.icon className="w-4 h-4 mr-2" />
@@ -394,8 +394,8 @@ export default function Layout({ children, currentPageName }) {
                   <Button
                     variant={currentPageName === item.page ? 'default' : 'ghost'}
                     className={`w-full justify-start mb-1 ${currentPageName === item.page 
-                      ? 'bg-[#1e3a5f] text-white' 
-                      : 'text-slate-600'
+                      ? 'bg-orange-700 text-white' 
+                      : 'text-stone-600'
                     }`}
                   >
                     <item.icon className="w-4 h-4 mr-2" />
@@ -413,8 +413,8 @@ export default function Layout({ children, currentPageName }) {
                   <Button
                     variant={currentPageName === item.page ? 'default' : 'ghost'}
                     className={`w-full justify-start mb-1 ${currentPageName === item.page 
-                      ? 'bg-[#1e3a5f] text-white' 
-                      : 'text-slate-600'
+                      ? 'bg-orange-700 text-white' 
+                      : 'text-stone-600'
                     }`}
                   >
                     <item.icon className="w-4 h-4 mr-2" />
@@ -432,8 +432,8 @@ export default function Layout({ children, currentPageName }) {
                   <Button
                     variant={currentPageName === item.page ? 'default' : 'ghost'}
                     className={`w-full justify-start mb-1 ${currentPageName === item.page 
-                      ? 'bg-[#1e3a5f] text-white' 
-                      : 'text-slate-600'
+                      ? 'bg-orange-700 text-white' 
+                      : 'text-stone-600'
                     }`}
                   >
                     <item.icon className="w-4 h-4 mr-2" />
