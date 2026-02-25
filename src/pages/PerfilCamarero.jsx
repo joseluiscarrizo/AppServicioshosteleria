@@ -12,6 +12,7 @@ import { createPageUrl } from '../utils';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GestionDocumentosCamarero from '../components/camareros/GestionDocumentosCamarero';
+import { useIsMobile } from '../components/ui/useIsMobile';
 
 const especialidadColors = {
   general: 'bg-slate-100 text-slate-700',
