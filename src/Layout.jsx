@@ -128,7 +128,30 @@ export default function Layout({ children, currentPageName }) {
   }, [requestPermission]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-amber-50/60">
+      <style>{`
+        :root {
+          --background: 33 30% 98%;
+          --foreground: 20 20% 14%;
+          --card: 0 0% 100%;
+          --card-foreground: 20 20% 14%;
+          --popover: 0 0% 100%;
+          --popover-foreground: 20 20% 14%;
+          --primary: 22 80% 38%;
+          --primary-foreground: 30 100% 98%;
+          --secondary: 34 35% 93%;
+          --secondary-foreground: 20 15% 20%;
+          --muted: 34 25% 94%;
+          --muted-foreground: 25 15% 46%;
+          --accent: 34 35% 92%;
+          --accent-foreground: 20 15% 20%;
+          --border: 30 20% 87%;
+          --input: 30 20% 87%;
+          --ring: 22 80% 38%;
+          --radius: 0.6rem;
+        }
+        body { background-color: hsl(33, 30%, 98%) !important; }
+      `}</style>
       {/* Manejador global de errores de rate limit */}
       <RateLimitHandler />
       

@@ -53,6 +53,7 @@ import Camareros from './pages/Camareros';
 import Chat from './pages/Chat';
 import Clientes from './pages/Clientes';
 import Comunicacion from './pages/Comunicacion';
+import ConfiguracionCuenta from './pages/ConfiguracionCuenta';
 import ConfiguracionNotificaciones from './pages/ConfiguracionNotificaciones';
 import ConfirmarServicio from './pages/ConfirmarServicio';
 import Coordinadores from './pages/Coordinadores';
@@ -68,7 +69,6 @@ import PreferenciasNotificaciones from './pages/PreferenciasNotificaciones';
 import TableroEventos from './pages/TableroEventos';
 import TiempoReal from './pages/TiempoReal';
 import VistaMovil from './pages/VistaMovil';
-import ConfiguracionCuenta from './pages/ConfiguracionCuenta';
 import __Layout from './Layout.jsx';
 
 
@@ -79,6 +79,7 @@ export const PAGES = {
     "Chat": Chat,
     "Clientes": Clientes,
     "Comunicacion": Comunicacion,
+    "ConfiguracionCuenta": ConfiguracionCuenta,
     "ConfiguracionNotificaciones": ConfiguracionNotificaciones,
     "ConfirmarServicio": ConfirmarServicio,
     "Coordinadores": Coordinadores,
@@ -94,7 +95,6 @@ export const PAGES = {
     "TableroEventos": TableroEventos,
     "TiempoReal": TiempoReal,
     "VistaMovil": VistaMovil,
-    "ConfiguracionCuenta": ConfiguracionCuenta,
 }
 
 export const pagesConfig = {
