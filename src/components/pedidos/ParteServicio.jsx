@@ -196,8 +196,8 @@ export default function ParteServicio({ pedido, open, onOpenChange }) {
       y += rowH;
     });
 
-    // Añadir filas vacías si hay menos de 8
-    const filasVacias = Math.max(0, 8 - filas.length);
+    // Añadir filas vacías si hay menos de 12 (más espacio en landscape)
+    const filasVacias = Math.max(0, 12 - filas.length);
     for (let i = 0; i < filasVacias; i++) {
       const rowH = 9;
       const bg = (filas.length + i) % 2 === 0 ? [248, 250, 252] : [255, 255, 255];
