@@ -230,7 +230,7 @@ export default function ParteServicio({ pedido, open, onOpenChange }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0">
         <DialogHeader className="px-6 pt-5 pb-3 border-b">
           <DialogTitle className="flex items-center gap-2 text-[#1e3a5f]">
             <FileText className="w-5 h-5" />
