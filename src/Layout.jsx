@@ -151,6 +151,10 @@ export default function Layout({ children, currentPageName }) {
           --radius: 0.6rem;
         }
         body { background-color: hsl(33, 30%, 98%) !important; }
+        @media (max-width: 767px) {
+          button { min-height: 44px; }
+          button[data-size="icon"], .btn-no-min-h { min-height: unset; }
+        }
       `}</style>
       {/* Manejador global de errores de rate limit */}
       <RateLimitHandler />
