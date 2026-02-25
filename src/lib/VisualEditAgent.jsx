@@ -46,8 +46,8 @@ export default function VisualEditAgent() {
 		void element.offsetWidth;
 
 		const rect = element.getBoundingClientRect();
-		overlay.style.top = `${rect.top + window.scrollY}px`;
-		overlay.style.left = `${rect.left + window.scrollX}px`; // weird bug with the offset
+		overlay.style.top = `${rect.top + globalThis.scrollY}px`;
+		overlay.style.left = `${rect.left + globalThis.scrollX}px`; // weird bug with the offset
 		overlay.style.width = `${rect.width}px`;
 		overlay.style.height = `${rect.height}px`;
 
@@ -381,8 +381,8 @@ export default function VisualEditAgent() {
 					const rect = element.getBoundingClientRect();
 
 					// Check if element is in viewport
-					const viewportHeight = window.innerHeight;
-					const viewportWidth = window.innerWidth;
+					const viewportHeight = globalThis.innerHeight;
+					const viewportWidth = globalThis.innerWidth;
 					const isInViewport = (
 						rect.top < viewportHeight &&
 						rect.bottom > 0 &&
@@ -465,8 +465,8 @@ export default function VisualEditAgent() {
 							const rect = element.getBoundingClientRect();
 
 							// Check if element is in viewport
-							const viewportHeight = window.innerHeight;
-							const viewportWidth = window.innerWidth;
+							const viewportHeight = globalThis.innerHeight;
+							const viewportWidth = globalThis.innerWidth;
 							const isInViewport = (
 								rect.top < viewportHeight &&
 								rect.bottom > 0 &&
@@ -526,16 +526,16 @@ export default function VisualEditAgent() {
 			}
 		};
 
-		window.addEventListener('message', handleMessage);
-		window.addEventListener('scroll', handleScroll, true); // Use capture to catch all scroll events
+		globalThis.addEventListener('message', handleMessage);
+		globalThis.addEventListener('scroll', handleScroll, true); // Use capture to catch all scroll events
 		document.addEventListener('scroll', handleScroll, true); // Also listen on document
 
 		// Send ready message to parent
 		window.parent.postMessage({ type: 'visual-edit-agent-ready' }, '*');
 
 		return () => {
-			window.removeEventListener('message', handleMessage);
-			window.removeEventListener('scroll', handleScroll, true);
+			globalThis.removeEventListener('message', handleMessage);
+			globalThis.removeEventListener('scroll', handleScroll, true);
 			document.removeEventListener('scroll', handleScroll, true);
 			document.removeEventListener('mouseover', handleMouseOver);
 			document.removeEventListener('mouseout', handleMouseOut);
@@ -633,12 +633,12 @@ export default function VisualEditAgent() {
 			attributeFilter: ['style', 'class', 'width', 'height']
 		});
 
-		window.addEventListener('resize', handleResize);
-		window.addEventListener('scroll', handleResize);
+		globalThis.addEventListener('resize', handleResize);
+		globalThis.addEventListener('scroll', handleResize);
 
 		return () => {
-			window.removeEventListener('resize', handleResize);
-			window.removeEventListener('scroll', handleResize);
+			globalThis.removeEventListener('resize', handleResize);
+			globalThis.removeEventListener('scroll', handleResize);
 			mutationObserver.disconnect();
 		};
 	}, []);

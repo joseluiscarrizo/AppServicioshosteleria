@@ -258,7 +258,7 @@ export default function EnviarWhatsApp({ pedido, asignaciones, camareros, button
           } else if (resultado.whatsapp_url) {
             enviadosPorWeb++;
             // Abrir WhatsApp Web como fallback
-            window.open(resultado.whatsapp_url, '_blank');
+            globalThis.open(resultado.whatsapp_url, '_blank');
             await new Promise(resolve => setTimeout(resolve, 1500));
           }
         } catch (error) {

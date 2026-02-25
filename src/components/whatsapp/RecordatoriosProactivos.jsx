@@ -82,7 +82,7 @@ ${tipo === '2h' ? '⚠️ Recuerda salir con tiempo suficiente para llegar puntu
       const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${mensajeCodificado}`;
       
       // Abrir WhatsApp
-      window.open(whatsappUrl, '_blank');
+      globalThis.open(whatsappUrl, '_blank');
 
       // Registrar en historial
       await base44.entities.HistorialWhatsApp.create({

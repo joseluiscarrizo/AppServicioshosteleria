@@ -258,7 +258,7 @@ export default function VistaMovil() {
                           <Button 
                             variant="outline" 
                             className="w-full mt-3"
-                            onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(pedido.direccion_completa)}`, '_blank')}
+                            onClick={() => globalThis.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(pedido.direccion_completa)}`, '_blank')}
                           >
                             <Navigation className="w-4 h-4 mr-2" />
                             Cómo llegar

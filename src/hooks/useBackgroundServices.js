@@ -319,7 +319,7 @@ export function useBackgroundServices({ showPushNotifications } = {}) {
 
             const tel = camarero.telefono.replace(/\D/g, '');
             const num = (!tel.startsWith('34') && tel.length === 9) ? '34' + tel : tel;
-            window.open(`https://wa.me/${num}?text=${encodeURIComponent(mensaje)}`, '_blank');
+            globalThis.open(`https://wa.me/${num}?text=${encodeURIComponent(mensaje)}`, '_blank');
 
             await base44.entities.RecordatorioEnviado.create({
               asignacion_id: asign.id,
@@ -371,7 +371,7 @@ export function useBackgroundServices({ showPushNotifications } = {}) {
 
         const tel = camarero.telefono.replace(/\D/g, '');
         const num = (!tel.startsWith('34') && tel.length === 9) ? '34' + tel : tel;
-        window.open(`https://wa.me/${num}?text=${encodeURIComponent(mensaje)}`, '_blank');
+        globalThis.open(`https://wa.me/${num}?text=${encodeURIComponent(mensaje)}`, '_blank');
 
         await base44.entities.HistorialWhatsApp.create({
           destinatario_id: camarero.id,

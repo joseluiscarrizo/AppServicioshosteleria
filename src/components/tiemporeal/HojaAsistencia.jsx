@@ -108,7 +108,7 @@ export default function HojaAsistencia({ pedido, asignaciones, camareros }) {
     },
     onSuccess: (data) => {
       toast.success('Hoja exportada a Google Sheets');
-      window.open(data.url, '_blank');
+      globalThis.open(data.url, '_blank');
     },
     onError: (error) => {
       toast.error('Error al exportar a Google Sheets');

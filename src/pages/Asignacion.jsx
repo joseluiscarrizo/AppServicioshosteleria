@@ -513,7 +513,7 @@ Sistema de Gestión de Camareros
         });
         
         if (resultado.whatsapp_url) {
-          window.open(resultado.whatsapp_url, '_blank');
+          globalThis.open(resultado.whatsapp_url, '_blank');
         }
         
         queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
@@ -576,7 +576,7 @@ Sistema de Gestión de Camareros
       
       if (data.success) {
         // Abrir en nueva pestaña
-        window.open(data.spreadsheetUrl, '_blank');
+        globalThis.open(data.spreadsheetUrl, '_blank');
         toast.success('Excel generado correctamente. Se abrió en una nueva pestaña.');
       } else {
         toast.error('Error al generar Excel');
@@ -594,7 +594,7 @@ Sistema de Gestión de Camareros
     try {
       const { data } = await base44.functions.invoke('exportarCalendarioEventos', {});
       if (data.success) {
-        window.open(data.spreadsheetUrl, '_blank');
+        globalThis.open(data.spreadsheetUrl, '_blank');
         toast.success(`Calendario exportado: ${data.total_eventos} eventos. Se abrió en una nueva pestaña.`);
       } else {
         toast.error('Error al generar el calendario');

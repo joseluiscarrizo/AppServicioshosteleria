@@ -68,7 +68,7 @@ export const enviarNotificacionPush = (tipo, titulo, mensaje, opciones = {}) => 
     });
 
     notification.onclick = () => {
-      window.focus();
+      globalThis.focus();
       if (opciones.onClick) {
         opciones.onClick();
       }

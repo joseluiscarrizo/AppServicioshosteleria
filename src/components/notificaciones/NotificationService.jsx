@@ -56,7 +56,7 @@ export class NotificationService {
         });
 
         notification.onclick = () => {
-          window.focus();
+          globalThis.focus();
           if (data.url) {
             window.location.hash = data.url;
           }
