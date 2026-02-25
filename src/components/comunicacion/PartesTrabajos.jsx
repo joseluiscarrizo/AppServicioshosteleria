@@ -4,12 +4,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Eye, Send, RefreshCw, CheckCircle, Clock, Calendar, MapPin, Users } from 'lucide-react';
+import { Eye, Send, RefreshCw, CheckCircle, Clock, MapPin, Users } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import ParteServicio from '../pedidos/ParteServicio';
 
 export default function PartesTrabajos({ user }) {
   const [vistaPrevia, setVistaPrevia] = useState(null);
