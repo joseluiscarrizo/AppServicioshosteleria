@@ -742,7 +742,7 @@ export default function Pedidos() {
               </TableBody>
             </Table>
           </div>
-        </Card>
+        </Card></> 
         )}
 
         {/* Modal Form */}
