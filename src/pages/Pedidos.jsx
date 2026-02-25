@@ -454,7 +454,27 @@ export default function Pedidos() {
           </Card>
         </div>
 
-        {/* Tabla de Pedidos */}
+        {/* Lista/Tabla de Pedidos */}
+        {isMobile ? (
+          <div className="space-y-3">
+            {pedidos.length === 0 && (
+              <p className="text-center text-slate-400 py-8">No hay pedidos registrados</p>
+            )}
+            {pedidos.map(pedido => (
+              <PedidoCardMobile
+                key={pedido.id}
+                pedido={pedido}
+                asignaciones={asignaciones}
+                onEdicionRapida={(p, campo) => setEdicionRapida({ open: true, pedido: p, campo })}
+                onDuplicar={(p) => setDuplicarDialog({ open: true, pedido: p })}
+                onRecurrente={(p) => setRecurrenteDialog({ open: true, pedido: p })}
+                onEdit={handleEdit}
+                onDelete={(id) => deleteMutation.mutate(id)}
+                onParte={(p) => setParteDialog({ open: true, pedido: p })}
+              />
+            ))}
+          </div>
+        ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
