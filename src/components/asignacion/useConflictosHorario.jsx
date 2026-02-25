@@ -106,4 +106,5 @@ export function useConflictosHorario({ asignaciones = [], pedidos = [], enabled 
     try {
       sessionStorage.setItem(NOTIFICADOS_KEY, JSON.stringify([...yaNotificadosRef.current]));
     } catch (_) { /* empty */ }
+  }, [asignaciones, pedidos, enabled]);
 }
