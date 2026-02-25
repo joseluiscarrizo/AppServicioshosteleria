@@ -90,21 +90,17 @@ const TAB_ORDER = BOTTOM_TABS.map(t => t.page);
 
 function PageTransitionWrapper({ children, currentPageName }) {
   const location = useLocation();
-  const idx = TAB_ORDER.indexOf(currentPageName);
-  const isTabPage = idx !== -1;
+  const isTabPage = TAB_ORDER.includes(currentPageName);
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={location.pathname + location.search}
-        initial={isTabPage ? { x: 20, opacity: 0 } : { opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={isTabPage ? { x: -20, opacity: 0 } : { opacity: 0 }}
-        transition={{ duration: 0.18, ease: 'easeOut' }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      key={location.pathname + location.search}
+      initial={isTabPage ? { x: 16, opacity: 0 } : { opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.18, ease: 'easeOut' }}
+    >
+      {children}
+    </motion.div>
   );
 }
 
