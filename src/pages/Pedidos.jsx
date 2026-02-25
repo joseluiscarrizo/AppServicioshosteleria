@@ -779,5 +779,6 @@ export default function Pedidos() {
         />
         </div>
         </div>
+    </PullToRefresh>
         );
         }
