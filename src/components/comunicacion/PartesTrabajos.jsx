@@ -159,7 +159,7 @@ export default function PartesTrabajos({ user }) {
                       variant="ghost"
                       size="sm"
                       className="h-7 px-2 text-[#1e3a5f] hover:bg-[#1e3a5f]/10"
-                      onClick={() => setVistaPrevia(p)}
+                      onClick={() => setParteAbierto(p)}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
