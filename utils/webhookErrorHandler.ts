@@ -7,7 +7,7 @@
  * @param {Object} res - The response object.
  * @returns {void}
  */
-export const webhookErrorHandler = (error, req, res) => {
+export const webhookErrorHandler = (error, _req, res) => {
     console.error('Webhook error:', error);
     
     // Send a generic error response to the webhook sender
