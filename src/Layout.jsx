@@ -15,7 +15,7 @@ const BOTTOM_TABS = [
 
 function BottomNav({ currentPageName }) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-slate-200 bottom-nav flex items-stretch">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-amber-100 bottom-nav flex items-stretch">
       {BOTTOM_TABS.map(tab => {
         const Icon = tab.icon;
         const active = currentPageName === tab.page;
