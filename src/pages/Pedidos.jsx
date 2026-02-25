@@ -31,6 +31,7 @@ export default function Pedidos() {
   const [edicionRapida, setEdicionRapida] = useState({ open: false, pedido: null, campo: null });
   const [duplicarDialog, setDuplicarDialog] = useState({ open: false, pedido: null });
   const [recurrenteDialog, setRecurrenteDialog] = useState({ open: false, pedido: null });
+  const [parteDialog, setParteDialog] = useState({ open: false, pedido: null });
   const [editingSalida, setEditingSalida] = useState({ pedidoId: null, turnoIndex: null, camareroIndex: null });
   const [formData, setFormData] = useState({
     codigo_pedido: '',
