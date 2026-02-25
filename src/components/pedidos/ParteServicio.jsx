@@ -214,7 +214,7 @@ export default function ParteServicio({ pedido, open, onOpenChange }) {
       y += rowH;
     }
 
-    y += 10;
+    y += 8;
 
     // ---- PIE ----
     doc.setFontSize(10);
