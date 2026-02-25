@@ -123,8 +123,20 @@ export default function PerfilCamarero() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      {/* Sticky top bar on mobile */}
+      {isMobile && (
+        <div className="sticky top-16 z-40 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 shadow-sm">
+          <Link to={createPageUrl('Camareros')}>
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <span className="font-semibold text-slate-800 truncate">{camarero?.nombre || 'Perfil'}</span>
+        </div>
+      )}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header con botón volver */}
+        {/* Header con botón volver – solo desktop */}
+        {!isMobile && (
         <div className="mb-6">
           <Link to={createPageUrl('Camareros')}>
             <Button variant="ghost" className="mb-4">
@@ -133,6 +145,7 @@ export default function PerfilCamarero() {
             </Button>
           </Link>
         </div>
+        )}
 
         {/* Información Principal */}
         <Card className="p-6 mb-6">
