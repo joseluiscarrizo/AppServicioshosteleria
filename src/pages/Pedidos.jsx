@@ -757,6 +757,13 @@ export default function Pedidos() {
           pedidoOriginal={duplicarDialog.pedido}
         />
 
+        {/* Parte de Servicio */}
+        <ParteServicio
+          pedido={parteDialog.pedido}
+          open={parteDialog.open}
+          onOpenChange={(open) => setParteDialog({ ...parteDialog, open })}
+        />
+
         {/* Evento Recurrente */}
         <EventoRecurrente
           open={recurrenteDialog.open}
