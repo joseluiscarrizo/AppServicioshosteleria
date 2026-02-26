@@ -12,18 +12,6 @@ Deno.serve(async (req) => {
     // Obtener datos
     const pedidos = await base44.entities.Pedido.list('-dia', 500);
     const asignaciones = await base44.entities.AsignacionCamarero.list('-fecha_pedido', 2000);
-    const camareros = await base44.entities.Camarero.list('nombre');
-
-    // Crear mapping de camareros por ID
-    const camarerosMap = {};
-    camareros.forEach(c => {
-      camarerosMap[c.id] = c;
-    });
-
-    // Obtener coordinadores para mapear por código
-    const coordinadores = await base44.entities.Coordinador.list('nombre');
-    const coordinadoresMap = {};
-    coordinadores.forEach(c => { coordinadoresMap[c.id] = c; });
 
     // Preparar datos para la hoja
     const filas = [];
