@@ -301,8 +301,20 @@ async function crearPedidoEnBD(base44, datos, telefono) {
     if (partes.length === 3) {
       diaFormateado = `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
     }
-    if (diaFormateado && !validateDate(diaFormateado)) {
-      throw new ValidationError(`La fecha "${datos.fecha_evento}" no es válida`);
+    if (diaFormateado) {
+      // Primero validar el formato con la función existente
+      if (!validateDate(diaFormateado)) {
+        throw new ValidationError(`La fecha "${datos.fecha_evento}" no es válida`);
+      }
+      // Validación semántica adicional: comprobar que la fecha exista realmente
+      const parsed = parseISO(diaFormateado);
+      const isInvalid =
+        !parsed ||
+        Number.isNaN(parsed.getTime()) ||
+        format(parsed, 'yyyy-MM-dd') !== diaFormateado;
+      if (isInvalid) {
+        throw new ValidationError(`La fecha "${datos.fecha_evento}" no es válida`);
+      }
     }
   }
 
