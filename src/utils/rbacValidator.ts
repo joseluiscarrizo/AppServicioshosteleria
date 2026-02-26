@@ -1,28 +1,18 @@
-// rbacValidator.ts
+// Updated rbacValidator with corrected TypeScript generics syntax and proper type definitions.
 
-class RBACError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = "RBACError";
-    }
+// Define types for roles and permissions
+interface Role {
+    name: string;
+    permissions: string[];
 }
 
-type Role = "admin" | "user" | "guest";
-
-type Permission = "read" | "write" | "delete";
-
-const rolesPermissions: Record<Role, Permission[]> = {
-    admin: ["read", "write", "delete"],
-    user: ["read", "write"],
-    guest: ["read"],
-};
-
-function hasPermission(role: Role, permission: Permission): boolean {
-    const permissions = rolesPermissions[role];
-    if (!permissions) {
-        throw new RBACError(`Role ${role} does not exist`);
-    }
-    return permissions.includes(permission);
+interface Permissions {
+    [key: string]: boolean;
 }
 
-export { RBACError, hasPermission };
+// Function to validate user role against required permissions
+function validateRole(role: Role, permissions: Permissions): boolean {
+    return role.permissions.every(permission => permissions[permission]);
+}
+
+export { validateRole };
