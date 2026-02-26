@@ -1,15 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { format } from 'npm:date-fns@3.6.0';
 import { es } from 'npm:date-fns@3.6.0/locale';
+import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
-    if (!user || (user.role !== 'admin' && user.role !== 'coordinador')) {
-      return Response.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    validateUserAccess(user, ['admin', 'coordinador']);
 
     const { asignacion_id } = await req.json();
 
@@ -165,6 +164,9 @@ Tu servicio ha sido confirmado por el coordinador:
     });
 
   } catch (error) {
+    if (error instanceof RBACError) {
+      return Response.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('Error en confirmarServicioAutomatico:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }

@@ -14,8 +14,11 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfiguracionRecordatorios from '../components/recordatorios/ConfiguracionRecordatorios';
 import NotificacionesMasivas from '../components/notificaciones/NotificacionesMasivas';
+import { useRole } from '@/hooks/useRole';
+import AccessDenied from '@/components/AccessDenied';
 
 export default function Coordinadores() {
+  const { isAdmin } = useRole();
   const [showForm, setShowForm] = useState(false);
   const [editingCoord, setEditingCoord] = useState(null);
   const [mostrarRecordatorios, setMostrarRecordatorios] = useState(false);
@@ -72,6 +75,8 @@ export default function Coordinadores() {
       toast.error('Error al eliminar coordinador: ' + (error.message || 'Error desconocido'));
     }
   });
+
+  if (!isAdmin) return <AccessDenied />;
 
   const resetForm = () => {
     setShowForm(false);

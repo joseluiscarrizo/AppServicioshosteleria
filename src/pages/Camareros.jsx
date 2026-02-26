@@ -21,6 +21,8 @@ import ValoracionesHistorial from '../components/camareros/ValoracionesHistorial
 import DocumentosWidget from '../components/camareros/DocumentosWidget';
 import GestionDisponibilidad from '../components/camareros/GestionDisponibilidad';
 import PreferenciasHorarias from '../components/camareros/PreferenciasHorarias';
+import { useRole } from '@/hooks/useRole';
+import AccessDenied from '@/components/AccessDenied';
 
 const especialidadColors = {
   general: 'bg-slate-100 text-slate-700',
@@ -38,6 +40,7 @@ const nivelExperienciaColors = {
 };
 
 export default function Camareros() {
+  const { isAdmin, isCoordinator } = useRole();
   const [showForm, setShowForm] = useState(false);
   const [editingCamarero, setEditingCamarero] = useState(null);
   const [busqueda, setBusqueda] = useState('');
@@ -209,6 +212,8 @@ export default function Camareros() {
       toast.error('Error al eliminar camarero: ' + error.message);
     }
   });
+
+  if (!isAdmin && !isCoordinator) return <AccessDenied />;
 
   // Obtener habilidades únicas
   const todasHabilidades = [...new Set(camareros.flatMap(c => c.habilidades || []))].sort();

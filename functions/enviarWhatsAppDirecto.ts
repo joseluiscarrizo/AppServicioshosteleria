@@ -4,15 +4,14 @@ import { validatePhoneNumber } from '../utils/validators.ts';
 import {
   handleWebhookError
 } from '../utils/webhookImprovements.ts';
+import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
-    if (!user) {
-      return Response.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    validateUserAccess(user, ['admin', 'coordinador']);
 
     const { telefono, mensaje, camarero_id, camarero_nombre, pedido_id, asignacion_id, plantilla_usada, link_confirmar, link_rechazar } = await req.json();
     
@@ -175,6 +174,9 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
+    if (error instanceof RBACError) {
+      return Response.json({ error: error.message }, { status: error.statusCode });
+    }
     Logger.error(`Error en enviarWhatsAppDirecto: ${(error as Error).message}`);
     return handleWebhookError(error as Error, 500);
   }
