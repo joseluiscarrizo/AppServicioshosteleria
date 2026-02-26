@@ -160,6 +160,7 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
         const baseUrl = globalThis.location.origin;
         const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
         const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
+        const response = await base44.functions.invoke('enviarWhatsAppDirecto', {
           telefono: camarero.telefono,
           mensaje,
           camarero_id: camarero.id,

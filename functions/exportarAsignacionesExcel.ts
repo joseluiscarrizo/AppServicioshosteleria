@@ -61,7 +61,8 @@ Deno.serve(async (req) => {
         try {
           const [y, m, d] = pedido.dia.split('-');
           fechaFormato = `${d}/${m}/${y}`;
-        } catch (_e) {
+        } catch (_e) {}
+      }
       let codCoordinador = '-';
       // Intentar obtenerlo del cliente vinculado
       // Se usa el campo coordinador_codigo si el pedido lo tiene, o via cliente
