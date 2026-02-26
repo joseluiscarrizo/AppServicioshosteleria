@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { executeResilientAPICall } from '../utils/resilience/resilientAPI.ts';
 
 Deno.serve(async (req) => {
     try {
@@ -159,22 +160,33 @@ Deno.serve(async (req) => {
                 .replace(/\//g, '_')
                 .replace(/=+$/, '');
 
-            const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ raw: encodedEmail })
-            });
-
-            if (!response.ok) {
-                const error = await response.text();
-                console.error(`Error enviando a ${to}:`, error);
-                resultados.push({ to, ok: false });
-            } else {
-                resultados.push({ to, ok: true });
+            let sendSuccess = false;
+            try {
+                const response = await executeResilientAPICall(
+                    'gmail-attendance',
+                    () => fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ raw: encodedEmail })
+                    }),
+                    {
+                        maxRetries: 2,
+                        initialDelay: 500,
+                        onFailure: (err) => console.error(`[ALERT] Gmail failed for ${to}`, err.message)
+                    }
+                );
+                sendSuccess = response.ok;
+                if (!response.ok) {
+                    const error = await response.text();
+                    console.error(`Error enviando a ${to}:`, error);
+                }
+            } catch (err) {
+                console.error(`Error enviando a ${to}:`, err);
             }
+            resultados.push({ to, ok: sendSuccess });
         }
 
         const exitosos = resultados.filter(r => r.ok).map(r => r.to);
