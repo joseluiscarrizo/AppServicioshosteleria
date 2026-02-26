@@ -715,9 +715,13 @@ Deno.serve(async (req) => {
 
       } else if (accion === 'rechazar') {
         if (asignacion.camarero_id) {
-          await executeDbOperation(() =>
-            base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, { estado_actual: 'disponible' })
-          );
+          try {
+            await executeDbOperation(() =>
+              base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, { estado_actual: 'disponible' })
+            );
+          } catch (e) {
+            Logger.error(`Error actualizando estado del camarero a disponible: ${e instanceof Error ? e.message : String(e)}`);
+          }
         }
 
         try {
