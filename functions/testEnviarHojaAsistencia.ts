@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.integrations.Core.SendEmail({
       to: coordinador.email,
       subject: `[TEST] Hoja de Asistencia - ${pedido.cliente} - ${pedido.dia}`,
-      html: hojaHTML
+      body: hojaHTML
     });
     
     return Response.json({
