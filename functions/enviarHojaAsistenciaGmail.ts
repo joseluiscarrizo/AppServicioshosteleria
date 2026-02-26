@@ -1,85 +1,65 @@
-// Refactored enviarHojaAsistenciaGmail.ts
-
-// Import necessary modules
-import { Buffer } from 'buffer';
 import nodemailer from 'nodemailer';
 import * as validator from 'validator';
+import * as sanitizeHtml from 'sanitize-html';
 
-// Interface for email validation results
-interface EmailValidationResult {
-    isValid: boolean;
-    message: string;
+const MAX_RETRIES = 3;
+
+interface User {
+    email: string;
+    role: string;
 }
 
-// Function to validate email
-function validateEmail(email: string): EmailValidationResult {
-    if (!validator.isEmail(email)) {
-        return { isValid: false, message: 'Invalid email format.' };
-    }
-    return { isValid: true, message: 'Valid email.' };
+function validateEmail(email: string): boolean {
+    return validator.isEmail(email);
 }
 
-// Function to sanitize HTML
-function sanitizeHTML(html: string): string {
-    // Implement sanitization logic here
-    return html.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function checkRBAC(user: User, requiredRole: string): boolean {
+    return user.role === requiredRole;
 }
 
-// Function for RBAC checks
-function checkRBAC(user: string): boolean {
-    // Mock RBAC check, replace with actual logic
-    const allowedUsers = ['admin', 'manager'];
-    return allowedUsers.includes(user);
+async function sendEmail(to: string, subject: string, html: string) {
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.GMAIL_USER,
+            pass: process.env.GMAIL_PASS,
+        },
+    });
+
+    await transporter.sendMail({
+        from: process.env.GMAIL_USER,
+        to,
+        subject,
+        html,
+    });
 }
 
-// Main function to send attendance email
-async function enviarHojaAsistenciaGmail(email: string, content: string, user: string) {
-    // Validate input email
-    const emailValidation = validateEmail(email);
-    if (!emailValidation.isValid) {
-        throw new Error(emailValidation.message);
-    }
-
-    // Check RBAC
-    if (!checkRBAC(user)) {
-        throw new Error('User does not have permission to send emails.');
+async function enviarHojaAsistenciaGmail(user: User, subject: string, rawHtml: string) {
+    if (!validateEmail(user.email)) {
+        throw new Error('Invalid email address');
     }
 
-    // Sanitize content
-    const sanitizedContent = sanitizeHTML(content);
+    if (!checkRBAC(user, 'admin')) {
+        throw new Error('Permission denied: insufficient role');
+    }
 
-    // Retry logic for sending email
-    const maxRetries = 3;
-    let attempt = 0;
-    let success = false;
-    let lastError: Error | null = null;
+    const sanitizedHtml = sanitizeHtml(rawHtml);
 
-    while (attempt < maxRetries && !success) {
-        attempt++;
+    let retries = 0;
+
+    while (retries < MAX_RETRIES) {
         try {
-            const transporter = nodemailer.createTransport({
-                // SMTP configuration
-            });
-            await transporter.sendMail({
-                from: 'your-email@gmail.com',
-                to: email,
-                subject: 'Attendance Sheet',
-                html: sanitizedContent,
-            });
-            success = true; // Email sent successfully
+            await sendEmail(user.email, subject, sanitizedHtml);
+            console.log('Email sent successfully');
+            return;
         } catch (error) {
-            lastError = error as Error;
-            console.error(`Attempt ${attempt} failed: ${lastError.message}`);
+            console.error('Error sending email:', error);
+            retries++;
+            if (retries >= MAX_RETRIES) {
+                throw new Error('Failed to send email after multiple attempts');
+            }
         }
     }
-
-    if (!success) {
-        throw new Error(`Failed to send email after ${maxRetries} attempts: ${lastError?.message}`);
-    }
-
-    console.log('Email sent successfully!');
 }
 
-// Export the function for external use
 export default enviarHojaAsistenciaGmail;
-
