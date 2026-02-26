@@ -30,7 +30,17 @@ import {
 const WA_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN');
 const WA_PHONE = Deno.env.get('WHATSAPP_PHONE_NUMBER');
 
-async function sendWAMessage(to: string, payload: object) {
+interface WhatsAppMessagePayload {
+  /**
+   * Tipo de mensaje de WhatsApp, por ejemplo 'text', 'interactive', etc.
+   * Se pueden ir refinando las variantes concretas (text, interactive, template...)
+   * a medida que se necesiten más tipos.
+   */
+  type: string;
+  [key: string]: unknown;
+}
+
+async function sendWAMessage(to: string, payload: WhatsAppMessagePayload) {
   if (!to) {
     Logger.error('sendWAMessage: destinatario vacío');
     throw new ValidationError('El destinatario de WhatsApp no puede estar vacío');
