@@ -9,6 +9,10 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { PrivateRoute, RoleBasedRoute } from '@/components/ProtectedRoute';
+import { ErrorProvider } from '@/contexts/ErrorContext';
+import { LoadingProvider } from '@/contexts/LoadingContext';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -44,19 +48,16 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
-      {Object.entries(Pages).map(([path, Page]) => (
+      {Object.entries(Pages).map(([name, Component]) => (
         <Route
-          key={path}
-          path={`/${path}`}
+          key={name}
+          path={name === mainPageKey ? '/' : `/${name.toLowerCase()}`}
           element={
-            <LayoutWrapper currentPageName={path}>
-              <Page />
-            </LayoutWrapper>
+            <PrivateRoute>
+              <LayoutWrapper currentPageName={name}>
+                <Component />
+              </LayoutWrapper>
+            </PrivateRoute>
           }
         />
       ))}
@@ -67,19 +68,24 @@ const AuthenticatedApp = () => {
 
 
 function App() {
-
   return (
-    <AuthProvider>
+    <ErrorBoundary>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <NavigationTracker />
-          <AuthenticatedApp />
+          <AuthProvider>
+            <ErrorProvider>
+              <LoadingProvider>
+                <VisualEditAgent />
+                <NavigationTracker />
+                <AuthenticatedApp />
+                <Toaster />
+              </LoadingProvider>
+            </ErrorProvider>
+          </AuthProvider>
         </Router>
-        <Toaster />
-        <VisualEditAgent />
       </QueryClientProvider>
-    </AuthProvider>
-  )
+    </ErrorBoundary>
+  );
 }
 
 export default App
