@@ -2,14 +2,14 @@
 
 export class DatabaseError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
-    super(message);
+    super(message, { cause });
     this.name = 'DatabaseError';
   }
 }
 
 export class WhatsAppApiError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
-    super(message);
+    super(message, { cause });
     this.name = 'WhatsAppApiError';
   }
 }

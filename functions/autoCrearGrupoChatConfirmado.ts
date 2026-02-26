@@ -1,12 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import Logger from '../utils/logger';
-import { retryWithExponentialBackoff } from '../utils/retryHandler';
+import Logger from '../utils/logger.ts';
+import { retryWithExponentialBackoff } from '../utils/retryHandler.ts';
 import {
   executeDbOperation,
   executeWhatsAppOperation,
   DatabaseError,
   WhatsAppApiError
-} from '../utils/webhookImprovements';
+} from '../utils/webhookImprovements.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -124,7 +124,10 @@ Deno.serve(async (req) => {
       // Validar datos mínimos para crear el grupo
       if (!pedido.cliente || !pedido.dia) {
         Logger.error(`Datos insuficientes para crear grupo. pedido_id=${pedidoId}, cliente=${pedido.cliente}, dia=${pedido.dia}`);
-        throw new DatabaseError(`Datos insuficientes en el pedido para crear grupo (pedido_id=${pedidoId})`);
+        return Response.json({
+          error: `Datos insuficientes en el pedido para crear grupo (pedido_id=${pedidoId})`,
+          error_code: 'VALIDATION_ERROR'
+        }, { status: 422 });
       }
 
       // Calcular fecha de eliminación (6 horas después de terminar el evento)
@@ -137,24 +140,56 @@ Deno.serve(async (req) => {
         fechaEliminacion = fechaEvento.toISOString();
       }
 
-      // Crear grupo con reintentos
+      // Crear grupo con reintentos (idempotente: verifica existencia antes de crear)
       try {
+        const isDuplicateKeyError = (error: unknown): boolean => {
+          const message = error instanceof Error ? error.message : String(error);
+          return /duplicate key|unique constraint|UNIQUE constraint/i.test(message);
+        };
+
+        let seCreoNuevoGrupo = false;
+
         grupo = await retryWithExponentialBackoff(() =>
-          executeDbOperation(() =>
-            base44.asServiceRole.entities.GrupoChat.create({
+          executeDbOperation(async () => {
+            // Re-verificar si ya existe un grupo activo (idempotencia ante reintentos)
+            const existentes = await base44.asServiceRole.entities.GrupoChat.filter({
               pedido_id: pedidoId,
-              nombre: `${pedido.cliente} - ${pedido.dia}`,
-              descripcion: `Evento en ${pedido.lugar_evento || 'ubicación por confirmar'}`,
-              fecha_evento: pedido.dia,
-              hora_fin_evento: pedido.salida || pedido.turnos?.[0]?.salida,
-              miembros: miembros,
-              activo: true,
-              fecha_eliminacion_programada: fechaEliminacion
-            })
-          )
+              activo: true
+            });
+            if (Array.isArray(existentes) && existentes.length > 0) {
+              return existentes[0];
+            }
+
+            try {
+              const nuevo = await base44.asServiceRole.entities.GrupoChat.create({
+                pedido_id: pedidoId,
+                nombre: `${pedido.cliente} - ${pedido.dia}`,
+                descripcion: `Evento en ${pedido.lugar_evento || 'ubicación por confirmar'}`,
+                fecha_evento: pedido.dia,
+                hora_fin_evento: pedido.salida || pedido.turnos?.[0]?.salida,
+                miembros: miembros,
+                activo: true,
+                fecha_eliminacion_programada: fechaEliminacion
+              });
+              seCreoNuevoGrupo = true;
+              return nuevo;
+            } catch (createErr) {
+              // Si hay conflicto de clave duplicada, recuperar el grupo existente
+              if (isDuplicateKeyError(createErr)) {
+                const existentesDespues = await base44.asServiceRole.entities.GrupoChat.filter({
+                  pedido_id: pedidoId,
+                  activo: true
+                });
+                if (Array.isArray(existentesDespues) && existentesDespues.length > 0) {
+                  return existentesDespues[0];
+                }
+              }
+              throw createErr;
+            }
+          })
         );
-        nuevoGrupo = true;
-        Logger.info(`Grupo de chat creado: ${grupo.nombre}. grupo_id=${grupo.id}, pedido_id=${pedidoId}`);
+        nuevoGrupo = seCreoNuevoGrupo;
+        Logger.info(`Grupo de chat ${nuevoGrupo ? 'creado' : 'recuperado'}: ${grupo.nombre}. grupo_id=${grupo.id}, pedido_id=${pedidoId}`);
       } catch (dbErr) {
         if (dbErr instanceof DatabaseError) {
           Logger.error(`Error de base de datos al crear grupo. pedido_id=${pedidoId}: ${dbErr.message}`);
@@ -188,9 +223,11 @@ Deno.serve(async (req) => {
     }
 
     // Notificar a los camareros del grupo sobre la confirmación
-    const camarero = await executeDbOperation(() =>
-      base44.asServiceRole.entities.Camarero.get(asignacion.camarero_id)
-    );
+    const camarero = asignacion.camarero_id
+      ? await executeDbOperation(() =>
+          base44.asServiceRole.entities.Camarero.get(asignacion.camarero_id)
+        )
+      : null;
     
     if (camarero) {
       Logger.info(`Notificando a camarero. camarero_id=${camarero.id}, grupo_id=${grupo.id}, pedido_id=${pedidoId}`);
