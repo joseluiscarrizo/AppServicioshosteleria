@@ -4,6 +4,7 @@ import { validatePhoneNumber } from '../utils/validators.ts';
 import {
   handleWebhookError
 } from '../utils/webhookImprovements.ts';
+import { executeResilientAPICall } from '../src/utils/resilientAPI.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -45,66 +46,47 @@ Deno.serve(async (req) => {
     let mensajeIdProveedor = null;
     let errorAPI = null;
 
-    // Intentar enviar por API de WhatsApp Business
+    // Intentar enviar por API de WhatsApp Business con resiliencia
     if (whatsappToken && whatsappPhone) {
+      // Separar el cuerpo del mensaje de los links de confirmar/rechazar
+      // Los links se pasan aparte para construir botones interactivos
+      const tieneLinks = link_confirmar && link_rechazar;
+
       try {
-        // Separar el cuerpo del mensaje de los links de confirmar/rechazar
-        // Los links se pasan aparte para construir botones interactivos
-        const tieneLinks = link_confirmar && link_rechazar;
-
-        let body;
-        if (tieneLinks) {
-          // Mensaje interactivo con reply buttons.
-          // La Cloud API NO soporta botones tipo URL nativos — se usan reply buttons
-          // con id que el webhook procesa. Los links reales quedan en el cuerpo del mensaje
-          // y el coordinador los ve en el historial; el camarero usa los botones.
-          body = {
-            messaging_product: 'whatsapp',
-            to: numeroWhatsApp,
-            type: 'interactive',
-            interactive: {
-              type: 'button',
-              body: { text: mensaje },
-              action: {
-                buttons: [
-                  { type: 'reply', reply: { id: `confirmar::${asignacion_id}`, title: 'ACEPTO ✅' } },
-                  { type: 'reply', reply: { id: `rechazar::${asignacion_id}`, title: 'RECHAZO ❌' } }
-                ]
-              }
+        const resultado = await executeResilientAPICall(
+          'whatsapp-directional',
+          async () => {
+            let body;
+            if (tieneLinks) {
+              // Mensaje interactivo con reply buttons.
+              // La Cloud API NO soporta botones tipo URL nativos — se usan reply buttons
+              // con id que el webhook procesa. Los links reales quedan en el cuerpo del mensaje
+              // y el coordinador los ve en el historial; el camarero usa los botones.
+              body = {
+                messaging_product: 'whatsapp',
+                to: numeroWhatsApp,
+                type: 'interactive',
+                interactive: {
+                  type: 'button',
+                  body: { text: mensaje },
+                  action: {
+                    buttons: [
+                      { type: 'reply', reply: { id: `confirmar::${asignacion_id}`, title: 'ACEPTO ✅' } },
+                      { type: 'reply', reply: { id: `rechazar::${asignacion_id}`, title: 'RECHAZO ❌' } }
+                    ]
+                  }
+                }
+              };
+            } else {
+              body = {
+                messaging_product: 'whatsapp',
+                to: numeroWhatsApp,
+                type: 'text',
+                text: { body: mensaje }
+              };
             }
-          };
-        } else {
-          body = {
-            messaging_product: 'whatsapp',
-            to: numeroWhatsApp,
-            type: 'text',
-            text: { body: mensaje }
-          };
-        }
 
-        const apiResponse = await fetch(
-          `https://graph.facebook.com/v21.0/${whatsappPhone}/messages`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${whatsappToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
-          }
-        );
-
-        const resultado = await apiResponse.json();
-        
-        if (apiResponse.ok && resultado.messages?.[0]?.id) {
-          enviadoPorAPI = true;
-          mensajeIdProveedor = resultado.messages[0].id;
-          Logger.info(`✅ Mensaje enviado por API a ${numeroWhatsApp}: ${mensajeIdProveedor}`);
-        } else {
-          // Si falla el interactivo (ej: cuenta no soporta), intentar como texto plano
-          if (tieneLinks) {
-            Logger.warn('Interactivo falló, intentando texto plano:', resultado.error?.message);
-            const fallbackResponse = await fetch(
+            const apiResponse = await fetch(
               `https://graph.facebook.com/v21.0/${whatsappPhone}/messages`,
               {
                 method: 'POST',
@@ -112,30 +94,64 @@ Deno.serve(async (req) => {
                   'Authorization': `Bearer ${whatsappToken}`,
                   'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                  messaging_product: 'whatsapp',
-                  to: numeroWhatsApp,
-                  type: 'text',
-                  text: { body: mensaje }
-                })
+                body: JSON.stringify(body)
               }
             );
-            const fallbackResult = await fallbackResponse.json();
-            if (fallbackResponse.ok && fallbackResult.messages?.[0]?.id) {
-              enviadoPorAPI = true;
-              mensajeIdProveedor = fallbackResult.messages[0].id;
-              Logger.info(`✅ Mensaje texto plano enviado a ${numeroWhatsApp}`);
-            } else {
-              errorAPI = fallbackResult.error?.message || resultado.error?.message || 'Error desconocido';
-              Logger.error('Error en fallback texto plano:', fallbackResult);
+
+            const data = await apiResponse.json();
+
+            if (apiResponse.ok && data.messages?.[0]?.id) {
+              return data;
             }
-          } else {
-            errorAPI = resultado.error?.message || 'Error desconocido de la API';
-            Logger.error('Error en API de WhatsApp:', resultado);
+
+            // Si falla el interactivo (ej: cuenta no soporta), intentar como texto plano
+            if (tieneLinks) {
+              Logger.warn('Interactivo falló, intentando texto plano:', data.error?.message);
+              const fallbackResponse = await fetch(
+                `https://graph.facebook.com/v21.0/${whatsappPhone}/messages`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${whatsappToken}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    messaging_product: 'whatsapp',
+                    to: numeroWhatsApp,
+                    type: 'text',
+                    text: { body: mensaje }
+                  })
+                }
+              );
+              const fallbackData = await fallbackResponse.json();
+              if (fallbackResponse.ok && fallbackData.messages?.[0]?.id) {
+                return fallbackData;
+              }
+              throw new Error(fallbackData.error?.message || data.error?.message || 'Error desconocido');
+            }
+
+            throw new Error(data.error?.message || 'Error desconocido de la API');
+          },
+          {
+            fallback: async () => {
+              Logger.warn(`[FALLBACK] Guardando WhatsApp en queue: ${numeroWhatsApp}`);
+              return { encolado: true, messages: [] };
+            },
+            onFailure: (error) => {
+              Logger.error(`[ALERT] WhatsApp failed: ${error.message}`);
+            }
           }
+        );
+
+        if (resultado.messages?.[0]?.id) {
+          enviadoPorAPI = true;
+          mensajeIdProveedor = resultado.messages[0].id;
+          Logger.info(`✅ Mensaje enviado por API a ${numeroWhatsApp}: ${mensajeIdProveedor}`);
+        } else if ((resultado as { encolado?: boolean }).encolado) {
+          Logger.info(`📬 Mensaje encolado para reintento: ${numeroWhatsApp}`);
         }
       } catch (e) {
-        errorAPI = e.message;
+        errorAPI = (e as Error).message;
         Logger.error('Error llamando a la API de WhatsApp:', e);
       }
     }

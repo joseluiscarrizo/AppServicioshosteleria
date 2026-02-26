@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { executeResilientAPICall } from '../src/utils/resilientAPI.ts';
 
 Deno.serve(async (req) => {
     try {
@@ -159,21 +160,41 @@ Deno.serve(async (req) => {
                 .replace(/\//g, '_')
                 .replace(/=+$/, '');
 
-            const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ raw: encodedEmail })
-            });
+            try {
+                const apiResult = await executeResilientAPICall(
+                    'gmail-attendance',
+                    async () => {
+                        const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`,
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ raw: encodedEmail })
+                        });
 
-            if (!response.ok) {
-                const error = await response.text();
-                console.error(`Error enviando a ${to}:`, error);
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(`Gmail API error for ${to}: ${errorText}`);
+                        }
+
+                        return response;
+                    },
+                    {
+                        fallback: async () => {
+                            console.warn(`[FALLBACK] Gmail falló para ${to}, encolando email`);
+                            return null;
+                        },
+                        onFailure: (error) => {
+                            console.error(`[ALERT] Gmail failed for ${to}: ${error.message}`);
+                        }
+                    }
+                );
+                // Only mark as successful when the actual API call returned a valid response
+                resultados.push({ to, ok: apiResult !== null });
+            } catch (e) {
+                console.error(`Error enviando a ${to}:`, e);
                 resultados.push({ to, ok: false });
-            } else {
-                resultados.push({ to, ok: true });
             }
         }
 
