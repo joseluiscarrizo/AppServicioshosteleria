@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
 
       try {
         const resultado = await executeResilientAPICall(
-          'whatsapp-directional',
+          'whatsapp-directo',
           async () => {
             let body;
             if (tieneLinks) {
