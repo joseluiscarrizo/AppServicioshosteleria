@@ -4,6 +4,11 @@ import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import Logger from '../utils/logger';
 import { validateToken } from '../utils/validators';
+import {
+  validateAndCheckTokenStatus,
+  refreshTokenIfNeeded,
+  getTimeUntilExpiration
+} from '../utils/tokenRefresh';
 import ErrorNotificationService from '../utils/errorNotificationService';
 import {
   ValidationError,
@@ -19,10 +24,53 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
+  const [token, setToken] = useState(appParams.token ?? null);
+  const [expiresIn, setExpiresIn] = useState(null);
+  const [isTokenExpired, setIsTokenExpired] = useState(false);
+  const [timeUntilExpiration, setTimeUntilExpiration] = useState(null);
 
   useEffect(() => {
     checkAppState();
   }, []);
+
+  // Check token expiration every 3 minutes and refresh if needed
+  useEffect(() => {
+    if (!token) return;
+
+    const checkToken = async () => {
+      const validation = validateAndCheckTokenStatus(token);
+
+      if (validation.isExpired) {
+        Logger.warn('Token expired during session – logging out');
+        const userMessage = ErrorNotificationService.getMessage('TOKEN_EXPIRED');
+        ErrorNotificationService.notifyUser(userMessage);
+        setIsTokenExpired(true);
+        setTimeUntilExpiration(0);
+        logout(false);
+        return;
+      }
+
+      if (validation.shouldRefresh) {
+        const result = await refreshTokenIfNeeded(token, base44);
+        if (result) {
+          Logger.info('Token refreshed successfully');
+          setToken(result.token);
+          setExpiresIn(result.expiresIn);
+        } else {
+          Logger.warn('Token refresh failed – user may need to re-authenticate');
+        }
+      }
+
+      setTimeUntilExpiration(getTimeUntilExpiration(token));
+      setIsTokenExpired(validation.isExpired);
+      setExpiresIn(validation.expiresIn);
+    };
+
+    // Run immediately on mount to validate the current token without waiting for the first interval
+    checkToken();
+    const interval = setInterval(checkToken, 3 * 60 * 1000); // 3 minutes (within the 5-min refresh threshold)
+    return () => clearInterval(interval);
+  }, [token]);
 
   const checkAppState = async () => {
     try {
@@ -220,6 +268,10 @@ export const AuthProvider = ({ children }) => {
       isLoadingPublicSettings,
       authError,
       appPublicSettings,
+      token,
+      expiresIn,
+      isTokenExpired,
+      timeUntilExpiration,
       logout,
       navigateToLogin,
       checkAppState

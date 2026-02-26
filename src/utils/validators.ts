@@ -10,13 +10,21 @@ export function validateEmail(email: string): boolean {
     return emailRegex.test(email);
 }
 
+/** Number of seconds before expiration to consider a token as needing refresh. */
+const REFRESH_THRESHOLD_SECONDS = 5 * 60; // 5 minutes
+
 /**
  * Validate the structure and basic integrity of an authentication token.
- * Checks that the token is a non-empty string with a plausible format.
+ * For JWTs, also validates expiration and detects tokens close to expiry.
  * @param {string | null | undefined} token - Token to validate.
- * @returns {{ valid: boolean; reason?: string }} - Validation result.
+ * @returns {{ valid: boolean; reason?: string; isExpired?: boolean; shouldRefresh?: boolean }} - Validation result.
  */
-export function validateToken(token: string | null | undefined): { valid: boolean; reason?: string } {
+export function validateToken(token: string | null | undefined): {
+    valid: boolean;
+    reason?: string;
+    isExpired?: boolean;
+    shouldRefresh?: boolean;
+} {
     if (!token) {
         return { valid: false, reason: 'Token is missing' };
     }
@@ -31,8 +39,15 @@ export function validateToken(token: string | null | undefined): { valid: boolea
     if (jwtParts.length === 3) {
         try {
             const payload = JSON.parse(atob(jwtParts[1]));
-            if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) {
-                return { valid: false, reason: 'Token has expired' };
+            if (payload.exp) {
+                const nowSeconds = Math.floor(Date.now() / 1000);
+                if (nowSeconds > payload.exp) {
+                    return { valid: false, reason: 'Token expired', isExpired: true };
+                }
+                const secondsUntilExpiry = payload.exp - nowSeconds;
+                if (secondsUntilExpiry < REFRESH_THRESHOLD_SECONDS) {
+                    return { valid: true, shouldRefresh: true };
+                }
             }
         } catch {
             // Not a standard JWT – treat as opaque token, still valid structurally
