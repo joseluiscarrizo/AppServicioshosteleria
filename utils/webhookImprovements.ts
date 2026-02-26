@@ -1,67 +1,45 @@
 // webhookImprovements.ts
 
-import { retryWithExponentialBackoff } from './retryHandler.ts';
-
-// ── Custom error classes ──────────────────────────────────────────────────────
-
 export class DatabaseError extends Error {
-    constructor(message: string, public readonly cause?: unknown) {
-        super(message);
-        this.name = 'DatabaseError';
-    }
-}
-
-export class ValidationError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'ValidationError';
-    }
+  constructor(message: string, public readonly cause?: unknown) {
+    super(message, { cause });
+    this.name = 'DatabaseError';
+  }
 }
 
 export class WhatsAppApiError extends Error {
-    constructor(message: string, public readonly cause?: unknown) {
-        super(message);
-        this.name = 'WhatsAppApiError';
-    }
+  constructor(message: string, public readonly cause?: unknown) {
+    super(message, { cause });
+    this.name = 'WhatsAppApiError';
+  }
 }
 
-export class GmailApiError extends Error {
-    constructor(message: string, public readonly cause?: unknown) {
-        super(message);
-        this.name = 'GmailApiError';
-    }
-}
-
-// ── Execute wrappers with retry and structured error handling ─────────────────
-
+/**
+ * Wraps a database operation and converts any error into a DatabaseError.
+ */
 export async function executeDbOperation<T>(operation: () => Promise<T>): Promise<T> {
-    try {
-        return await retryWithExponentialBackoff(operation);
-    } catch (error) {
-        throw new DatabaseError('Database operation failed', error);
-    }
+  try {
+    return await operation();
+  } catch (error) {
+    if (error instanceof DatabaseError) throw error;
+    throw new DatabaseError(
+      error instanceof Error ? error.message : 'Database operation failed',
+      error
+    );
+  }
 }
 
+/**
+ * Wraps a WhatsApp API operation and converts any error into a WhatsAppApiError.
+ */
 export async function executeWhatsAppOperation<T>(operation: () => Promise<T>): Promise<T> {
-    try {
-        return await retryWithExponentialBackoff(operation);
-    } catch (error) {
-        throw new WhatsAppApiError('WhatsApp API operation failed', error);
-    }
-}
-
-export async function executeGmailOperation<T>(operation: () => Promise<T>): Promise<T> {
-    try {
-        return await retryWithExponentialBackoff(operation);
-    } catch (error) {
-        throw new GmailApiError('Gmail API operation failed', error);
-    }
-}
-
-// ── Webhook error handler ─────────────────────────────────────────────────────
-// Returns ok:true to suppress WhatsApp delivery retries
-
-export function handleWebhookError(error: unknown): Response {
-    const message = error instanceof Error ? error.message : String(error);
-    return Response.json({ ok: true, error: message });
+  try {
+    return await operation();
+  } catch (error) {
+    if (error instanceof WhatsAppApiError) throw error;
+    throw new WhatsAppApiError(
+      error instanceof Error ? error.message : 'WhatsApp API operation failed',
+      error
+    );
+  }
 }
