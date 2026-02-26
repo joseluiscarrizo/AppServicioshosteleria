@@ -781,10 +781,16 @@ Deno.serve(async (req) => {
           }
         }
 
-        await executeDbOperation(() =>
-          base44.asServiceRole.entities.AsignacionCamarero.delete(asignacionId)
-        );
-        Logger.info(`❌ Asignación ${asignacionId} rechazada y eliminada vía botón WhatsApp`);
+        try {
+          await executeDbOperation(() =>
+            base44.asServiceRole.entities.AsignacionCamarero.delete(asignacionId)
+          );
+          Logger.info(`❌ Asignación ${asignacionId} rechazada y eliminada vía botón WhatsApp`);
+        } catch (e) {
+          Logger.error(
+            `Error eliminando asignación rechazada ${asignacionId}: ${e instanceof Error ? e.message : String(e)}`
+          );
+        }
       }
     }
 
