@@ -118,10 +118,23 @@ async function handleFlujoPedido(base44, telefono, sesion, textoMensaje) {
   if (pasoActual && pasoActual !== 'color_camisa' && pasoActual !== 'confirmar_envio') {
     const valorTrimmed = textoMensaje.trim();
 
-    // Validar campo email
-    if (pasoActual === 'mail_contacto' && valorTrimmed && !validateEmail(valorTrimmed)) {
-      await sendTextMessage(telefono, '⚠️ El correo electrónico no parece válido. Por favor, ingrésalo de nuevo (ejemplo: nombre@dominio.com):');
-      return;
+    // Validar campo email (requerido)
+    if (pasoActual === 'mail_contacto') {
+      if (!valorTrimmed) {
+        await sendTextMessage(
+          telefono,
+          '⚠️ El correo electrónico es obligatorio. Por favor, escríbelo (ejemplo: nombre@dominio.com):',
+        );
+        return;
+      }
+
+      if (!validateEmail(valorTrimmed)) {
+        await sendTextMessage(
+          telefono,
+          '⚠️ El correo electrónico no parece válido. Por favor, ingrésalo de nuevo (ejemplo: nombre@dominio.com):',
+        );
+        return;
+      }
     }
 
     sesion.datos[pasoActual] = valorTrimmed;
