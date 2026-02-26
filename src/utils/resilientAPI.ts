@@ -49,9 +49,18 @@ export async function executeResilientAPICall<T>(
         Logger.info(`[RESILIENT_API] Executing fallback for ${apiName}`);
         return await options.fallback();
       } catch (fallbackError) {
+        const fallbackErr = fallbackError as Error;
         Logger.error(
-          `[RESILIENT_API] Fallback also failed: ${(fallbackError as Error).message}`
+          `[RESILIENT_API] Fallback also failed: ${fallbackErr.message}`
         );
+        const combinedError = new AggregateError(
+          [err, fallbackErr],
+          `[RESILIENT_API] ${apiName} failed and fallback also failed`
+        );
+        if (options?.onFailure) {
+          options.onFailure(combinedError);
+        }
+        throw combinedError;
       }
     }
 
