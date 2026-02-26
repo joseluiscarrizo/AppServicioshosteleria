@@ -407,6 +407,7 @@ Deno.serve(async (req) => {
         }
 
         if (sesion.flujo === 'admin') {
+          let notificacionRegistrada = false;
           try {
             await executeDbOperation(() => base44.asServiceRole.entities.Notificacion.create({
               tipo: 'alerta',
@@ -414,10 +415,15 @@ Deno.serve(async (req) => {
               mensaje: `Mensaje de ${telefono}: "${texto}"`,
               prioridad: 'media'
             }));
+            notificacionRegistrada = true;
           } catch (e) {
             Logger.error(`Error registrando mensaje de admin: ${e instanceof Error ? e.message : String(e)}`);
           }
-          await sendTextMessage(telefono, '✅ Tu mensaje ha llegado a Administración. Te responderemos a la brevedad. 😊');
+          if (notificacionRegistrada) {
+            await sendTextMessage(telefono, '✅ Tu mensaje ha llegado a Administración. Te responderemos a la brevedad. 😊');
+          } else {
+            await sendTextMessage(telefono, '⚠️ No pudimos registrar tu mensaje en este momento. Por favor, inténtalo de nuevo más tarde.');
+          }
           clearSesion(telefono);
           continue;
         }
@@ -529,7 +535,14 @@ Deno.serve(async (req) => {
         }
 
         const fmtDate = (d) => d.toISOString().split('T')[0];
-        const pedidosTodos = await executeDbOperation(() => base44.asServiceRole.entities.Pedido.list());
+        let pedidosTodos = [];
+        try {
+          pedidosTodos = await executeDbOperation(() => base44.asServiceRole.entities.Pedido.list());
+        } catch (e) {
+          Logger.error(`Error cargando pedidos: ${e instanceof Error ? e.message : String(e)}`);
+          await sendTextMessage(telefono, '⚠️ No pudimos cargar los eventos en este momento. Por favor, inténtalo de nuevo más tarde.');
+          continue;
+        }
         const nombreCliente = (sesion.datos.nombre_cliente || '').toLowerCase();
         const pedidosFiltrados = pedidosTodos.filter(p => {
           if (!p.dia) return false;
@@ -673,14 +686,23 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        await executeDbOperation(() =>
-          base44.asServiceRole.entities.AsignacionCamarero.update(asignacionId, { estado: 'confirmado' })
-        );
+        try {
+          await executeDbOperation(() =>
+            base44.asServiceRole.entities.AsignacionCamarero.update(asignacionId, { estado: 'confirmado' })
+          );
+        } catch (e) {
+          Logger.error(`Error actualizando estado de asignación a confirmado: ${e instanceof Error ? e.message : String(e)}`);
+          continue;
+        }
 
         if (asignacion.camarero_id) {
-          await executeDbOperation(() =>
-            base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, { estado_actual: 'ocupado' })
-          );
+          try {
+            await executeDbOperation(() =>
+              base44.asServiceRole.entities.Camarero.update(asignacion.camarero_id, { estado_actual: 'ocupado' })
+            );
+          } catch (e) {
+            Logger.error(`Error actualizando estado del camarero a ocupado: ${e instanceof Error ? e.message : String(e)}`);
+          }
         }
 
         try {
