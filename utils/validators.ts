@@ -1,6 +1,16 @@
 // validators.ts
 
 /**
+ * Error class for input validation failures.
+ */
+export class ValidationError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'ValidationError';
+    }
+}
+
+/**
  * Validate if the given phone number is valid.
  * @param {string} phoneNumber - Phone number to validate.
  * @returns {boolean} - True if valid, false otherwise.

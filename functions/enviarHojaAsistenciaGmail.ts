@@ -1,4 +1,19 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import Logger from '../utils/logger.ts';
+import { validateEmail, ValidationError } from '../utils/validators.ts';
+import { retryWithExponentialBackoff } from '../utils/retryHandler.ts';
+import {
+    executeGmailOperation,
+    GmailApiError,
+    handleWebhookError
+} from '../utils/webhookImprovements.ts';
+import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
+import { escapeHtml } from '../utils/htmlSanitizer.ts';
+
+const MAX_EMAILS_PER_REQUEST = 10;
+
+type Asignacion = { camarero_id: string };
+type Camarero = { codigo?: string; nombre?: string; telefono?: string };
 
 Deno.serve(async (req) => {
     try {
@@ -9,7 +24,16 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'No autenticado' }, { status: 401 });
         }
 
-        const { pedido_id } = await req.json();
+        // RBAC: only admin or coordinador may send attendance sheets
+        validateUserAccess(user, ['admin', 'coordinador']);
+
+        const body = await req.json();
+        const { pedido_id } = body;
+
+        // Input validation
+        if (!pedido_id || typeof pedido_id !== 'string' || pedido_id.trim() === '') {
+            throw new ValidationError('pedido_id es requerido y debe ser un identificador válido');
+        }
 
         // Obtener datos del pedido
         const pedido = await base44.entities.Pedido.get(pedido_id);
@@ -23,12 +47,20 @@ Deno.serve(async (req) => {
             estado: 'confirmado'
         });
 
-        const camarerosIds = [...new Set(asignaciones.map(a => a.camarero_id))];
-        const camareros = await Promise.all(
-            camarerosIds.map(id => base44.entities.Camarero.get(id))
-        );
+        // Null/undefined check for asignaciones
+        if (!Array.isArray(asignaciones) || asignaciones.length === 0) {
+            Logger.warn(`No hay asignaciones confirmadas para pedido_id=${pedido_id}`);
+        }
 
-        // Generar HTML de la hoja de asistencia
+        const camarerosIds = Array.isArray(asignaciones)
+            ? [...new Set(asignaciones.map((a: Asignacion) => a.camarero_id))]
+            : [];
+
+        const camareros: Camarero[] = camarerosIds.length > 0
+            ? await Promise.all(camarerosIds.map((id: string) => base44.entities.Camarero.get(id)))
+            : [];
+
+        // Generar HTML de la hoja de asistencia (con escapeHtml para prevenir XSS)
         const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -57,19 +89,19 @@ Deno.serve(async (req) => {
     <div class="info-section">
         <h2>Información del Evento</h2>
         <div class="info-row">
-            <span class="label">Cliente:</span> ${pedido.cliente || 'N/A'}
+            <span class="label">Cliente:</span> ${escapeHtml(pedido.cliente || 'N/A')}
         </div>
         <div class="info-row">
-            <span class="label">Fecha:</span> ${pedido.dia || 'N/A'}
+            <span class="label">Fecha:</span> ${escapeHtml(pedido.dia || 'N/A')}
         </div>
         <div class="info-row">
-            <span class="label">Lugar:</span> ${pedido.lugar_evento || 'N/A'}
+            <span class="label">Lugar:</span> ${escapeHtml(pedido.lugar_evento || 'N/A')}
         </div>
         <div class="info-row">
-            <span class="label">Hora entrada:</span> ${pedido.entrada || pedido.turnos?.[0]?.entrada || 'N/A'}
+            <span class="label">Hora entrada:</span> ${escapeHtml(pedido.entrada || pedido.turnos?.[0]?.entrada || 'N/A')}
         </div>
         <div class="info-row">
-            <span class="label">Hora salida:</span> ${pedido.salida || pedido.turnos?.[0]?.salida || 'N/A'}
+            <span class="label">Hora salida:</span> ${escapeHtml(pedido.salida || pedido.turnos?.[0]?.salida || 'N/A')}
         </div>
     </div>
 
@@ -85,12 +117,12 @@ Deno.serve(async (req) => {
             </tr>
         </thead>
         <tbody>
-            ${camareros.map((camarero, index) => `
+            ${camareros.map((camarero: Camarero, index: number) => `
                 <tr>
                     <td>${index + 1}</td>
-                    <td>${camarero.codigo || 'N/A'}</td>
-                    <td>${camarero.nombre || 'N/A'}</td>
-                    <td>${camarero.telefono || 'N/A'}</td>
+                    <td>${escapeHtml(camarero.codigo || 'N/A')}</td>
+                    <td>${escapeHtml(camarero.nombre || 'N/A')}</td>
+                    <td>${escapeHtml(camarero.telefono || 'N/A')}</td>
                     <td style="height: 50px;"></td>
                 </tr>
             `).join('')}
@@ -120,7 +152,7 @@ Deno.serve(async (req) => {
                 if (clienteData?.email_1) emailsDestinatarios.push(clienteData.email_1);
                 if (clienteData?.email_2) emailsDestinatarios.push(clienteData.email_2);
             } catch (e) {
-                console.error('Error obteniendo cliente:', e);
+                Logger.error(`Error obteniendo cliente: ${(e as Error).message}`);
             }
         }
 
@@ -134,46 +166,90 @@ Deno.serve(async (req) => {
         const sinEmailCliente = emailsDestinatarios.length === 0;
         if (sinEmailCliente) {
             emailsDestinatarios.push(user.email);
-            console.warn(`Cliente ${pedido.cliente} sin email registrado — enviando al coordinador ${user.email}`);
+            Logger.warn(`Cliente ${pedido.cliente} sin email registrado — enviando al coordinador ${user.email}`);
+        }
+
+        // Validate all emails before sending
+        const validRecipients = emailsDestinatarios.filter((email: string) => {
+            if (!validateEmail(email)) {
+                Logger.warn(`Formato de email inválido, omitido: ${email}`);
+                return false;
+            }
+            return true;
+        });
+
+        if (validRecipients.length === 0) {
+            throw new ValidationError('No se encontraron emails de destinatarios válidos');
+        }
+
+        // Rate limiting
+        if (validRecipients.length > MAX_EMAILS_PER_REQUEST) {
+            throw new ValidationError(`Demasiados destinatarios (máximo ${MAX_EMAILS_PER_REQUEST})`);
         }
 
         // Obtener token de Gmail
         const accessToken = await base44.asServiceRole.connectors.getAccessToken("gmail");
 
-        // Construir y enviar un email por destinatario
-        const subject = `Hoja de Asistencia - ${pedido.cliente} - ${pedido.dia}`;
-        const resultados: { to: string; ok: boolean }[] = [];
+        // Sanitize subject line special characters
+        const rawSubject = `Hoja de Asistencia - ${pedido.cliente} - ${pedido.dia}`;
+        const subject = rawSubject.replace(/[\r\n]/g, ' ');
 
-        for (const to of emailsDestinatarios) {
-            const emailContent = [
-                'Content-Type: text/html; charset=utf-8',
-                'MIME-Version: 1.0',
-                `To: ${to}`,
-                `Subject: ${subject}`,
-                '',
-                htmlContent
-            ].join('\r\n');
+        Logger.info(`Enviando hoja de asistencia para pedido_id=${pedido_id} a ${validRecipients.length} destinatario(s)`);
 
-            const encodedEmail = btoa(emailContent)
-                .replace(/\+/g, '-')
-                .replace(/\//g, '_')
-                .replace(/=+$/, '');
+        const resultados: { to: string; ok: boolean; messageId?: string; error?: string }[] = [];
 
-            const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ raw: encodedEmail })
-            });
+        for (const to of validRecipients) {
+            try {
+                const resultado = await executeGmailOperation(() =>
+                    retryWithExponentialBackoff(async () => {
+                        const emailContent = [
+                            'Content-Type: text/html; charset=utf-8',
+                            'MIME-Version: 1.0',
+                            `To: ${to}`,
+                            `Subject: ${subject}`,
+                            '',
+                            htmlContent
+                        ].join('\r\n');
 
-            if (!response.ok) {
-                const error = await response.text();
-                console.error(`Error enviando a ${to}:`, error);
-                resultados.push({ to, ok: false });
-            } else {
-                resultados.push({ to, ok: true });
+                        const encodedEmail = Buffer.from(emailContent, 'utf-8')
+                            .toString('base64')
+                            .replace(/\+/g, '-')
+                            .replace(/\//g, '_')
+                            .replace(/=+$/, '');
+
+                        const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`,
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ raw: encodedEmail })
+                        });
+
+                        if (!response.ok) {
+                            const errorBody = await response.json().catch(() => ({}));
+                            const errorCode = errorBody?.error?.code ?? response.status;
+                            const errorMsg = errorBody?.error?.message ?? response.statusText;
+                            throw new GmailApiError(errorCode, errorMsg);
+                        }
+
+                        const json = await response.json();
+                        if (!json?.id) {
+                            throw new GmailApiError('INVALID_RESPONSE', 'Respuesta de Gmail API sin messageId');
+                        }
+                        return json;
+                    }, 3, 500)
+                );
+
+                resultados.push({ to, ok: true, messageId: resultado.id });
+                Logger.info(`Email enviado a ${to}: messageId=${resultado.id}`);
+            } catch (e) {
+                if (e instanceof GmailApiError) {
+                    Logger.error(`Gmail API error para ${to} [${e.code}]: ${e.message}`);
+                } else {
+                    Logger.error(`Error enviando a ${to}: ${(e as Error).message}`);
+                }
+                resultados.push({ to, ok: false, error: (e as Error).message });
             }
         }
 
@@ -190,9 +266,15 @@ Deno.serve(async (req) => {
         });
 
     } catch (error) {
-        console.error('Error:', error);
-        return Response.json({
-            error: error.message
-        }, { status: 500 });
+        if (error instanceof ValidationError) {
+            Logger.warn(`Validation error: ${error.message}`);
+            return handleWebhookError(error, 400);
+        }
+        if (error instanceof RBACError) {
+            Logger.warn(`RBAC error: ${error.message}`);
+            return handleWebhookError(error, 403);
+        }
+        Logger.error(`Error en enviarHojaAsistenciaGmail: ${(error as Error).message}`);
+        return handleWebhookError(error as Error, 500);
     }
 });
