@@ -1,7 +1,7 @@
 // tokenRefresh.ts - JWT token refresh and validation utilities
 
 /** Number of seconds before expiration to consider a token as needing refresh. */
-const REFRESH_THRESHOLD_SECONDS = 5 * 60; // 5 minutes
+export const REFRESH_THRESHOLD_SECONDS = 5 * 60; // 5 minutes
 
 export interface TokenValidationResult {
     valid: boolean;
