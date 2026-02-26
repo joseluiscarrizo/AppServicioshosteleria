@@ -5,6 +5,7 @@ import {
   handleWebhookError
 } from '../utils/webhookImprovements.ts';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
+import { executeResilientAPICall } from '../utils/resilience/resilientAPI.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -81,15 +82,23 @@ Deno.serve(async (req) => {
           };
         }
 
-        const apiResponse = await fetch(
-          `https://graph.facebook.com/v21.0/${whatsappPhone}/messages`,
+        const apiResponse = await executeResilientAPICall(
+          'whatsapp-directional',
+          () => fetch(
+            `https://graph.facebook.com/v21.0/${whatsappPhone}/messages`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${whatsappToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(body)
+            }
+          ),
           {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${whatsappToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
+            maxRetries: 2,
+            initialDelay: 500,
+            onFailure: (err) => Logger.error(`[ALERT] WhatsApp API failed`, { error: err.message })
           }
         );
 

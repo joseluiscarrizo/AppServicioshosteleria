@@ -10,6 +10,37 @@ export function validateEmail(email: string): boolean {
     return emailRegex.test(email);
 }
 
+/**
+ * Validate if the given phone number is valid.
+ * @param {string} phoneNumber - Phone number to validate.
+ * @returns {boolean} - True if valid, false otherwise.
+ */
+export function validatePhoneNumber(phoneNumber: string): boolean {
+    const phoneRegex = /^(\+\d{1,3}[- ]?)?\d{10}$/;
+    return phoneRegex.test(phoneNumber);
+}
+
+/**
+ * Validate if the given date is valid (format YYYY-MM-DD).
+ * @param {string} date - Date to validate.
+ * @returns {boolean} - True if valid, false otherwise.
+ */
+export function validateDate(date: string): boolean {
+    const dateRegex = /^(\d{4})-(\d{2})-(\d{2})$/;
+    return dateRegex.test(date);
+}
+
+/**
+ * Check if all required fields are present in the data object.
+ * @param {Record<string, unknown>} data - Data object to validate.
+ * @param {string[]} requiredFields - List of required field names.
+ * @returns {boolean} - True if all required fields are present, false otherwise.
+ */
+export function validateRequiredFields(data: Record<string, unknown>, requiredFields: string[]): boolean {
+    if (!data || typeof data !== 'object') return false;
+    return requiredFields.every(field => field in data && data[field] !== null && data[field] !== undefined);
+}
+
 /** Number of seconds before expiration to consider a token as needing refresh. */
 const REFRESH_THRESHOLD_SECONDS = 5 * 60; // 5 minutes
 
