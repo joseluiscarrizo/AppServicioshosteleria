@@ -11,6 +11,25 @@ export interface TokenValidationResult {
     expiresIn: number | null;
 }
 
+export interface Base44Client {
+    auth: {
+        me: () => Promise<Record<string, unknown> | null | undefined>;
+        getToken?: () => Promise<string | null | undefined> | string | null | undefined;
+    };
+}
+
+/**
+ * Decodes a Base64 string in a way compatible with both Node.js and browsers.
+ */
+function decodeBase64(str: string): string {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nodeBuffer = (globalThis as any).Buffer;
+    if (typeof nodeBuffer !== 'undefined') {
+        return nodeBuffer.from(str, 'base64').toString('utf-8');
+    }
+    return atob(str);
+}
+
 /**
  * Parses the payload of a JWT token without verifying the signature.
  * Returns null if the token is not a valid JWT.
@@ -19,7 +38,7 @@ function parseJwtPayload(token: string): Record<string, unknown> | null {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     try {
-        return JSON.parse(atob(parts[1]));
+        return JSON.parse(decodeBase64(parts[1]));
     } catch {
         return null;
     }
@@ -78,8 +97,7 @@ export function validateAndCheckTokenStatus(token: string | null | undefined): T
  */
 export async function refreshTokenIfNeeded(
     currentToken: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    base44Client: any
+    base44Client: Base44Client
 ): Promise<{ token: string; expiresIn: number } | null> {
     const status = validateAndCheckTokenStatus(currentToken);
 
@@ -90,17 +108,27 @@ export async function refreshTokenIfNeeded(
     try {
         // Verify the session via the SDK; some SDK versions return a refreshed token
         const user = await base44Client.auth.me();
-        if (!user) return null;
+        if (!user || typeof user !== 'object') {
+            console.warn('refreshTokenIfNeeded: auth.me() did not return a valid user object');
+            return null;
+        }
 
         // If the SDK exposes a refreshed token, use it; otherwise return current token.
         // `await` is used here to support both sync and async getToken() implementations.
-        const refreshedToken: string = (typeof base44Client.auth.getToken === 'function')
-            ? ((await base44Client.auth.getToken()) ?? currentToken)
-            : currentToken;
+        let refreshedToken: string = currentToken;
+        if (typeof base44Client.auth.getToken === 'function') {
+            const tokenResult = await base44Client.auth.getToken();
+            if (typeof tokenResult === 'string' && tokenResult.trim().length > 0) {
+                refreshedToken = tokenResult;
+            } else {
+                console.warn('refreshTokenIfNeeded: getToken() did not return a valid string, falling back to current token');
+            }
+        }
 
         const newExpiresIn = getTimeUntilExpiration(refreshedToken) ?? 0;
         return { token: refreshedToken, expiresIn: newExpiresIn };
-    } catch {
+    } catch (err) {
+        console.error('refreshTokenIfNeeded: error during token refresh', err);
         return null;
     }
 }
