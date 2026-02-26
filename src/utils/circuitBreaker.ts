@@ -12,21 +12,23 @@ export type CircuitBreakerState = 'closed' | 'open' | 'half-open';
 /**
  * Snapshot of a circuit breaker's operational metrics.
  *
- * - `totalRequests`       – All requests attempted through the breaker.
+ * - `totalRequests`       – Requests that were actually executed (not blocked).
  * - `totalSuccesses`      – Requests that completed without triggering a failure.
  * - `totalFailures`       – Requests that triggered the failure predicate.
+ * - `blockedRequests`     – Requests rejected immediately because the breaker was open.
  * - `consecutiveFailures` – Unbroken run of failures since the last success.
  * - `lastFailureTime`     – Epoch ms of the most-recent recorded failure.
  * - `lastSuccessTime`     – Epoch ms of the most-recent recorded success.
  * - `lastFailureError`    – The most-recent failure's Error object.
  * - `stateChangeTime`     – Epoch ms when the current state was entered.
  * - `uptime`              – Milliseconds the breaker has been in its current state.
- * - `successRate`         – Ratio of successes to total requests (0–1).
+ * - `successRate`         – Ratio of successes to total executed requests (0–1).
  */
 export interface CircuitBreakerMetrics {
     totalRequests: number;
     totalSuccesses: number;
     totalFailures: number;
+    blockedRequests: number;
     consecutiveFailures: number;
     lastFailureTime?: number;
     lastSuccessTime?: number;
@@ -58,8 +60,12 @@ export interface CircuitBreakerConfig {
      * counter (e.g. for 4xx / validation errors).
      */
     failurePredicate?: (error: Error) => boolean;
-    /** Human-readable label attached to log messages and events. */
-    name?: string;
+    /**
+     * Maximum number of entries retained in {@link CircuitBreaker.eventHistory}.
+     * Older entries are evicted when the limit is exceeded.
+     * Set to `0` to disable history entirely. Default: 100.
+     */
+    maxEventHistory?: number;
 }
 
 /** Payload carried by every circuit-breaker event. */
@@ -122,11 +128,12 @@ export class CircuitBreakerStateError extends Error {
 // Defaults
 // ---------------------------------------------------------------------------
 
-const DEFAULT_CONFIG: Required<Omit<CircuitBreakerConfig, 'name' | 'failurePredicate'>> = {
+const DEFAULT_CONFIG: Required<Omit<CircuitBreakerConfig, 'failurePredicate'>> = {
     failureThreshold: 5,
     successThreshold: 2,
     timeout: 60_000,
     halfOpenLimit: 1,
+    maxEventHistory: 100,
 };
 
 /**
@@ -152,8 +159,8 @@ type EventMap = {
     open: [metrics: CircuitBreakerMetrics];
     closed: [metrics: CircuitBreakerMetrics];
     'half-open': [metrics: CircuitBreakerMetrics];
-    success: [result: unknown, metrics: CircuitBreakerMetrics];
-    failure: [error: Error, metrics: CircuitBreakerMetrics];
+    success: [result: unknown, metrics: CircuitBreakerMetrics, context?: Record<string, unknown>];
+    failure: [error: Error, metrics: CircuitBreakerMetrics, context?: Record<string, unknown>];
 };
 
 /**
@@ -189,7 +196,7 @@ type EventMap = {
  */
 export class CircuitBreaker {
     private readonly name: string;
-    private readonly config: Required<Omit<CircuitBreakerConfig, 'name'>>;
+    private readonly config: Required<Omit<CircuitBreakerConfig, 'failurePredicate'>> & { failurePredicate: (error: Error) => boolean };
 
     private state: CircuitBreakerState = 'closed';
     private consecutiveFailures = 0;
@@ -199,6 +206,7 @@ export class CircuitBreaker {
     private totalRequests = 0;
     private totalSuccesses = 0;
     private totalFailures = 0;
+    private blockedRequests = 0;
     private lastFailureTime?: number;
     private lastSuccessTime?: number;
     private lastFailureError?: Error;
@@ -210,7 +218,7 @@ export class CircuitBreaker {
         [K in keyof EventMap]?: Array<EventListener<EventMap[K]>>;
     } = {};
 
-    /** History of all emitted events (useful for testing and debugging). */
+    /** History of recent events (capped by `config.maxEventHistory`). Useful for testing and debugging. */
     public readonly eventHistory: CircuitBreakerEvent[] = [];
 
     /**
@@ -225,6 +233,7 @@ export class CircuitBreaker {
             successThreshold: config.successThreshold ?? DEFAULT_CONFIG.successThreshold,
             timeout: config.timeout ?? DEFAULT_CONFIG.timeout,
             halfOpenLimit: config.halfOpenLimit ?? DEFAULT_CONFIG.halfOpenLimit,
+            maxEventHistory: config.maxEventHistory ?? DEFAULT_CONFIG.maxEventHistory,
             failurePredicate: config.failurePredicate ?? defaultFailurePredicate,
         };
     }
@@ -251,6 +260,7 @@ export class CircuitBreaker {
             totalRequests: this.totalRequests,
             totalSuccesses: this.totalSuccesses,
             totalFailures: this.totalFailures,
+            blockedRequests: this.blockedRequests,
             consecutiveFailures: this.consecutiveFailures,
             lastFailureTime: this.lastFailureTime,
             lastSuccessTime: this.lastSuccessTime,
@@ -276,6 +286,7 @@ export class CircuitBreaker {
         this.totalRequests = 0;
         this.totalSuccesses = 0;
         this.totalFailures = 0;
+        this.blockedRequests = 0;
         this.lastFailureTime = undefined;
         this.lastSuccessTime = undefined;
         this.lastFailureError = undefined;
@@ -327,10 +338,12 @@ export class CircuitBreaker {
         this.checkTimeout();
 
         if (this.state === 'open') {
+            this.blockedRequests++;
             throw new CircuitBreakerError(this.name, this.getMetrics());
         }
 
         if (this.state === 'half-open' && this.halfOpenRequests >= this.config.halfOpenLimit) {
+            this.blockedRequests++;
             throw new CircuitBreakerError(this.name, this.getMetrics());
         }
 
@@ -421,8 +434,8 @@ export class CircuitBreaker {
         }
 
         const metrics = this.getMetrics();
-        this.emit('success', result, metrics);
-        this.recordEvent('success', metrics);
+        this.emit('success', result, metrics, context);
+        this.recordEvent('success', metrics, context);
 
         Logger.debug(`[CircuitBreaker:${this.name}] success`, { state: this.state, context });
     }
@@ -440,8 +453,8 @@ export class CircuitBreaker {
         this.consecutiveSuccesses = 0;
 
         const metrics = this.getMetrics();
-        this.emit('failure', error, metrics);
-        this.recordEvent('failure', metrics, error);
+        this.emit('failure', error, metrics, context);
+        this.recordEvent('failure', metrics, context, error);
 
         Logger.warn(`[CircuitBreaker:${this.name}] failure`, {
             consecutiveFailures: this.consecutiveFailures,
@@ -498,9 +511,14 @@ export class CircuitBreaker {
     private recordEvent(
         type: CircuitBreakerEvent['type'],
         metrics: CircuitBreakerMetrics,
+        context?: Record<string, unknown>,
         error?: Error,
     ): void {
-        this.eventHistory.push({ type, timestamp: Date.now(), metrics, error });
+        if (this.config.maxEventHistory === 0) return;
+        this.eventHistory.push({ type, timestamp: Date.now(), metrics, error, context });
+        if (this.eventHistory.length > this.config.maxEventHistory) {
+            this.eventHistory.shift();
+        }
     }
 }
 
