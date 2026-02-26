@@ -38,10 +38,13 @@ Deno.serve(async (req) => {
     }
 
     const camareros = await base44.asServiceRole.entities.Camarero.list();
+    const camarerosMap = new Map(camareros.map(c => [c.id, c]));
+
+    const esc = (v: unknown) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
     // Generar HTML de la hoja
     const camarerosList = asignaciones
-      .map(a => ({ camarero: camareros.find(c => c.id === a.camarero_id), asignacion: a }))
+      .map(a => ({ camarero: camarerosMap.get(a.camarero_id), asignacion: a }))
       .filter(item => item.camarero);
 
     if (camarerosList.length === 0) {
@@ -75,12 +78,12 @@ Deno.serve(async (req) => {
       <body>
         <div class="header">
           <div>
-            <strong>Cliente:</strong> ${pedido.cliente}<br>
-            <strong>Día:</strong> ${pedido.dia}
+            <strong>Cliente:</strong> ${esc(pedido.cliente)}<br>
+            <strong>Día:</strong> ${esc(pedido.dia)}
           </div>
           <div style="text-align: right;">
-            <strong>Evento:</strong> ${pedido.lugar_evento || 'No especificado'}<br>
-            <strong>Horario:</strong> ${pedido.entrada} - ${pedido.salida || 'Por confirmar'}
+            <strong>Evento:</strong> ${esc(pedido.lugar_evento || 'No especificado')}<br>
+            <strong>Horario:</strong> ${esc(pedido.entrada)} - ${esc(pedido.salida || 'Por confirmar')}
           </div>
         </div>
 
@@ -99,9 +102,9 @@ Deno.serve(async (req) => {
           <tbody>
             ${camarerosList.map(({ camarero, asignacion }) => `
               <tr>
-                <td>${camarero.nombre}</td>
-                <td>${asignacion.entrada || pedido.entrada || ''}</td>
-                <td>${asignacion.salida || pedido.salida || ''}</td>
+                <td>${esc(camarero.nombre)}</td>
+                <td>${esc(asignacion.entrada || pedido.entrada)}</td>
+                <td>${esc(asignacion.salida || pedido.salida)}</td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -117,7 +120,7 @@ Deno.serve(async (req) => {
       </html>
     `;
     
-    // Para pruebas, enviamos al coordinador (usuario autenticado)
+    // Para pruebas, enviamos la hoja al primer usuario coordinador/admin con email encontrado
     const usuario = await base44.asServiceRole.entities.User.list();
     const coordinador = usuario.find(u => (u.role === 'coordinador' || u.role === 'admin') && u.email);
     
