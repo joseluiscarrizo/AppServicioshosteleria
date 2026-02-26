@@ -1,11 +1,39 @@
 import { createClientFromRequest } from '@base44/sdk';
 import Logger from '../utils/logger.ts';
-import { validatePhoneNumber } from '../utils/validators.ts';
+import { validatePhoneNumber, ValidationError } from '../utils/validators.ts';
+import { retryWithExponentialBackoff } from '../utils/retryHandler.ts';
+import { ErrorNotificationService } from '../utils/errorNotificationService.ts';
 import {
+  executeWhatsAppOperation,
+  WhatsAppApiError,
   handleWebhookError
 } from '../utils/webhookImprovements.ts';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
+/**
+ * Envía un mensaje de WhatsApp directamente a un camarero o contacto.
+ *
+ * @param req - Petición HTTP con body JSON:
+ *   - telefono: string - Número de teléfono del destinatario
+ *   - mensaje: string - Contenido del mensaje
+ *   - camarero_id?: string - ID del camarero destinatario
+ *   - camarero_nombre?: string - Nombre del camarero
+ *   - pedido_id?: string - ID del pedido asociado
+ *   - asignacion_id?: string - ID de la asignación (para botones interactivos)
+ *   - plantilla_usada?: string - Nombre de la plantilla utilizada
+ *   - link_confirmar?: string - Link de confirmación (activa botones interactivos)
+ *   - link_rechazar?: string - Link de rechazo (activa botones interactivos)
+ *
+ * @returns JSON con resultado del envío y URL de WhatsApp Web como fallback
+ *
+ * @example
+ * await base44.functions.invoke('enviarWhatsAppDirecto', {
+ *   telefono: '+34600000000',
+ *   mensaje: 'Hola, tienes un nuevo servicio asignado.',
+ *   camarero_id: 'abc123',
+ *   pedido_id: 'ped456'
+ * });
+ */
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -14,32 +42,39 @@ Deno.serve(async (req) => {
     validateUserAccess(user, ['admin', 'coordinador']);
 
     const { telefono, mensaje, camarero_id, camarero_nombre, pedido_id, asignacion_id, plantilla_usada, link_confirmar, link_rechazar } = await req.json();
-    
+
+    // Validate required parameters
     if (!telefono || !mensaje) {
-      return Response.json({ error: 'Teléfono y mensaje son requeridos' }, { status: 400 });
+      throw new ValidationError('Teléfono y mensaje son requeridos');
+    }
+
+    if (typeof mensaje !== 'string' || !mensaje.trim()) {
+      throw new ValidationError('El mensaje no puede estar vacío');
     }
 
     if (!validatePhoneNumber(telefono)) {
-      return Response.json({ error: 'Número de teléfono con formato inválido' }, { status: 400 });
+      throw new ValidationError('Número de teléfono con formato inválido');
     }
-    
+
     // Limpiar el número de teléfono (solo dígitos)
     const telefonoLimpio = telefono.replace(/\D/g, '');
-    
+
     // Validar formato del teléfono
     if (telefonoLimpio.length < 9) {
-      return Response.json({ error: 'Número de teléfono inválido' }, { status: 400 });
+      throw new ValidationError('Número de teléfono inválido');
     }
-    
+
     // Formatear número para WhatsApp (añadir código de país si falta)
     let numeroWhatsApp = telefonoLimpio;
     if (!numeroWhatsApp.startsWith('34') && numeroWhatsApp.length === 9) {
       numeroWhatsApp = '34' + numeroWhatsApp; // España
     }
-    
+
+    Logger.info(`[enviarWhatsAppDirecto] Iniciando envío a ${numeroWhatsApp} | pedido=${pedido_id} | camarero=${camarero_id}`);
+
     const whatsappToken = Deno.env.get('WHATSAPP_API_TOKEN');
     const whatsappPhone = Deno.env.get('WHATSAPP_PHONE_NUMBER');
-    
+
     let enviadoPorAPI = false;
     let mensajeIdProveedor = null;
     let errorAPI = null;
@@ -81,29 +116,9 @@ Deno.serve(async (req) => {
           };
         }
 
-        const apiResponse = await fetch(
-          `https://graph.facebook.com/v21.0/${whatsappPhone}/messages`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${whatsappToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
-          }
-        );
-
-        const resultado = await apiResponse.json();
-        
-        if (apiResponse.ok && resultado.messages?.[0]?.id) {
-          enviadoPorAPI = true;
-          mensajeIdProveedor = resultado.messages[0].id;
-          Logger.info(`✅ Mensaje enviado por API a ${numeroWhatsApp}: ${mensajeIdProveedor}`);
-        } else {
-          // Si falla el interactivo (ej: cuenta no soporta), intentar como texto plano
-          if (tieneLinks) {
-            Logger.warn('Interactivo falló, intentando texto plano:', resultado.error?.message);
-            const fallbackResponse = await fetch(
+        const resultado = await executeWhatsAppOperation(() =>
+          retryWithExponentialBackoff(async () => {
+            const apiResponse = await fetch(
               `https://graph.facebook.com/v21.0/${whatsappPhone}/messages`,
               {
                 method: 'POST',
@@ -111,38 +126,73 @@ Deno.serve(async (req) => {
                   'Authorization': `Bearer ${whatsappToken}`,
                   'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                  messaging_product: 'whatsapp',
-                  to: numeroWhatsApp,
-                  type: 'text',
-                  text: { body: mensaje }
-                })
+                body: JSON.stringify(body)
               }
             );
-            const fallbackResult = await fallbackResponse.json();
-            if (fallbackResponse.ok && fallbackResult.messages?.[0]?.id) {
+            return { apiResponse, data: await apiResponse.json() };
+          }, 3)
+        );
+
+        if (resultado.apiResponse.ok && resultado.data.messages?.[0]?.id) {
+          enviadoPorAPI = true;
+          mensajeIdProveedor = resultado.data.messages[0].id;
+          Logger.info(`[enviarWhatsAppDirecto] ✅ Mensaje enviado por API a ${numeroWhatsApp}: ${mensajeIdProveedor}`);
+        } else {
+          // Si falla el interactivo (ej: cuenta no soporta), intentar como texto plano
+          if (tieneLinks) {
+            Logger.warn(`[enviarWhatsAppDirecto] Interactivo falló, intentando texto plano: ${resultado.data.error?.message}`);
+            const fallbackResultado = await executeWhatsAppOperation(() =>
+              retryWithExponentialBackoff(async () => {
+                const fallbackResponse = await fetch(
+                  `https://graph.facebook.com/v21.0/${whatsappPhone}/messages`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${whatsappToken}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      messaging_product: 'whatsapp',
+                      to: numeroWhatsApp,
+                      type: 'text',
+                      text: { body: mensaje }
+                    })
+                  }
+                );
+                return { fallbackResponse, data: await fallbackResponse.json() };
+              }, 3)
+            );
+            if (fallbackResultado.fallbackResponse.ok && fallbackResultado.data.messages?.[0]?.id) {
               enviadoPorAPI = true;
-              mensajeIdProveedor = fallbackResult.messages[0].id;
-              Logger.info(`✅ Mensaje texto plano enviado a ${numeroWhatsApp}`);
+              mensajeIdProveedor = fallbackResultado.data.messages[0].id;
+              Logger.info(`[enviarWhatsAppDirecto] ✅ Mensaje texto plano enviado a ${numeroWhatsApp}`);
             } else {
-              errorAPI = fallbackResult.error?.message || resultado.error?.message || 'Error desconocido';
-              Logger.error('Error en fallback texto plano:', fallbackResult);
+              errorAPI = fallbackResultado.data.error?.message || resultado.data.error?.message || 'Error desconocido';
+              Logger.error(`[enviarWhatsAppDirecto] Error en fallback texto plano: ${errorAPI}`);
             }
           } else {
-            errorAPI = resultado.error?.message || 'Error desconocido de la API';
-            Logger.error('Error en API de WhatsApp:', resultado);
+            errorAPI = resultado.data.error?.message || 'Error desconocido de la API';
+            Logger.error(`[enviarWhatsAppDirecto] Error en API de WhatsApp: ${errorAPI}`);
           }
         }
       } catch (e) {
-        errorAPI = e.message;
-        Logger.error('Error llamando a la API de WhatsApp:', e);
+        if (e instanceof WhatsAppApiError) {
+          errorAPI = e.message;
+          Logger.error(`[enviarWhatsAppDirecto] WhatsApp API error para ${numeroWhatsApp}: ${e.message}`);
+        } else {
+          errorAPI = (e as Error).message;
+          Logger.error(`[enviarWhatsAppDirecto] Error llamando a la API de WhatsApp: ${(e as Error).message}`);
+        }
+        // Notify the coordinator of the sending failure
+        const notificationService = new ErrorNotificationService(user.id);
+        notificationService.notifyUser(`Error al enviar mensaje de WhatsApp a ${numeroWhatsApp}: ${errorAPI}`);
       }
     }
-    
+
     // Construir URL de WhatsApp Web como fallback
     const mensajeCodificado = encodeURIComponent(mensaje);
     const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${mensajeCodificado}`;
-    
+
     // Registrar en historial de WhatsApp
     try {
       await base44.asServiceRole.entities.HistorialWhatsApp.create({
@@ -160,9 +210,11 @@ Deno.serve(async (req) => {
         coordinador_id: user.id
       });
     } catch (e) {
-      Logger.error('Error registrando en historial:', e);
+      Logger.error(`[enviarWhatsAppDirecto] Error registrando en historial: ${(e as Error).message}`);
     }
-    
+
+    Logger.info(`[enviarWhatsAppDirecto] Completado | enviado_por_api=${enviadoPorAPI} | destino=${numeroWhatsApp}`);
+
     return Response.json({
       success: true,
       telefono: numeroWhatsApp,
@@ -177,7 +229,11 @@ Deno.serve(async (req) => {
     if (error instanceof RBACError) {
       return Response.json({ error: error.message }, { status: error.statusCode });
     }
-    Logger.error(`Error en enviarWhatsAppDirecto: ${(error as Error).message}`);
+    if (error instanceof ValidationError) {
+      Logger.warn(`[enviarWhatsAppDirecto] Validación fallida: ${error.message}`);
+      return handleWebhookError(error, 400);
+    }
+    Logger.error(`[enviarWhatsAppDirecto] Error inesperado: ${(error as Error).message}`);
     return handleWebhookError(error as Error, 500);
   }
 });
