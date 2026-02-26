@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CheckCheck, Check, FileIcon, ImageIcon, ExternalLink, User, Megaphone } from 'lucide-react';
+import { CheckCheck, Check, FileIcon, ExternalLink, Megaphone } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { cn } from '@/lib/utils';
 

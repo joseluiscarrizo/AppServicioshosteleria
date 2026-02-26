@@ -17,6 +17,7 @@ import EnviarWhatsApp from '../components/whatsapp/EnviarWhatsApp';
 import WhatsAppEventos from '../components/whatsapp/WhatsAppEventos';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import PullToRefresh from '../components/ui/PullToRefresh';
 
 const estadoColors = {
   pendiente: 'bg-slate-100',
@@ -29,7 +30,7 @@ export default function TiempoReal() {
   const [busqueda, setBusqueda] = useState('');
   const [vistaCalendario, setVistaCalendario] = useState('dia'); // 'dia', 'semana', 'mes'
   const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
-  const [filtroFecha, setFiltroFecha] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [_filtroFecha, _setFiltroFecha] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [valoracionModal, setValoracionModal] = useState({ open: false, camarero: null, pedido: null });
   const [detalleEventoModal, setDetalleEventoModal] = useState({ open: false, pedido: null });
 
@@ -65,12 +66,20 @@ export default function TiempoReal() {
 
   const updateAsignacionMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.AsignacionCamarero.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['asignaciones'] });
+      const previous = queryClient.getQueryData(['asignaciones']);
+      queryClient.setQueryData(['asignaciones'], (old = []) =>
+        old.map(a => a.id === id ? { ...a, ...data } : a)
+      );
+      return { previous };
     },
-    onError: (error) => {
-      console.error('Error al actualizar asignación:', error);
+    onError: (error, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['asignaciones'], ctx.previous);
       toast.error('Error al actualizar asignación: ' + (error.message || 'Error desconocido'));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
     }
   });
 
@@ -173,8 +182,15 @@ export default function TiempoReal() {
 
   const isLoading = loadingPedidos || loadingAsignaciones;
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+    await queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+    await queryClient.invalidateQueries({ queryKey: ['camareros'] });
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
@@ -496,7 +512,7 @@ export default function TiempoReal() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filas.map((fila, index) => {
+                  {filas.map((fila, _index) => {
                     const bgColor = fila.asignacion ? estadoColors[fila.asignacion.estado] : 'bg-white';
                     
                     return (
@@ -647,6 +663,7 @@ export default function TiempoReal() {
         />
       )}
       </div>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }

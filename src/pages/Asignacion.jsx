@@ -11,10 +11,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { UserPlus, Users, ClipboardList, Search, MapPin, Clock, Calendar, Calendar as CalendarIcon, X, ChevronRight, Star, Filter, Award, GripVertical, Sparkles, Ban, Copy, Repeat, Pencil, Trash2, FileSpreadsheet } from 'lucide-react';
+import { UserPlus, Users, ClipboardList, MapPin, Clock, Calendar, Calendar as CalendarIcon, X, ChevronRight, Star, GripVertical, Sparkles, Ban, Copy, Repeat, Pencil, Trash2, FileSpreadsheet } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -84,16 +83,6 @@ export default function Asignacion() {
   // Escuchar cambios en tiempo real sobre asignaciones y pedidos
   useAsignacionesRealtime();
 
-  // Detectar conflictos de horario entre asignaciones
-  useConflictosHorario({ asignaciones, pedidos, enabled: !loadingPedidos });
-
-  // Scores de idoneidad para el pedido seleccionado
-  const scoresAsignacion = useScoresAsignacion({
-    pedido: selectedPedido,
-    camareros,
-    asignaciones
-  });
-
   const { data: pedidos = [], isLoading: loadingPedidos } = useQuery({
     queryKey: ['pedidos'],
     queryFn: async () => {
@@ -135,6 +124,16 @@ export default function Asignacion() {
   const { data: disponibilidades = [] } = useQuery({
     queryKey: ['disponibilidades'],
     queryFn: () => base44.entities.Disponibilidad.list('-fecha', 500)
+  });
+
+  // Detectar conflictos de horario entre asignaciones
+  useConflictosHorario({ asignaciones, pedidos, enabled: !loadingPedidos });
+
+  // Scores de idoneidad para el pedido seleccionado
+  const scoresAsignacion = useScoresAsignacion({
+    pedido: selectedPedido,
+    camareros,
+    asignaciones
   });
 
   const createAsignacionMutation = useMutation({
@@ -295,34 +294,52 @@ Sistema de Gestión de Camareros
 
   const updateAsignacionMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.AsignacionCamarero.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['asignaciones'] });
+      const previous = queryClient.getQueryData(['asignaciones']);
+      queryClient.setQueryData(['asignaciones'], old =>
+        (old || []).map(a => a.id === id ? { ...a, ...data } : a)
+      );
+      return { previous };
     },
-    onError: (error) => {
-      console.error('Error al actualizar asignación:', error);
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['asignaciones'] }),
+    onError: (error, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['asignaciones'], ctx.previous);
       toast.error('Error al actualizar asignación: ' + (error.message || 'Error desconocido'));
     }
   });
 
   const deleteAsignacionMutation = useMutation({
     mutationFn: async (asignacion) => {
-      // Eliminar tareas asociadas primero
       await TareasService.eliminarTareasAsignacion(asignacion.id);
-      // Eliminar asignación
       await base44.entities.AsignacionCamarero.delete(asignacion.id);
+    },
+    onMutate: async (asignacion) => {
+      await queryClient.cancelQueries({ queryKey: ['asignaciones'] });
+      const previous = queryClient.getQueryData(['asignaciones']);
+      queryClient.setQueryData(['asignaciones'], old => (old || []).filter(a => a.id !== asignacion.id));
+      return { previous };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
       toast.success('Asignación eliminada');
     },
-    onError: (error) => {
-      console.error('Error al eliminar asignación:', error);
-      toast.error('Error al eliminar asignación: ' + (error.message || 'Error desconocido'));
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['asignaciones'], ctx.previous);
+      toast.error('Error al eliminar asignación');
     }
   });
 
   const updatePedidoMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Pedido.update(id, data),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['pedidos'] });
+      const previous = queryClient.getQueryData(['pedidos']);
+      queryClient.setQueryData(['pedidos'], old =>
+        (old || []).map(p => p.id === id ? { ...p, ...data } : p)
+      );
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       setEditingSalida({ pedidoId: null, turnoIndex: null, camareroIndex: null });
@@ -330,21 +347,27 @@ Sistema de Gestión de Camareros
       setEditingPedido(null);
       toast.success('Pedido actualizado');
     },
-    onError: (error) => {
-      console.error('Error al actualizar pedido:', error);
-      toast.error('Error al actualizar pedido: ' + (error.message || 'Error desconocido'));
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['pedidos'], ctx.previous);
+      toast.error('Error al actualizar pedido');
     }
   });
 
   const deletePedidoMutation = useMutation({
     mutationFn: (id) => base44.entities.Pedido.delete(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['pedidos'] });
+      const previous = queryClient.getQueryData(['pedidos']);
+      queryClient.setQueryData(['pedidos'], old => (old || []).filter(p => p.id !== id));
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       toast.success('Pedido eliminado');
     },
-    onError: (error) => {
-      console.error('Error al eliminar pedido:', error);
-      toast.error('Error al eliminar pedido: ' + (error.message || 'Error desconocido'));
+    onError: (_err, _id, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['pedidos'], ctx.previous);
+      toast.error('Error al eliminar pedido');
     }
   });
 
@@ -489,7 +512,7 @@ Sistema de Gestión de Camareros
         });
         
         if (resultado.whatsapp_url) {
-          window.open(resultado.whatsapp_url, '_blank');
+          globalThis.open(resultado.whatsapp_url, '_blank');
         }
         
         queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
@@ -552,7 +575,7 @@ Sistema de Gestión de Camareros
       
       if (data.success) {
         // Abrir en nueva pestaña
-        window.open(data.spreadsheetUrl, '_blank');
+        globalThis.open(data.spreadsheetUrl, '_blank');
         toast.success('Excel generado correctamente. Se abrió en una nueva pestaña.');
       } else {
         toast.error('Error al generar Excel');
@@ -570,7 +593,7 @@ Sistema de Gestión de Camareros
     try {
       const { data } = await base44.functions.invoke('exportarCalendarioEventos', {});
       if (data.success) {
-        window.open(data.spreadsheetUrl, '_blank');
+        globalThis.open(data.spreadsheetUrl, '_blank');
         toast.success(`Calendario exportado: ${data.total_eventos} eventos. Se abrió en una nueva pestaña.`);
       } else {
         toast.error('Error al generar el calendario');

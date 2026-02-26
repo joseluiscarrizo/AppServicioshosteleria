@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -239,7 +239,7 @@ export default function ConfiguracionNotificaciones({ open, onClose }) {
                           🔄 Verificar Permisos
                         </Button>
                         <Button 
-                          onClick={() => window.location.reload()}
+                          onClick={() => globalThis.location.reload()}
                           size="sm"
                           variant="outline"
                           className="flex-1 border-red-300 text-red-700 hover:bg-red-50"

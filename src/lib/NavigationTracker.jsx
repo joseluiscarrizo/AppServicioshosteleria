@@ -12,9 +12,9 @@ export default function NavigationTracker() {
 
     // Post navigation changes to parent window
     useEffect(() => {
-        window.parent?.postMessage({
+        globalThis.parent?.postMessage({
             type: "app_changed_url",
-            url: window.location.href
+            url: globalThis.location.href
         }, '*');
     }, [location]);
 

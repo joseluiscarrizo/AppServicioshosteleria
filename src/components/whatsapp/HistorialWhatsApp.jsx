@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -59,7 +59,7 @@ export default function HistorialWhatsApp() {
       const mensajeCodificado = encodeURIComponent(mensaje);
       const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${mensajeCodificado}`;
       
-      window.open(whatsappUrl, '_blank');
+      globalThis.open(whatsappUrl, '_blank');
       
       await base44.entities.HistorialWhatsApp.create({
         telefono: numeroWhatsApp,

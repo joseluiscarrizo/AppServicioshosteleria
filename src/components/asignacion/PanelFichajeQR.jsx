@@ -6,7 +6,7 @@
  * - Botón para generar QR del evento y mostrar link en el chat
  * - Vista de QR individual por camarero
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { QrCode, Clock, LogIn, LogOut, Pencil, Check, X, Loader2, Copy, ExternalLink, AlertCircle } from 'lucide-react';
+import { QrCode, LogIn, LogOut, Pencil, Check, X, Loader2, Copy, ExternalLink, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 function calcularHoras(entrada, salida) {
@@ -59,7 +59,7 @@ function FilaFichaje({ asignacion, onUpdate }) {
   const tieneSalida = !!asignacion.hora_salida_real;
 
   const qrUrl = asignacion.qr_token
-    ? `${window.location.origin}/FichajeQR?token=${asignacion.qr_token}`
+    ? `${globalThis.location.origin}/FichajeQR?token=${asignacion.qr_token}`
     : null;
 
   return (
@@ -203,7 +203,7 @@ export default function PanelFichajeQR({ pedido }) {
   };
 
   const copiarLink = (url) => {
-    navigator.clipboard.writeText(window.location.origin + url);
+    navigator.clipboard.writeText(globalThis.location.origin + url);
     toast.success('Link copiado');
   };
 
@@ -295,7 +295,7 @@ export default function PanelFichajeQR({ pedido }) {
                 <p className="text-xs font-semibold text-blue-700 mb-2">🔗 Link del evento (para el chat grupal)</p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-xs bg-white rounded px-2 py-1 border truncate">
-                    {window.location.origin}/FichajeQR?pedido_id={pedido.id}
+                    {globalThis.location.origin}/FichajeQR?pedido_id={pedido.id}
                   </code>
                   <Button
                     size="icon"

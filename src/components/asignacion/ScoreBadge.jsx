@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TrendingUp, MapPin, Star, Briefcase, Users } from 'lucide-react';
 

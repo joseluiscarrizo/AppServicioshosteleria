@@ -154,7 +154,7 @@ export const useWebPushNotifications = () => {
       });
 
       notification.onclick = () => {
-        window.focus();
+        globalThis.focus();
         if (options.onClick) {
           options.onClick();
         }

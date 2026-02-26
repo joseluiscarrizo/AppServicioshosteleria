@@ -4,7 +4,7 @@
  * y devuelve la URL de la página de fichaje del evento.
  * Solo accesible por admin/coordinador.
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from '@base44/sdk';
 
 function generarToken() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ClipboardList, Sparkles, Calendar, MapPin, Ban, Copy, Repeat, Download, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, ClipboardList, Sparkles, Calendar, MapPin, Ban, Copy, Repeat, Download, Upload, FileText } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -20,9 +20,14 @@ import DuplicarEvento from '../components/pedidos/DuplicarEvento';
 import EventoRecurrente from '../components/pedidos/EventoRecurrente';
 import PedidoFormNuevo from '../components/pedidos/PedidoFormNuevo';
 import GenerarDocumentacion from '../components/pedidos/GenerarDocumentacion';
+import ParteServicio from '../components/pedidos/ParteServicio';
 import SugerenciasInteligentes from '../components/asignacion/SugerenciasInteligentes';
+import PullToRefresh from '../components/ui/PullToRefresh';
+import PedidoCardMobile from '../components/pedidos/PedidoCardMobile';
+import { useIsMobile } from '../components/ui/useIsMobile';
 
 export default function Pedidos() {
+  const isMobile = useIsMobile();
   const [showForm, setShowForm] = useState(false);
   const [showAIExtractor, setShowAIExtractor] = useState(false);
   const [showEntradaAuto, setShowEntradaAuto] = useState(false);
@@ -30,6 +35,7 @@ export default function Pedidos() {
   const [edicionRapida, setEdicionRapida] = useState({ open: false, pedido: null, campo: null });
   const [duplicarDialog, setDuplicarDialog] = useState({ open: false, pedido: null });
   const [recurrenteDialog, setRecurrenteDialog] = useState({ open: false, pedido: null });
+  const [parteDialog, setParteDialog] = useState({ open: false, pedido: null });
   const [editingSalida, setEditingSalida] = useState({ pedidoId: null, turnoIndex: null, camareroIndex: null });
   const [formData, setFormData] = useState({
     codigo_pedido: '',
@@ -104,27 +110,42 @@ export default function Pedidos() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Pedido.create(data),
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries({ queryKey: ['pedidos'] });
+      const previous = queryClient.getQueryData(['pedidos']);
+      const optimistic = { ...newData, id: `temp-${Date.now()}` };
+      queryClient.setQueryData(['pedidos'], old => [...(old || []), optimistic].sort((a, b) => (a.dia || '').localeCompare(b.dia || '')));
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       resetForm();
       toast.success('Pedido creado');
     },
-    onError: (error) => {
-      console.error('Error al crear pedido:', error);
+    onError: (error, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['pedidos'], ctx.previous);
       toast.error('Error al crear pedido: ' + (error.message || 'Error desconocido'));
     }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Pedido.update(id, data),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['pedidos'] });
+      const previous = queryClient.getQueryData(['pedidos']);
+      queryClient.setQueryData(['pedidos'], old =>
+        (old || []).map(p => p.id === id ? { ...p, ...data } : p)
+      );
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       resetForm();
       setEditingSalida({ pedidoId: null, turnoIndex: null, camareroIndex: null });
       toast.success('Pedido actualizado');
     },
-    onError: (error) => {
-      console.error('Error al actualizar pedido:', error);
+    onError: (error, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['pedidos'], ctx.previous);
       toast.error('Error al actualizar pedido: ' + (error.message || 'Error desconocido'));
     }
   });
@@ -161,13 +182,19 @@ export default function Pedidos() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Pedido.delete(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['pedidos'] });
+      const previous = queryClient.getQueryData(['pedidos']);
+      queryClient.setQueryData(['pedidos'], old => (old || []).filter(p => p.id !== id));
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pedidos'] });
       toast.success('Pedido eliminado');
     },
-    onError: (error) => {
-      console.error('Error al eliminar pedido:', error);
-      toast.error('Error al eliminar pedido: ' + (error.message || 'Error desconocido'));
+    onError: (_err, _id, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['pedidos'], ctx.previous);
+      toast.error('Error al eliminar pedido');
     }
   });
 
@@ -353,8 +380,14 @@ export default function Pedidos() {
     setShowForm(true);
   };
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+    await queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -442,8 +475,28 @@ export default function Pedidos() {
           </Card>
         </div>
 
-        {/* Tabla de Pedidos */}
-        <Card className="overflow-hidden">
+        {/* Lista/Tabla de Pedidos */}
+        {isMobile ? (
+          <div className="space-y-3">
+            {pedidos.length === 0 && (
+              <p className="text-center text-slate-400 py-8">No hay pedidos registrados</p>
+            )}
+            {pedidos.map(pedido => (
+              <PedidoCardMobile
+                key={pedido.id}
+                pedido={pedido}
+                asignaciones={asignaciones}
+                onEdicionRapida={(p, campo) => setEdicionRapida({ open: true, pedido: p, campo })}
+                onDuplicar={(p) => setDuplicarDialog({ open: true, pedido: p })}
+                onRecurrente={(p) => setRecurrenteDialog({ open: true, pedido: p })}
+                onEdit={handleEdit}
+                onDelete={(id) => deleteMutation.mutate(id)}
+                onParte={(p) => setParteDialog({ open: true, pedido: p })}
+              />
+            ))}
+          </div>
+        ) : (
+        <><Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -621,11 +674,20 @@ export default function Pedidos() {
                                   <div className="flex justify-end gap-1">
                                     <SugerenciasInteligentes
                                       pedido={pedido}
-                                      onAsignar={(camarero) => {
+                                      onAsignar={(_camarero) => {
                                         // Navigate to Asignacion page with pedido selected
-                                        window.location.href = `/Asignacion?pedido_id=${pedido.id}`;
+                                        globalThis.location.href = `/Asignacion?pedido_id=${pedido.id}`;
                                       }}
                                     />
+                                    <Button
+                                       variant="ghost"
+                                       size="icon"
+                                       onClick={() => setParteDialog({ open: true, pedido })}
+                                       className="h-8 w-8"
+                                       title="Parte de servicio"
+                                     >
+                                       <FileText className="w-4 h-4" />
+                                     </Button>
                                     <GenerarDocumentacion pedido={pedido} variant="ghost" size="icon" />
                                     <Button 
                                       variant="ghost" 
@@ -701,7 +763,8 @@ export default function Pedidos() {
               </TableBody>
             </Table>
           </div>
-        </Card>
+        </Card></> 
+        )}
 
         {/* Modal Form */}
         <AnimatePresence>
@@ -746,6 +809,13 @@ export default function Pedidos() {
           pedidoOriginal={duplicarDialog.pedido}
         />
 
+        {/* Parte de Servicio */}
+        <ParteServicio
+          pedido={parteDialog.pedido}
+          open={parteDialog.open}
+          onOpenChange={(open) => setParteDialog({ ...parteDialog, open })}
+        />
+
         {/* Evento Recurrente */}
         <EventoRecurrente
           open={recurrenteDialog.open}
@@ -753,6 +823,7 @@ export default function Pedidos() {
           pedidoBase={recurrenteDialog.pedido}
         />
         </div>
-        </div>
-        );
-        }
+      </div>
+    </PullToRefresh>
+  );
+}

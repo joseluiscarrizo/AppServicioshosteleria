@@ -13,6 +13,15 @@ import { Star } from 'lucide-react';
 import { toast } from 'sonner';
 import HabilidadesEditor from '../camareros/HabilidadesEditor';
 
+const tiposPerfil = [
+  { value: 'camarero', label: 'Camarero', prefix: 'CAM' },
+  { value: 'cocinero', label: 'Cocinero', prefix: 'COC' },
+  { value: 'ayudante_cocina', label: 'Ayudante de cocina', prefix: 'AYU' },
+  { value: 'pica', label: 'Pica', prefix: 'PIC' },
+  { value: 'jamonero', label: 'Jamonero', prefix: 'JAM' },
+  { value: 'coctelero', label: 'Coctelero', prefix: 'EXT' },
+];
+
 const especialidades = [
   { value: 'general', label: 'General' },
   { value: 'cocteleria', label: 'Coctelería' },
@@ -29,6 +38,7 @@ const nivelesExperiencia = [
 ];
 
 export default function GestionCamareros({ open, onOpenChange, editingCamarero }) {
+  const [tipoPerfil, setTipoPerfil] = useState('camarero');
   const [formData, setFormData] = useState({
     codigo: '',
     nombre: '',
@@ -60,6 +70,10 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
 
   React.useEffect(() => {
     if (editingCamarero) {
+      // Detectar tipo de perfil por prefijo del código
+      const codigo = editingCamarero.codigo || '';
+      const perfilDetectado = tiposPerfil.find(t => codigo.startsWith(t.prefix)) || tiposPerfil[0];
+      setTipoPerfil(perfilDetectado.value);
       setFormData({
         ...editingCamarero,
         habilidades: editingCamarero.habilidades || [],
@@ -69,6 +83,7 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
         nivel_experiencia: editingCamarero.nivel_experiencia || 'intermedio'
       });
     } else {
+      setTipoPerfil('camarero');
       setFormData({
         codigo: '',
         nombre: '',
@@ -112,16 +127,18 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
     
     let dataToSubmit = { ...formData };
     
-    // Generar código automático si es nuevo camarero
+    // Generar código automático si es nuevo perfil
     if (!editingCamarero) {
+      const perfilSeleccionado = tiposPerfil.find(t => t.value === tipoPerfil) || tiposPerfil[0];
+      const prefix = perfilSeleccionado.prefix;
       const maxCodigo = camareros.reduce((max, c) => {
-        if (c.codigo && c.codigo.startsWith('CAM')) {
-          const num = parseInt(c.codigo.substring(3));
+        if (c.codigo && c.codigo.startsWith(prefix)) {
+          const num = parseInt(c.codigo.substring(prefix.length));
           return Math.max(max, isNaN(num) ? 0 : num);
         }
         return max;
       }, 0);
-      dataToSubmit.codigo = `CAM${String(maxCodigo + 1).padStart(3, '0')}`;
+      dataToSubmit.codigo = `${prefix}${String(maxCodigo + 1).padStart(3, '0')}`;
     }
     
     if (editingCamarero) {
@@ -136,7 +153,7 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {editingCamarero ? 'Editar Camarero' : 'Nuevo Camarero'}
+            {editingCamarero ? 'Editar Perfil' : 'Nuevo Perfil'}
             {editingCamarero?.valoracion_promedio > 0 && (
               <span className="flex items-center gap-1 text-sm font-normal text-amber-600">
                 <Star className="w-4 h-4 fill-amber-400" />
@@ -155,33 +172,48 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
             </TabsList>
 
             <TabsContent value="info" className="space-y-4">
-              {/* Código automático */}
-              {!editingCamarero && (
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <Label className="text-xs text-slate-500">Código Automático del Camarero</Label>
-                  <p className="font-mono font-semibold text-lg text-[#1e3a5f]">
-                    {(() => {
+              {/* Selector de tipo de perfil */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-sm font-semibold">Tipo de Perfil *</Label>
+                  <Select value={tipoPerfil} onValueChange={setTipoPerfil} disabled={!!editingCamarero}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar perfil" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tiposPerfil.map(t => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-500">Código {editingCamarero ? 'actual' : 'asignado'}</Label>
+                  <p className="font-mono font-semibold text-lg text-[#1e3a5f] bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                    {editingCamarero ? formData.codigo : (() => {
+                      const perfilSeleccionado = tiposPerfil.find(t => t.value === tipoPerfil) || tiposPerfil[0];
+                      const prefix = perfilSeleccionado.prefix;
                       const maxCodigo = camareros.reduce((max, c) => {
-                        if (c.codigo && c.codigo.startsWith('CAM')) {
-                          const num = parseInt(c.codigo.substring(3));
+                        if (c.codigo && c.codigo.startsWith(prefix)) {
+                          const num = parseInt(c.codigo.substring(prefix.length));
                           return Math.max(max, isNaN(num) ? 0 : num);
                         }
                         return max;
                       }, 0);
-                      return `CAM${String(maxCodigo + 1).padStart(3, '0')}`;
+                      return `${prefix}${String(maxCodigo + 1).padStart(3, '0')}`;
                     })()}
                   </p>
                 </div>
-              )}
+              </div>
 
-              {editingCamarero && (
+              {/* Código automático (hidden, replaced above) */}
+              {!editingCamarero && false && (
                 <div className="p-3 bg-slate-50 rounded-lg">
-                  <Label className="text-xs text-slate-500">Código del Camarero</Label>
-                  <p className="font-mono font-semibold text-lg text-[#1e3a5f]">
-                    {formData.codigo}
-                  </p>
+                  <Label className="text-xs text-slate-500">Código Automático del Camarero</Label>
                 </div>
               )}
+
+
 
               <div className="space-y-2">
                 <Label htmlFor="nombre">Nombre *</Label>
@@ -289,13 +321,51 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
                   <Switch
                     id="en_reserva"
                     checked={formData.en_reserva}
-                    onCheckedChange={(v) => setFormData({ ...formData, en_reserva: v })}
+                    onCheckedChange={(v) => {
+                      // Si se activa en_reserva, incrementar contador
+                      const nuevasVeces = v && !formData.en_reserva
+                        ? (formData.veces_en_reserva || 0) + 1
+                        : (formData.veces_en_reserva || 0);
+                      setFormData({ ...formData, en_reserva: v, veces_en_reserva: nuevasVeces });
+                    }}
                   />
                   <Label htmlFor="en_reserva" className="cursor-pointer">
                     En Reserva (no aparece en lista activa)
                   </Label>
                 </div>
               </div>
+
+              {/* Contadores de incidencias */}
+              {editingCamarero && (
+                <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500">Cancelaciones &lt;2h</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={formData.cancelaciones_last_minute || 0}
+                        onChange={(e) => setFormData({ ...formData, cancelaciones_last_minute: parseInt(e.target.value) || 0 })}
+                        className="w-20 h-8 text-sm"
+                      />
+                      <span className="text-xs text-slate-400">veces</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-slate-500">Veces en Reserva</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={formData.veces_en_reserva || 0}
+                        onChange={(e) => setFormData({ ...formData, veces_en_reserva: parseInt(e.target.value) || 0 })}
+                        className="w-20 h-8 text-sm"
+                      />
+                      <span className="text-xs text-slate-400">veces</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="coordinador">Coordinador Asignado</Label>

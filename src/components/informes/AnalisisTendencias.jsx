@@ -1,14 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, TrendingDown, Users, Star, Clock, Target, Download } from 'lucide-react';
-import { format, parseISO, startOfMonth, subMonths, eachMonthOfInterval } from 'date-fns';
+import { format, startOfMonth, subMonths, eachMonthOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, ComposedChart } from 'recharts';
+import { Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, ComposedChart } from 'recharts';
 
 export default function AnalisisTendencias() {
   const [mesesAtras, setMesesAtras] = useState(6);

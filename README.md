@@ -189,12 +189,51 @@ Coordinados desde un único hook `useBackgroundServices` montado en `Layout.jsx`
 
 ## Tests
 
-Actualmente sin cobertura de tests automatizados. Roadmap:
+El proyecto cuenta con una suite de tests automatizados usando **Vitest + Testing Library** con cobertura de los flujos críticos.
+
+### Ejecutar tests
 
 ```bash
-# Futuro setup
-npm install --save-dev vitest @testing-library/react @testing-library/jest-dom
+# Correr todos los tests una vez
+npm test
+
+# Correr tests en modo watch (re-ejecuta al guardar)
+npx vitest
+
+# Dashboard visual interactivo de tests
+npm run test:ui
+
+# Tests con reporte de cobertura
+npm run test:coverage
 ```
 
-Flujos prioritarios para cubrir: creación de pedido, asignación de camarero, confirmación de servicio.
+### Estructura de tests
+
+```
+tests/
+├── setup.js                    # Setup global de Vitest + mocks
+├── fixtures/                   # Datos mock reutilizables
+│   ├── pedidos.json
+│   ├── camareros.json
+│   ├── asignaciones.json
+│   └── coordinadores.json
+├── flows/                      # Tests de flujos críticos (40 tests)
+│   ├── crear-pedido.test.jsx       # 12 tests
+│   ├── asignar-camarero.test.jsx   # 13 tests
+│   └── confirmar-servicio.test.jsx # 15 tests
+└── utils/
+    ├── render.jsx              # Custom render con providers (BrowserRouter + QueryClient)
+    ├── mocks.js                # Mocks de base44, sonner
+    └── factories.js            # Factory functions para crear datos de test
+```
+
+### Flujos cubiertos
+
+| Flujo | Tests | Descripción |
+|-------|-------|-------------|
+| Crear Pedido | 12 | Renderizado, formulario, CRUD, errores de red |
+| Asignar Camarero | 13 | Kanban, asignaciones, estados, notificaciones |
+| Confirmar Servicio | 15 | Token URL, confirmación, rechazo, toast, estado |
+
+
 

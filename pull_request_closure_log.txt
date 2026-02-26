@@ -1,0 +1,1 @@
+Closed pull request #1: These PR is outdated and superseded by PR #14 which fixes all Deno lint errors comprehensively.

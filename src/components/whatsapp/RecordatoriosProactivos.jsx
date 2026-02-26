@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { format, differenceInHours, parseISO, addHours } from 'date-fns';
+import { format, differenceInHours, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function RecordatoriosProactivos() {
@@ -82,7 +82,7 @@ ${tipo === '2h' ? '⚠️ Recuerda salir con tiempo suficiente para llegar puntu
       const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${mensajeCodificado}`;
       
       // Abrir WhatsApp
-      window.open(whatsappUrl, '_blank');
+      globalThis.open(whatsappUrl, '_blank');
 
       // Registrar en historial
       await base44.entities.HistorialWhatsApp.create({

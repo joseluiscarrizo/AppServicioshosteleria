@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const camareros = await base44.asServiceRole.entities.Camarero.list();
     
     // Obtener cliente para emails
-    const cliente = await base44.asServiceRole.entities.Cliente.get(pedido.cliente_id);
+    const _cliente = await base44.asServiceRole.entities.Cliente.get(pedido.cliente_id);
     
     // Generar HTML de la hoja
     const camarerosList = asignaciones

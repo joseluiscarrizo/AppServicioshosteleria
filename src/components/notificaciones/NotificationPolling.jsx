@@ -45,7 +45,7 @@ export const useNotificationPolling = (camareroId, enabled = true) => {
             duration: 8000,
             action: notif.tipo === 'nueva_asignacion' ? {
               label: 'Ver',
-              onClick: () => window.location.href = '#alertas'
+              onClick: () => globalThis.location.href = '#alertas'
             } : undefined
           });
 

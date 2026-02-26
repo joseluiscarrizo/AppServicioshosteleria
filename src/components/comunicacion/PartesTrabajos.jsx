@@ -1,24 +1,25 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Eye, Send, RefreshCw, CheckCircle, Clock, Calendar, MapPin, Users } from 'lucide-react';
+import { Eye, Send, RefreshCw, CheckCircle, Clock, MapPin, Users } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import ParteServicio from '../pedidos/ParteServicio';
 
 export default function PartesTrabajos({ user }) {
   const [vistaPrevia, setVistaPrevia] = useState(null);
+  const [parteAbierto, setParteAbierto] = useState(null);
   const [enviando, setEnviando] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: pedidos = [], isLoading } = useQuery({
     queryKey: ['pedidos-partes'],
-    queryFn: async () => {
+    queryFn: () => {
       const hoy = new Date();
       const desde = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
       const hasta = new Date(hoy.getFullYear(), hoy.getMonth() + 3, 0);
@@ -158,7 +159,7 @@ export default function PartesTrabajos({ user }) {
                       variant="ghost"
                       size="sm"
                       className="h-7 px-2 text-[#1e3a5f] hover:bg-[#1e3a5f]/10"
-                      onClick={() => setVistaPrevia(p)}
+                      onClick={() => setParteAbierto(p)}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
@@ -213,77 +214,12 @@ export default function PartesTrabajos({ user }) {
         </div>
       </Card>
 
-      {/* Dialog Vista Previa */}
-      <Dialog open={!!vistaPrevia} onOpenChange={() => setVistaPrevia(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Vista Previa del Parte
-            </DialogTitle>
-          </DialogHeader>
-          {vistaPrevia && (
-            <div className="space-y-4">
-              <div className="bg-[#1e3a5f] text-white p-4 rounded-lg">
-                <h3 className="font-bold text-lg">{vistaPrevia.cliente}</h3>
-                <p className="text-blue-200 text-sm">{vistaPrevia.codigo_pedido}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-slate-50 p-3 rounded-lg">
-                  <p className="text-slate-500 text-xs mb-0.5">Fecha</p>
-                  <p className="font-semibold">{vistaPrevia.dia ? format(parseISO(vistaPrevia.dia), 'dd/MM/yyyy', { locale: es }) : '-'}</p>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-lg">
-                  <p className="text-slate-500 text-xs mb-0.5">Día</p>
-                  <p className="font-semibold capitalize">{vistaPrevia.dia ? format(parseISO(vistaPrevia.dia), 'EEEE', { locale: es }) : '-'}</p>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-lg col-span-2">
-                  <p className="text-slate-500 text-xs mb-0.5">Lugar</p>
-                  <p className="font-semibold">{vistaPrevia.lugar_evento || '-'}</p>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-lg">
-                  <p className="text-slate-500 text-xs mb-0.5">Hora</p>
-                  <p className="font-semibold font-mono">{getHoraResumen(vistaPrevia)}</p>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-lg">
-                  <p className="text-slate-500 text-xs mb-0.5">Camareros confirmados</p>
-                  <p className="font-semibold text-emerald-600">{vistaPrevia.confirmados}</p>
-                </div>
-              </div>
-              {/* Camareros confirmados */}
-              <div>
-                <h4 className="text-sm font-semibold text-slate-700 mb-2">Equipo Asignado</h4>
-                <div className="space-y-1 max-h-48 overflow-y-auto">
-                  {asCamareros(vistaPrevia.id).length === 0 ? (
-                    <p className="text-sm text-slate-400 text-center py-2">Sin camareros confirmados</p>
-                  ) : asCamareros(vistaPrevia.id).map(a => (
-                    <div key={a.id} className="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded-lg text-sm">
-                      <span className="font-medium">{a.camarero_nombre}</span>
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <span>{a.hora_entrada} - {a.hora_salida}</span>
-                        <Badge className="bg-emerald-100 text-emerald-700 text-xs px-1.5">Confirmado</Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <Button
-                  className="flex-1 bg-[#1e3a5f] hover:bg-[#152a45]"
-                  onClick={() => { handleEnviarParte(vistaPrevia); setVistaPrevia(null); }}
-                  disabled={enviando === vistaPrevia.id}
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  {vistaPrevia.parte_enviado ? 'Reenviar Parte' : 'Enviar Parte'}
-                </Button>
-                <Button variant="outline" onClick={() => setVistaPrevia(null)}>
-                  Cerrar
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Vista Previa PDF del Parte */}
+      <ParteServicio
+        pedido={parteAbierto}
+        open={!!parteAbierto}
+        onOpenChange={(open) => { if (!open) setParteAbierto(null); }}
+      />
     </div>
   );
 }

@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Star, Award, Calendar, MapPin, Clock, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, Star, Award, Calendar, MapPin, Clock, Phone, Mail, AlertTriangle, Archive } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import GestionDocumentosCamarero from '../components/camareros/GestionDocumentosCamarero';
+import { useIsMobile } from '../components/ui/useIsMobile';
 
 const especialidadColors = {
   general: 'bg-slate-100 text-slate-700',
@@ -22,7 +23,8 @@ const especialidadColors = {
 };
 
 export default function PerfilCamarero() {
-  const urlParams = new URLSearchParams(window.location.search);
+  const isMobile = useIsMobile();
+  const urlParams = new URLSearchParams(globalThis.location.search);
   const camareroId = urlParams.get('id');
 
   const { data: camarero, isLoading } = useQuery({
@@ -67,6 +69,28 @@ export default function PerfilCamarero() {
     return { total, confirmados, pendientes, tasaConfirmacion };
   }, [asignaciones]);
 
+  // Calcular cancelaciones last-minute dinámicamente desde asignaciones
+  const cancelacionesLastMinute = useMemo(() => {
+    return asignaciones.filter(asig => {
+      if (asig.estado !== 'pendiente' && asig.estado !== 'enviado') return false;
+      const pedido = pedidos.find(p => p.id === asig.pedido_id);
+      if (!pedido?.dia) return false;
+      // Buscamos si la asignación fue cancelada/revertida muy tarde
+      // Como proxy: estado enviado/pendiente con fecha del evento ya pasada y hora_entrada conocida
+      // Se detecta si el updated_date ocurrió menos de 2h antes del evento
+      const horaEntrada = asig.hora_entrada || '00:00';
+      const [h, m] = horaEntrada.split(':').map(Number);
+      const fechaEvento = new Date(pedido.dia + 'T00:00:00');
+      fechaEvento.setHours(h, m || 0, 0, 0);
+      const updatedAt = asig.updated_date ? new Date(asig.updated_date) : null;
+      if (!updatedAt) return false;
+      const diffMs = fechaEvento - updatedAt;
+      const diffHoras = diffMs / (1000 * 60 * 60);
+      // Si el evento ya pasó y la última actualización fue menos de 2h antes del evento
+      return fechaEvento < new Date() && diffHoras >= 0 && diffHoras < 2;
+    }).length;
+  }, [asignaciones, pedidos]);
+
   // Historial de eventos con detalles
   const historialEventos = useMemo(() => {
     return asignaciones.map(asig => {
@@ -99,8 +123,20 @@ export default function PerfilCamarero() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      {/* Sticky top bar on mobile */}
+      {isMobile && (
+        <div className="sticky top-16 z-40 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 shadow-sm">
+          <Link to={createPageUrl('Camareros')}>
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <span className="font-semibold text-slate-800 truncate">{camarero?.nombre || 'Perfil'}</span>
+        </div>
+      )}
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header con botón volver */}
+        {/* Header con botón volver – solo desktop */}
+        {!isMobile && (
         <div className="mb-6">
           <Link to={createPageUrl('Camareros')}>
             <Button variant="ghost" className="mb-4">
@@ -109,6 +145,7 @@ export default function PerfilCamarero() {
             </Button>
           </Link>
         </div>
+        )}
 
         {/* Información Principal */}
         <Card className="p-6 mb-6">
@@ -204,7 +241,7 @@ export default function PerfilCamarero() {
         </Card>
 
         {/* Estadísticas */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <Card className="p-4">
             <p className="text-sm text-slate-500 mb-1">Total Eventos</p>
             <p className="text-3xl font-bold text-slate-800">{stats.total}</p>
@@ -220,6 +257,24 @@ export default function PerfilCamarero() {
           <Card className="p-4">
             <p className="text-sm text-slate-500 mb-1">Tasa Confirmación</p>
             <p className="text-3xl font-bold text-blue-600">{stats.tasaConfirmacion}%</p>
+          </Card>
+          <Card className="p-4 border-orange-200 bg-orange-50">
+            <div className="flex items-center gap-2 mb-1">
+              <AlertTriangle className="w-4 h-4 text-orange-500" />
+              <p className="text-sm text-orange-700 font-medium">Canc. &lt;2h</p>
+            </div>
+            <p className="text-3xl font-bold text-orange-600">
+              {(camarero.cancelaciones_last_minute || 0) + cancelacionesLastMinute}
+            </p>
+            <p className="text-xs text-orange-500 mt-1">cancelaciones de última hora</p>
+          </Card>
+          <Card className="p-4 border-slate-200 bg-slate-50">
+            <div className="flex items-center gap-2 mb-1">
+              <Archive className="w-4 h-4 text-slate-500" />
+              <p className="text-sm text-slate-600 font-medium">En Reserva</p>
+            </div>
+            <p className="text-3xl font-bold text-slate-600">{camarero.veces_en_reserva || 0}</p>
+            <p className="text-xs text-slate-400 mt-1">veces en lista de reserva</p>
           </Card>
         </div>
 

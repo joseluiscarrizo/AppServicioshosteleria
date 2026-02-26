@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { format, differenceInHours, parseISO, addHours } from 'date-fns';
+import { format, differenceInHours, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function ServicioRecordatorios() {
@@ -127,7 +127,7 @@ export default function ServicioRecordatorios() {
       const whatsappURL = `https://wa.me/${telefonoCamarero}?text=${mensajeEncoded}`;
       
       // Abrir WhatsApp
-      window.open(whatsappURL, '_blank');
+      globalThis.open(whatsappURL, '_blank');
       
       // Registrar recordatorio enviado
       await base44.entities.RecordatorioEnviado.create({

@@ -1,18 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Plus, User, Phone, Mail, FileText, Calendar, TrendingUp, ChevronDown, Check } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { Plus, User, Phone, Mail, Calendar, ChevronDown, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SelectorCliente({ onSelectCliente, clienteActual }) {
@@ -40,7 +37,7 @@ export default function SelectorCliente({ onSelectCliente, clienteActual }) {
   });
 
   const crearClienteMutation = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: (data) => {
       // Generar código automático
       const maxCodigo = clientes.reduce((max, c) => {
         const num = parseInt(c.codigo?.replace('CL', '') || '0');

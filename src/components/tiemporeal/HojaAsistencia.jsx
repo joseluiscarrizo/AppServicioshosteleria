@@ -1,4 +1,3 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Mail, Loader2, FileSpreadsheet } from 'lucide-react';
@@ -108,7 +107,7 @@ export default function HojaAsistencia({ pedido, asignaciones, camareros }) {
     },
     onSuccess: (data) => {
       toast.success('Hoja exportada a Google Sheets');
-      window.open(data.url, '_blank');
+      globalThis.open(data.url, '_blank');
     },
     onError: (error) => {
       toast.error('Error al exportar a Google Sheets');

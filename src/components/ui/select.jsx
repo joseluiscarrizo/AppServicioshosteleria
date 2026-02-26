@@ -3,13 +3,14 @@
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp } from "lucide-react"
-
 import { cn } from "@/lib/utils"
+import { useIsMobile } from "@/components/ui/useIsMobile"
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer"
+
+// ── Desktop Select (unchanged Radix) ────────────────────────────────────────
 
 const Select = SelectPrimitive.Root
-
 const SelectGroup = SelectPrimitive.Group
-
 const SelectValue = SelectPrimitive.Value
 
 const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) => (
@@ -46,8 +47,7 @@ const SelectScrollDownButton = React.forwardRef(({ className, ...props }, ref) =
     <ChevronDown className="h-4 w-4" />
   </SelectPrimitive.ScrollDownButton>
 ))
-SelectScrollDownButton.displayName =
-  SelectPrimitive.ScrollDownButton.displayName
+SelectScrollDownButton.displayName = SelectPrimitive.ScrollDownButton.displayName
 
 const SelectContent = React.forwardRef(({ className, children, position = "popper", ...props }, ref) => (
   <SelectPrimitive.Portal>
@@ -107,8 +107,163 @@ const SelectSeparator = React.forwardRef(({ className, ...props }, ref) => (
 ))
 SelectSeparator.displayName = SelectPrimitive.Separator.displayName
 
+// ── Mobile-aware wrapper ────────────────────────────────────────────────────
+// Collects SelectItem children and renders a Drawer on mobile instead of a popover.
+
+// Context to pass value/onValueChange down into MobileSelect
+const MobileSelectCtx = React.createContext(null)
+
+/**
+ * MobileSelect: renders a button trigger + Drawer sheet on mobile.
+ * It inspects its children to find SelectItem/SelectLabel/SelectSeparator nodes
+ * and renders them as touchable list items inside the drawer.
+ */
+function MobileSelect({ value, onValueChange, defaultValue, disabled, children }) {
+  const [open, setOpen] = React.useState(false)
+  const [internalValue, setInternalValue] = React.useState(defaultValue ?? '')
+  const controlled = value !== undefined
+  const currentValue = controlled ? value : internalValue
+
+  // Collect all <SelectItem> nodes recursively to build the label map & items list
+  const items = React.useMemo(() => {
+    const result = []
+    const walk = (nodes) => {
+      React.Children.forEach(nodes, (child) => {
+        if (!React.isValidElement(child)) return
+        if (child.type === SelectItem || child.type === SelectPrimitive.Item) {
+          result.push({ value: child.props.value, label: child.props.children, disabled: child.props.disabled })
+        } else if (child.props?.children) {
+          walk(child.props.children)
+        }
+      })
+    }
+    walk(children)
+    return result
+  }, [children])
+
+  // Find current label
+  const currentLabel = React.useMemo(() => {
+    const found = items.find(i => i.value === currentValue)
+    if (!found) return null
+    // Extract text from label (may be JSX)
+    if (typeof found.label === 'string') return found.label
+    // Try to get text from nested spans
+    return found.label
+  }, [items, currentValue])
+
+  // Find placeholder from SelectValue inside SelectTrigger
+  let placeholder = null
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) return
+    if (child.type === SelectTrigger || child.displayName === 'SelectTrigger') {
+      React.Children.forEach(child.props.children, (c) => {
+        if (React.isValidElement(c) && (c.type === SelectValue || c.type === SelectPrimitive.Value)) {
+          placeholder = c.props.placeholder
+        }
+      })
+    }
+  })
+
+  // Trigger className from the SelectTrigger child
+  let triggerClassName = ''
+  React.Children.forEach(children, (child) => {
+    if (React.isValidElement(child) && child.type === SelectTrigger) {
+      triggerClassName = child.props.className || ''
+    }
+  })
+
+  const handleSelect = (val) => {
+    if (!controlled) setInternalValue(val)
+    onValueChange?.(val)
+    setOpen(false)
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+        className={cn(
+          "flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+          !currentLabel && "text-muted-foreground",
+          triggerClassName
+        )}
+      >
+        <span className="line-clamp-1">{currentLabel ?? placeholder ?? ''}</span>
+        <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+      </button>
+
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerContent className="max-h-[85vh]">
+          {placeholder && (
+            <DrawerHeader className="pb-2">
+              <DrawerTitle className="text-base">{placeholder}</DrawerTitle>
+            </DrawerHeader>
+          )}
+          <div className="overflow-y-auto px-4 pb-safe pb-6">
+            {items.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                disabled={item.disabled}
+                onClick={() => handleSelect(item.value)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-3.5 text-sm text-left transition-colors active:bg-accent",
+                  item.value === currentValue
+                    ? "bg-accent text-accent-foreground font-semibold"
+                    : "hover:bg-accent/50",
+                  item.disabled && "opacity-50 pointer-events-none"
+                )}
+              >
+                <span className="flex-1">{item.label}</span>
+                {item.value === currentValue && <Check className="h-4 w-4 shrink-0 text-primary" />}
+              </button>
+            ))}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
+  )
+}
+
+/**
+ * ResponsiveSelect: auto-switches between MobileSelect (drawer) and Radix Select (desktop).
+ * Drop-in replacement — same API as Radix <Select>.
+ */
+function ResponsiveSelect({ children, value, onValueChange, defaultValue, disabled, open: controlledOpen, onOpenChange, ...props }) {
+  const isMobile = useIsMobile()
+
+  if (isMobile) {
+    return (
+      <MobileSelect
+        value={value}
+        onValueChange={onValueChange}
+        defaultValue={defaultValue}
+        disabled={disabled}
+      >
+        {children}
+      </MobileSelect>
+    )
+  }
+
+  return (
+    <SelectPrimitive.Root
+      value={value}
+      onValueChange={onValueChange}
+      defaultValue={defaultValue}
+      disabled={disabled}
+      open={controlledOpen}
+      onOpenChange={onOpenChange}
+      {...props}
+    >
+      {children}
+    </SelectPrimitive.Root>
+  )
+}
+
 export {
-  Select,
+  ResponsiveSelect as Select,
   SelectGroup,
   SelectValue,
   SelectTrigger,

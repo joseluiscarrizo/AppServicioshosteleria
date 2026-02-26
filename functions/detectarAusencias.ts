@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
           nombreCliente = pedidos[0].cliente || nombreCliente;
           lugarEvento = pedidos[0].lugar_evento || '';
         }
-      } catch (_) {}
+      } catch (_) { /* empty */ }
 
       ausencias.push(asig);
 

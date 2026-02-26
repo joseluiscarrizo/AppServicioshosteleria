@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, User, Star, Search, Filter, Award, MessageSquare, CalendarDays, UserCheck, Trash2, Download, Upload, Settings, SlidersHorizontal } from 'lucide-react';
+import { Plus, Pencil, User, Star, Search, MessageSquare, CalendarDays, UserCheck, Trash2, Download, Upload, Settings, SlidersHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
+import Logger from '../utils/logger.js';
+import { validateEmail, validatePhoneNumber } from '../utils/validators.js';
 import GestionCamareros from '../components/asignacion/GestionCamareros';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import ValoracionesHistorial from '../components/camareros/ValoracionesHistorial';
@@ -103,6 +105,12 @@ export default function Camareros() {
     const sep = lines[0].includes(';') ? ';' : ',';
     const headers = lines[0].split(sep).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
 
+    if (!headers.includes('nombre')) {
+      Logger.error('CSV import failed: required header "nombre" not found', { headers });
+      toast.error('El archivo CSV no contiene la columna requerida "nombre"');
+      return;
+    }
+
     const parsear = (row) => {
       const vals = [];
       let cur = '', inQ = false;
@@ -117,7 +125,7 @@ export default function Camareros() {
 
     const idx = (name) => headers.findIndex(h => h.includes(name));
 
-    let creados = 0, actualizados = 0, errores = 0;
+    let creados = 0, actualizados = 0, errores = 0, advertencias = 0;
     for (let i = 1; i < lines.length; i++) {
       const vals = parsear(lines[i]);
       if (!vals[idx('nombre')] && !vals[0]) continue;
@@ -139,6 +147,15 @@ export default function Camareros() {
         };
         if (!data.nombre) continue;
 
+        if (data.email && !validateEmail(data.email)) {
+          Logger.warn('Invalid email format in CSV row', { row: i, nombre: data.nombre, email: data.email });
+          advertencias++;
+        }
+        if (data.telefono && !validatePhoneNumber(data.telefono)) {
+          Logger.warn('Invalid phone number format in CSV row', { row: i, nombre: data.nombre, telefono: data.telefono });
+          advertencias++;
+        }
+
         const existente = camareros.find(c => c.codigo === data.codigo || c.email === data.email);
         if (existente) {
           await base44.entities.Camarero.update(existente.id, data);
@@ -147,11 +164,15 @@ export default function Camareros() {
           await base44.entities.Camarero.create(data);
           creados++;
         }
-      } catch { errores++; }
+      } catch (error) {
+        Logger.error('Error processing CSV row', { row: i, error: error?.message });
+        errores++;
+      }
     }
 
     queryClient.invalidateQueries({ queryKey: ['camareros'] });
-    toast.success(`Importación: ${creados} creados, ${actualizados} actualizados${errores ? `, ${errores} errores` : ''}`);
+    const advertenciasMsg = advertencias ? `, ${advertencias} advertencias` : '';
+    toast.success(`Importación: ${creados} creados, ${actualizados} actualizados${errores ? `, ${errores} errores` : ''}${advertenciasMsg}`);
   };
 
   const { data: camareros = [] } = useQuery({
@@ -160,7 +181,7 @@ export default function Camareros() {
       try {
         return await base44.entities.Camarero.list('-created_date');
       } catch (error) {
-        console.error('Error cargando camareros:', error);
+        Logger.error('Error cargando camareros', { error: error?.message });
         return [];
       }
     }
@@ -173,7 +194,7 @@ export default function Camareros() {
       toast.success('Disponibilidad actualizada');
     },
     onError: (error) => {
-      console.error('Error al actualizar disponibilidad:', error);
+      Logger.error('Error al actualizar disponibilidad', { error: error?.message });
       toast.error('Error al actualizar disponibilidad: ' + (error.message || 'Error desconocido'));
     }
   });
@@ -256,9 +277,9 @@ export default function Camareros() {
           <div>
             <h1 className="text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
               <User className="w-8 h-8 text-[#1e3a5f]" />
-              Gestión de Camareros
+              Gestión de Personal
             </h1>
-            <p className="text-slate-500 mt-1">Gestiona tu equipo de camareros, habilidades y valoraciones</p>
+            <p className="text-slate-500 mt-1">Gestiona tu equipo de personal, habilidades y valoraciones</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -306,7 +327,7 @@ export default function Camareros() {
               className="bg-[#1e3a5f] hover:bg-[#152a45] text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Nuevo Camarero
+              Nuevo Perfil
             </Button>
           </div>
         </div>
@@ -349,7 +370,7 @@ export default function Camareros() {
             onClick={() => setMostrarReserva(false)}
             className={!mostrarReserva ? 'bg-[#1e3a5f] hover:bg-[#152a45]' : ''}
           >
-            Camareros Activos ({camarerosFiltradosActivos.length})
+            Perfiles Activos ({camarerosFiltradosActivos.length})
           </Button>
           <Button
             variant={mostrarReserva ? 'default' : 'outline'}

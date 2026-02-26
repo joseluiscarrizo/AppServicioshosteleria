@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -191,7 +191,7 @@ export default function GestionDocumentos({ open, onClose, camarero }) {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => window.open(doc.url, '_blank')}
+                        onClick={() => globalThis.open(doc.url, '_blank')}
                         title="Ver documento"
                       >
                         <Eye className="w-4 h-4" />

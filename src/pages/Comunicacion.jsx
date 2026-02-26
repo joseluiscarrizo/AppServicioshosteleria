@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import PullToRefresh from '../components/ui/PullToRefresh';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageCircle, Users, Building2, FileText, Loader2 } from 'lucide-react';
 import ChatEventos from '../components/comunicacion/ChatEventos';
@@ -10,10 +11,17 @@ import PartesTrabajos from '../components/comunicacion/PartesTrabajos';
 
 export default function Comunicacion() {
   const [user, setUser] = useState(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => setUser(null));
   }, []);
+
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['grupos-chat'] });
+    await queryClient.invalidateQueries({ queryKey: ['mensajes'] });
+    await queryClient.invalidateQueries({ queryKey: ['pedidos-partes'] });
+  };
 
   if (!user) {
     return (
@@ -24,7 +32,8 @@ export default function Comunicacion() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
@@ -74,6 +83,7 @@ export default function Comunicacion() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }

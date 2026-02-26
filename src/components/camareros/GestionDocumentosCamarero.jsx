@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
@@ -218,7 +218,7 @@ export default function GestionDocumentosCamarero({ camarero, soloLectura = fals
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(doc.url, '_blank')}
+                  onClick={() => globalThis.open(doc.url, '_blank')}
                 >
                   <Eye className="w-3 h-3 mr-1" />
                   Ver
