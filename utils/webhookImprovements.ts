@@ -1,4 +1,5 @@
 // webhookImprovements.ts
+import Logger from './logger';
 
 /**
  * Error class for validation failures (invalid input data).
@@ -21,15 +22,15 @@ export class DatabaseError extends Error {
 }
 
 /**
- * Handles webhook errors by classifying and logging them.
+ * Handles webhook errors by classifying and logging them via the centralized Logger.
  * @param {Error} error - The error to handle.
  */
 export function handleWebhookError(error: Error): void {
     if (error instanceof ValidationError) {
-        console.warn(`[ValidationError] ${error.message}`);
+        Logger.warn(`[ValidationError] ${error.message}`);
     } else if (error instanceof DatabaseError) {
-        console.error(`[DatabaseError] ${error.message}`);
+        Logger.error(`[DatabaseError] ${error.message}`);
     } else {
-        console.error(`[WebhookError] ${error.message}`);
+        Logger.error(`[WebhookError] ${error.message}`);
     }
 }

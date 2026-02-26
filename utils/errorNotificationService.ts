@@ -1,4 +1,5 @@
 // errorNotificationService.ts
+import Logger from './logger';
 
 class ErrorNotificationService {
     private phoneNumber: string;
@@ -8,8 +9,11 @@ class ErrorNotificationService {
     }
 
     notifyUser(message: string): void {
+        if (!this.phoneNumber) {
+            return;
+        }
         // Logic to send WhatsApp message to the user
-        console.log(`Sending message to ${this.phoneNumber}: ${message}`);
+        Logger.info(`Sending message to ${this.phoneNumber}: ${message}`);
     }
 }
 

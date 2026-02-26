@@ -11,9 +11,13 @@ import { retryWithExponentialBackoff } from '../../../utils/retryHandler';
 
 // Queue for failed notifications pending retry
 const _notificationQueue = [];
+let _processingQueue = false;
 
-// System notification service for database/server errors (uses env var or falls back to empty for dev)
-const _systemNotifier = new ErrorNotificationService(import.meta.env.VITE_SYSTEM_NOTIFY_PHONE || '');
+// System notification service for database/server errors (no-op when phone is not configured)
+const _systemNotifyPhone = import.meta.env.VITE_SYSTEM_NOTIFY_PHONE;
+const _systemNotifier = _systemNotifyPhone
+  ? new ErrorNotificationService(_systemNotifyPhone)
+  : { notifyUser: () => {} };
 
 /**
  * Servicio centralizado para enviar notificaciones push a camareros
@@ -391,23 +395,31 @@ export class NotificationService {
    * Procesa la cola de notificaciones fallidas y reintenta enviarlas
    */
   static async procesarColaPendiente() {
-    if (_notificationQueue.length === 0) return;
+    if (_notificationQueue.length === 0 || _processingQueue) return;
+    _processingQueue = true;
     Logger.info(`Procesando cola de notificaciones pendientes: ${_notificationQueue.length} elemento(s)`);
 
     const pendientes = _notificationQueue.splice(0);
 
     for (const notif of pendientes) {
       try {
-        await retryWithExponentialBackoff(
-          () => this.enviarPush(notif.titulo, notif.mensaje, notif.icono, notif.data),
+        const success = await retryWithExponentialBackoff(
+          async () => {
+            const result = await this.enviarPush(notif.titulo, notif.mensaje, notif.icono, notif.data);
+            if (!result) throw new Error('enviarPush returned false');
+            return result;
+          },
           3,
           500
         );
-        Logger.info(`Notificación reintentada con éxito: "${notif.titulo}"`);
+        if (success) {
+          Logger.info(`Notificación reintentada con éxito: "${notif.titulo}"`);
+        }
       } catch (error) {
         Logger.error(`Error al reintentar notificación "${notif.titulo}": ${error.message}`);
       }
     }
+    _processingQueue = false;
   }
 
   /**
@@ -436,6 +448,15 @@ export class NotificationService {
   static obtenerNotificacionesPendientes() {
     return _notificationQueue.length;
   }
+}
+
+// Automatically retry queued notifications when the page regains visibility
+if (typeof window !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      NotificationService.procesarColaPendiente();
+    }
+  });
 }
 
 export default NotificationService;
