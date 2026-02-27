@@ -1,0 +1,156 @@
+name: Slack Notifications
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, closed, reopened, synchronize]
+  workflow_run:
+    workflows: ["Deploy to Firebase Hosting"]
+    types: [completed]
+
+jobs:
+  notify-push:
+    name: Notify on push to main
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Notify Slack on push
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "🔀 *Push to `main`* by ${{ github.actor }}",
+              "attachments": [
+                {
+                  "color": "#36a64f",
+                  "fields": [
+                    {
+                      "title": "Repository",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Commit",
+                      "value": "<${{ github.event.head_commit.url }}|${{ github.sha }}>",
+                      "short": true
+                    },
+                    {
+                      "title": "Message",
+                      "value": "${{ github.event.head_commit.message }}",
+                      "short": false
+                    }
+                  ]
+                }
+              ]
+            }
+
+  notify-pull-request:
+    name: Notify on pull request
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Set PR status emoji and color
+        id: pr-meta
+        run: |
+          if [[ "${{ github.event.action }}" == "opened" || "${{ github.event.action }}" == "reopened" ]]; then
+            echo "emoji=🟢" >> $GITHUB_OUTPUT
+            echo "color=#36a64f" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.action }}" == "closed" && "${{ github.event.pull_request.merged }}" == "true" ]]; then
+            echo "emoji=🟣" >> $GITHUB_OUTPUT
+            echo "color=#6f42c1" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.action }}" == "closed" ]]; then
+            echo "emoji=🔴" >> $GITHUB_OUTPUT
+            echo "color=#cb2431" >> $GITHUB_OUTPUT
+          else
+            echo "emoji=🔵" >> $GITHUB_OUTPUT
+            echo "color=#0075ca" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notify Slack on PR event
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "${{ steps.pr-meta.outputs.emoji }} *Pull Request `${{ github.event.action }}`*: <${{ github.event.pull_request.html_url }}|#${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}>",
+              "attachments": [
+                {
+                  "color": "${{ steps.pr-meta.outputs.color }}",
+                  "fields": [
+                    {
+                      "title": "Repository",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Author",
+                      "value": "${{ github.actor }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Branch",
+                      "value": "`${{ github.head_ref }}` → `${{ github.base_ref }}`",
+                      "short": false
+                    }
+                  ]
+                }
+              ]
+            }
+
+  notify-deployment:
+    name: Notify on deployment result
+    if: github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Set deployment status
+        id: deploy-meta
+        run: |
+          if [[ "${{ github.event.workflow_run.conclusion }}" == "success" ]]; then
+            echo "emoji=✅" >> $GITHUB_OUTPUT
+            echo "color=#36a64f" >> $GITHUB_OUTPUT
+            echo "status=succeeded" >> $GITHUB_OUTPUT
+          else
+            echo "emoji=❌" >> $GITHUB_OUTPUT
+            echo "color=#cb2431" >> $GITHUB_OUTPUT
+            echo "status=failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notify Slack on deployment result
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "${{ steps.deploy-meta.outputs.emoji }} *Deployment to Firebase ${{ steps.deploy-meta.outputs.status }}*",
+              "attachments": [
+                {
+                  "color": "${{ steps.deploy-meta.outputs.color }}",
+                  "fields": [
+                    {
+                      "title": "Repository",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Triggered by",
+                      "value": "${{ github.event.workflow_run.actor.login }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Run details",
+                      "value": "<${{ github.event.workflow_run.html_url }}|View deployment run>",
+                      "short": false
+                    }
+                  ]
+                }
+              ]
+            }
