@@ -1,4 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { TransactionManager } from './utils/transactionManager.ts';
+import { AuditLogger } from './utils/auditLogger.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -21,7 +23,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Pedido no encontrado' }, { status: 404 });
     }
 
-    // Verificar si ya existe un grupo para este pedido
+    // Verificar si ya existe un grupo para este pedido (idempotency check)
     const gruposExistentes = await base44.asServiceRole.entities.GrupoChat.filter({ 
       pedido_id: pedido_id,
       activo: true 
@@ -85,28 +87,49 @@ Deno.serve(async (req) => {
     fechaEvento.setHours(horas, minutos, 0);
     const fechaEliminacion = new Date(fechaEvento.getTime() + 24 * 60 * 60 * 1000);
 
-    // Crear grupo
-    const grupo = await base44.asServiceRole.entities.GrupoChat.create({
-      pedido_id: pedido_id,
-      nombre: `${pedido.cliente} - ${pedido.dia}`,
-      descripcion: pedido.lugar_evento,
-      fecha_evento: pedido.dia,
-      hora_fin_evento: pedido.salida,
-      miembros: miembros,
-      activo: true,
-      fecha_eliminacion_programada: fechaEliminacion.toISOString()
+    // Ejecutar operaciones multi-step con TransactionManager (Saga pattern)
+    const tx = new TransactionManager();
+    const audit = new AuditLogger(base44.asServiceRole.entities);
+
+    // Paso 1: Crear grupo
+    const grupo = await tx.execute(
+      () => base44.asServiceRole.entities.GrupoChat.create({
+        pedido_id: pedido_id,
+        nombre: `${pedido.cliente} - ${pedido.dia}`,
+        descripcion: pedido.lugar_evento,
+        fecha_evento: pedido.dia,
+        hora_fin_evento: pedido.salida,
+        miembros: miembros,
+        activo: true,
+        fecha_eliminacion_programada: fechaEliminacion.toISOString()
+      })
+    );
+
+    // Rollback: desactivar el grupo si el siguiente paso falla
+    tx.addRollback(async () => {
+      await base44.asServiceRole.entities.GrupoChat.update(grupo.id, { activo: false });
     });
 
-    // Crear mensaje de sistema
-    await base44.asServiceRole.entities.MensajeChat.create({
-      grupo_id: grupo.id,
-      user_id: 'sistema',
-      nombre_usuario: 'Sistema',
-      rol_usuario: 'admin',
-      mensaje: `¡Grupo creado! ${miembros.length} miembros añadidos al chat del evento.`,
-      tipo: 'sistema',
-      leido_por: []
+    await audit.logCreate({
+      entidad: 'GrupoChat',
+      entidad_id: grupo.id,
+      usuario_id: user.id,
+      usuario_nombre: user.full_name,
+      datos_despues: { pedido_id, nombre: grupo.nombre, miembros_count: miembros.length }
     });
+
+    // Paso 2: Crear mensaje de sistema
+    await tx.execute(
+      () => base44.asServiceRole.entities.MensajeChat.create({
+        grupo_id: grupo.id,
+        user_id: 'sistema',
+        nombre_usuario: 'Sistema',
+        rol_usuario: 'admin',
+        mensaje: `¡Grupo creado! ${miembros.length} miembros añadidos al chat del evento.`,
+        tipo: 'sistema',
+        leido_por: []
+      })
+    );
 
     return Response.json({
       success: true,

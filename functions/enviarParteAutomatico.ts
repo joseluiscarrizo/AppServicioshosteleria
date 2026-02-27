@@ -2,6 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { format, parseISO } from 'npm:date-fns@3.6.0';
 import { es } from 'npm:date-fns@3.6.0/locale';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
+import { TransactionManager } from './utils/transactionManager.ts';
+import { AuditLogger } from './utils/auditLogger.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -137,41 +139,92 @@ Sistema de Gestión de Camareros`;
       }
     }
 
-    // Enviar email al cliente
-    for (const emailCliente of emailsCliente) {
-      try {
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: emailCliente,
-          subject: `Parte de Servicio - ${pedido.cliente} - ${fechaFormateada}`,
-          body: parteMensaje
-        });
-      } catch (e) {
-        console.error(`Error enviando email a ${emailCliente}:`, e);
-      }
-    }
+    // Usar TransactionManager para garantizar consistencia en el envío
+    const tx = new TransactionManager();
+    const audit = new AuditLogger(base44.asServiceRole.entities);
 
-    // Enviar copia al coordinador
+    // Paso 1: Enviar email al cliente
+    await tx.execute(async () => {
+      for (const emailCliente of emailsCliente) {
+        try {
+          await base44.asServiceRole.integrations.Core.SendEmail({
+            to: emailCliente,
+            subject: `Parte de Servicio - ${pedido.cliente} - ${fechaFormateada}`,
+            body: parteMensaje
+          });
+          await audit.logSend({
+            entidad: 'ParteServicio',
+            entidad_id: pedido.id,
+            usuario_id: user.id,
+            usuario_nombre: user.full_name,
+            metadata: { destinatario: emailCliente, tipo: 'cliente' },
+            exito: true
+          });
+        } catch (e) {
+          console.error(`Error enviando email a ${emailCliente}:`, e);
+          await audit.logSend({
+            entidad: 'ParteServicio',
+            entidad_id: pedido.id,
+            usuario_id: user.id,
+            usuario_nombre: user.full_name,
+            metadata: { destinatario: emailCliente, tipo: 'cliente' },
+            exito: false,
+            error_mensaje: e instanceof Error ? e.message : String(e)
+          });
+        }
+      }
+    });
+
+    // Paso 2: Enviar copia al coordinador
     if (emailCoordinador) {
-      try {
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: emailCoordinador,
-          subject: `[COPIA] Parte de Servicio - ${pedido.cliente} - ${fechaFormateada}`,
-          body: `COPIA DEL PARTE ENVIADO AL CLIENTE\n\n${parteMensaje}`
-        });
-      } catch (e) {
-        console.error(`Error enviando copia a coordinador:`, e);
-      }
+      await tx.execute(async () => {
+        try {
+          await base44.asServiceRole.integrations.Core.SendEmail({
+            to: emailCoordinador,
+            subject: `[COPIA] Parte de Servicio - ${pedido.cliente} - ${fechaFormateada}`,
+            body: `COPIA DEL PARTE ENVIADO AL CLIENTE\n\n${parteMensaje}`
+          });
+          await audit.logSend({
+            entidad: 'ParteServicio',
+            entidad_id: pedido.id,
+            usuario_id: user.id,
+            usuario_nombre: user.full_name,
+            metadata: { destinatario: emailCoordinador, tipo: 'coordinador' },
+            exito: true
+          });
+        } catch (e) {
+          console.error(`Error enviando copia a coordinador:`, e);
+          await audit.logSend({
+            entidad: 'ParteServicio',
+            entidad_id: pedido.id,
+            usuario_id: user.id,
+            usuario_nombre: user.full_name,
+            metadata: { destinatario: emailCoordinador, tipo: 'coordinador' },
+            exito: false,
+            error_mensaje: e instanceof Error ? e.message : String(e)
+          });
+        }
+      });
     }
 
-    // Registrar en historial o notificaciones
-    await base44.asServiceRole.entities.Notificacion.create({
-      tipo: 'estado_cambio',
-      titulo: '📧 Parte de Servicio Enviado',
-      mensaje: `Se ha enviado automáticamente el parte de servicio para ${pedido.cliente} a ${emailsCliente.join(', ')}${emailCoordinador ? ` con copia a ${emailCoordinador}` : ''}`,
-      prioridad: 'media',
-      pedido_id: pedido.id,
-      coordinador: user.full_name,
-      email_enviado: true
+    // Paso 3: Registrar en historial / notificaciones
+    await tx.execute(() =>
+      base44.asServiceRole.entities.Notificacion.create({
+        tipo: 'estado_cambio',
+        titulo: '📧 Parte de Servicio Enviado',
+        mensaje: `Se ha enviado automáticamente el parte de servicio para ${pedido.cliente} a ${emailsCliente.join(', ')}${emailCoordinador ? ` con copia a ${emailCoordinador}` : ''}`,
+        prioridad: 'media',
+        pedido_id: pedido.id,
+        coordinador: user.full_name,
+        email_enviado: true
+      })
+    );
+
+    await audit.logCreate({
+      entidad: 'Notificacion',
+      usuario_id: user.id,
+      usuario_nombre: user.full_name,
+      datos_despues: { pedido_id: pedido.id, tipo: 'parte_servicio_enviado' }
     });
 
     return Response.json({ 
