@@ -1,1 +1,18 @@
-{"devDependencies": {"@vitest/coverage-v8": "latest"}}
+{
+  "name": "app-servicios-hosteleria",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:security": "vitest run tests/security",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "lint": "eslint src functions tests"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "latest"
+  }
+}
