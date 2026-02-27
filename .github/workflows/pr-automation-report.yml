@@ -1,0 +1,80 @@
+name: PR Automation Report
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Every day at 9 AM
+  workflow_dispatch:
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      checks: read
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Generate PR automation report
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            let stats = {
+              total: prs.length,
+              ready_for_merge: 0,
+              pending_approval: 0,
+              failing_checks: 0,
+              has_conflicts: 0,
+              pending_review: 0
+            };
+
+            for (const pr of prs) {
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              const { data: checks } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.head.sha
+              });
+
+              const failedChecks = checks.check_runs.filter(c => c.conclusion === 'failure');
+              const approvals = reviews.filter(r => r.state === 'APPROVED');
+
+              if (failedChecks.length > 0) stats.failing_checks++;
+              if (pr.mergeable === false) stats.has_conflicts++;
+              if (approvals.length === 0) stats.pending_approval++;
+              if (reviews.filter(r => r.state === 'CHANGES_REQUESTED').length > 0) stats.pending_review++;
+
+              if (approvals.length > 0 && failedChecks.length === 0 && pr.mergeable !== false) {
+                stats.ready_for_merge++;
+              }
+            }
+
+            const report = `
+            # 🤖 PR Automation Report
+
+            **Total Open PRs:** ${stats.total}
+
+            ✅ **Ready for Merge:** ${stats.ready_for_merge}
+            ⏳ **Pending Approval:** ${stats.pending_approval}
+            🔄 **Pending Review:** ${stats.pending_review}
+            ❌ **Failing Checks:** ${stats.failing_checks}
+            ⚠️  **Merge Conflicts:** ${stats.has_conflicts}
+
+            ---
+
+            *Report generated on ${new Date().toISOString()}*
+            `;
+
+            // Create or update PR automation report
+            console.log(report);

@@ -1,0 +1,73 @@
+name: PR Health Check & Auto-Close
+
+on:
+  schedule:
+    - cron: '0 9 * * MON'  # Every Monday at 9 AM
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check PR health and close stale
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            let closedCount = 0;
+
+            for (const pr of prs) {
+              const createdAt = new Date(pr.created_at);
+              const daysSinceCreated = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+
+              // Check if PR is stale (>30 days without updates)
+              if (daysSinceCreated > 30) {
+                const lastUpdate = new Date(pr.updated_at);
+                const daysSinceUpdate = (Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24);
+
+                if (daysSinceUpdate > 14) {
+                  // Close stale PR
+                  await github.rest.pulls.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: pr.number,
+                    state: 'closed'
+                  });
+
+                  // Add comment explaining closure
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: pr.number,
+                    body: `🤖 Auto-closed due to inactivity\n\nThis PR was created ${daysSinceCreated.toFixed(0)} days ago and hasn't been updated in ${daysSinceUpdate.toFixed(0)} days. Please reopen if you'd like to continue working on this.`
+                  });
+
+                  console.log(`✅ Closed stale PR #${pr.number}: ${pr.title}`);
+                  closedCount++;
+                }
+              }
+
+              // Check for conflicted PRs
+              if (pr.mergeable === false) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `⚠️ This PR has merge conflicts that need to be resolved. Please update your branch.`
+                });
+              }
+            }
+
+            console.log(`\n✅ Closed ${closedCount} stale PRs`);
