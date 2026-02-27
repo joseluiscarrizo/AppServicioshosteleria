@@ -7,6 +7,7 @@
  * POST { token, tipo }      → tipo: "entrada" | "salida"  → registra fichaje
  */
 import { createClientFromRequest } from '@base44/sdk';
+import { validateTokenInput } from '../utils/inputValidator.ts';
 
 function calcularHoras(entrada, salida) {
   if (!entrada || !salida) return null;
@@ -35,6 +36,11 @@ Deno.serve(async (req) => {
 
     if (!token) {
       return Response.json({ error: 'Token requerido' }, { status: 400, headers: corsHeaders });
+    }
+
+    const tokenValidation = validateTokenInput(token);
+    if (!tokenValidation.valid) {
+      return Response.json({ error: tokenValidation.error }, { status: 400, headers: corsHeaders });
     }
 
     // Buscar asignación por token

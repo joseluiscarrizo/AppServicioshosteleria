@@ -12,11 +12,14 @@ if (!import.meta.env.VITE_BASE44_BACKEND_URL) {
 
 const { appId, serverUrl, token, functionsVersion } = appParams;
 
+// Require auth in production; allow override in development via VITE_REQUIRES_AUTH
+const requiresAuth = import.meta.env.PROD || import.meta.env.VITE_REQUIRES_AUTH === 'true';
+
 //Create a client with authentication required
 export const base44 = createClient({
   appId,
   serverUrl,
   token,
   functionsVersion,
-  requiresAuth: false
+  requiresAuth
 });

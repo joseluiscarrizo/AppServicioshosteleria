@@ -110,3 +110,34 @@ export function validateOwnershipOrAdmin(
 
   return user;
 }
+
+/**
+ * Valida que usuario es propietario del recurso o tiene un rol administrativo permitido.
+ * Variante más flexible que permite especificar qué roles también pueden acceder.
+ * @param user - Usuario autenticado
+ * @param resourceUserId - ID del usuario dueño del recurso
+ * @param adminRoles - Roles que pueden acceder independientemente de propiedad
+ * @throws {RBACError} Si usuario no tiene acceso
+ *
+ * @example
+ * validateResourceOwnership(user, asignacion.coordinador_id, ['admin', 'coordinador']);
+ */
+export function validateResourceOwnership(
+  user: { id: string; role: string } | null,
+  resourceUserId: string,
+  adminRoles: string[] = ['admin']
+): { id: string; role: string } {
+  if (!user) {
+    throw new RBACError('No autorizado', 401);
+  }
+
+  const isOwner = user.id === resourceUserId;
+  const hasAdminRole = adminRoles.includes(user.role);
+
+  if (!isOwner && !hasAdminRole) {
+    Logger.warn(`Resource Ownership Violation: User ${user.id} (${user.role}) intentó acceso al recurso de ${resourceUserId}`);
+    throw new RBACError('No autorizado: No tienes permisos para acceder a este recurso', 403);
+  }
+
+  return user;
+}
