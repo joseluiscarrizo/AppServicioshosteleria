@@ -1,4 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { RateLimiter, rateLimitResponse, addRateLimitHeaders } from '../utils/rateLimit.ts';
+
+// 2 exports per minute per user
+const exportLimiter = new RateLimiter({ windowMs: 60_000, maxRequests: 2 });
 
 Deno.serve(async (req) => {
     try {
@@ -7,6 +11,11 @@ Deno.serve(async (req) => {
 
         if (!user) {
             return Response.json({ error: 'No autenticado' }, { status: 401 });
+        }
+
+        const rateLimitResult = exportLimiter.check(user.id);
+        if (!rateLimitResult.allowed) {
+            return rateLimitResponse(rateLimitResult, 2);
         }
 
         const { pedido_id } = await req.json();
@@ -187,12 +196,16 @@ Deno.serve(async (req) => {
             console.warn('Error al formatear spreadsheet:', await formatResponse.text());
         }
 
-        return Response.json({
-            success: true,
-            spreadsheetId: spreadsheetId,
-            url: spreadsheet.spreadsheetUrl,
-            message: 'Hoja de asistencia exportada a Google Sheets'
-        });
+        return addRateLimitHeaders(
+            Response.json({
+                success: true,
+                spreadsheetId: spreadsheetId,
+                url: spreadsheet.spreadsheetUrl,
+                message: 'Hoja de asistencia exportada a Google Sheets'
+            }),
+            rateLimitResult,
+            2
+        );
 
     } catch (error) {
         console.error('Error:', error);

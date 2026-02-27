@@ -1,4 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { RateLimiter, rateLimitResponse, addRateLimitHeaders } from '../utils/rateLimit.ts';
+
+// 2 exports per minute per user
+const exportLimiter = new RateLimiter({ windowMs: 60_000, maxRequests: 2 });
 
 Deno.serve(async (req) => {
   try {
@@ -7,6 +11,11 @@ Deno.serve(async (req) => {
     
     if (!user || (user.role !== 'admin' && user.role !== 'coordinador')) {
       return Response.json({ error: 'No autorizado' }, { status: 403 });
+    }
+
+    const rateLimitResult = exportLimiter.check(user.id);
+    if (!rateLimitResult.allowed) {
+      return rateLimitResponse(rateLimitResult, 2);
     }
 
     // Obtener datos
@@ -220,11 +229,15 @@ Deno.serve(async (req) => {
       }
     );
     
-    return Response.json({ 
-      success: true,
-      spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
-      message: 'Excel creado exitosamente'
-    });
+    return addRateLimitHeaders(
+      Response.json({ 
+        success: true,
+        spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
+        message: 'Excel creado exitosamente'
+      }),
+      rateLimitResult,
+      2
+    );
     
   } catch (error) {
     console.error('Error:', error);

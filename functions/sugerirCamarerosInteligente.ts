@@ -1,4 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { RateLimiter, rateLimitResponse, addRateLimitHeaders } from '../utils/rateLimit.ts';
+
+// 10 suggestion calls per minute per user
+const sugerenciasLimiter = new RateLimiter({ windowMs: 60_000, maxRequests: 10 });
 
 Deno.serve(async (req) => {
   try {
@@ -7,6 +11,11 @@ Deno.serve(async (req) => {
 
     if (!user || (user.role !== 'admin' && user.role !== 'coordinador')) {
       return Response.json({ error: 'No autorizado' }, { status: 403 });
+    }
+
+    const rateLimitResult = sugerenciasLimiter.check(user.id);
+    if (!rateLimitResult.allowed) {
+      return rateLimitResponse(rateLimitResult, 10);
     }
 
     const { pedido_id, limite = 10 } = await req.json();
@@ -306,20 +315,24 @@ Genera un ranking de los mejores ${limite} camareros ordenados por idoneidad. Pa
       };
     });
 
-    return Response.json({
-      success: true,
-      pedido_id: pedido_id,
-      evento: {
-        cliente: pedido.cliente,
-        fecha: pedido.dia,
-        lugar: pedido.lugar_evento
-      },
-      total_candidatos: camareros.length,
-      sugerencias: sugerenciasEnriquecidas,
-      resumen: analisisIA.resumen_analisis,
-      alertas: analisisIA.alertas || [],
-      timestamp: new Date().toISOString()
-    });
+    return addRateLimitHeaders(
+      Response.json({
+        success: true,
+        pedido_id: pedido_id,
+        evento: {
+          cliente: pedido.cliente,
+          fecha: pedido.dia,
+          lugar: pedido.lugar_evento
+        },
+        total_candidatos: camareros.length,
+        sugerencias: sugerenciasEnriquecidas,
+        resumen: analisisIA.resumen_analisis,
+        alertas: analisisIA.alertas || [],
+        timestamp: new Date().toISOString()
+      }),
+      rateLimitResult,
+      10
+    );
 
   } catch (error) {
     console.error('Error en sugerirCamarerosInteligente:', error);
