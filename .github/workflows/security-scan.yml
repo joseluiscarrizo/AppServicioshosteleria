@@ -1,0 +1,92 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-audit:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+  eslint-security:
+    name: ESLint Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install ESLint security plugin
+        run: npm install --no-save eslint-plugin-security @microsoft/eslint-formatter-sarif
+
+      - name: Run ESLint with SARIF output
+        run: |
+          npx eslint . \
+            --format @microsoft/eslint-formatter-sarif \
+            --output-file eslint-results.sarif \
+            --no-eslintrc \
+            --plugin security \
+            --rule 'security/detect-object-injection: warn' \
+            --rule 'security/detect-non-literal-regexp: warn' \
+            --rule 'security/detect-non-literal-fs-filename: warn' \
+            --ext .js,.jsx,.ts,.tsx \
+            --ignore-pattern node_modules/ \
+            --ignore-pattern dist/ \
+            src/ || true
+        continue-on-error: true
+
+      - name: Upload ESLint SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: eslint-results.sarif
+          category: eslint-security
+        continue-on-error: true
+
+  secret-scan:
+    name: Hardcoded Secrets Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+        continue-on-error: true

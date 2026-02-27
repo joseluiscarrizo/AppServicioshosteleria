@@ -1,0 +1,112 @@
+name: Validate Cloud Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'functions/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deno-format:
+    name: Deno Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Check formatting
+        run: deno fmt --check functions/
+
+  deno-lint:
+    name: Deno Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run Deno lint
+        run: deno lint functions/
+
+  deno-typecheck:
+    name: Deno Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run type check
+        run: deno check functions/**/*.ts
+        continue-on-error: true
+
+  rbac-validation:
+    name: RBAC Pattern Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate RBAC patterns
+        run: |
+          echo "Checking for RBAC authorization patterns in Cloud Functions..."
+          MISSING_RBAC=0
+          for f in functions/*.ts; do
+            # Skip test files
+            if echo "$f" | grep -qi "test"; then
+              continue
+            fi
+            if ! grep -qE "(verifyIdToken|checkPermission|isAuthorized|role|permission|auth\.uid)" "$f"; then
+              echo "WARNING: $f may be missing authorization/RBAC checks"
+              MISSING_RBAC=$((MISSING_RBAC + 1))
+            fi
+          done
+          if [ "$MISSING_RBAC" -gt 0 ]; then
+            echo "::warning::$MISSING_RBAC function(s) may be missing RBAC checks. Review the warnings above."
+          else
+            echo "RBAC validation passed."
+          fi
+
+  error-handling-validation:
+    name: Error Handling Pattern Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate error handling patterns
+        run: |
+          echo "Checking for error handling patterns in Cloud Functions..."
+          MISSING_ERROR_HANDLING=0
+          for f in functions/*.ts; do
+            if ! grep -qE "(try|catch|\.catch|onError)" "$f"; then
+              echo "WARNING: $f appears to be missing error handling (try/catch)"
+              MISSING_ERROR_HANDLING=$((MISSING_ERROR_HANDLING + 1))
+            fi
+          done
+          if [ "$MISSING_ERROR_HANDLING" -gt 0 ]; then
+            echo "::warning::$MISSING_ERROR_HANDLING function(s) may be missing error handling."
+          else
+            echo "Error handling validation passed."
+          fi
