@@ -54,6 +54,7 @@ export default function EventoContextBanner({ grupo }) {
               <p className="font-semibold text-slate-800 truncate text-sm">{pedido.cliente}</p>
               {fichajeUrl && (
                 <button
+                  type="button"
                   onClick={(e) => { e.stopPropagation(); copiarLink(); }}
                   className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 rounded px-1.5 py-0.5 flex-shrink-0"
                   title="Copiar link de fichaje QR"

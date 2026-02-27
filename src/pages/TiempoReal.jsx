@@ -462,6 +462,7 @@ export default function TiempoReal() {
 
                 return (
                   <button
+                    type="button"
                     key={diaStr}
                     onClick={() => setFechaSeleccionada(dia)}
                     className={`p-2 rounded-lg border-2 transition-all hover:shadow-md ${
@@ -533,6 +534,7 @@ export default function TiempoReal() {
                               </span>
                               {fila.asignacion.estado === 'alta' && (
                                 <button
+                                  type="button"
                                   onClick={() => {
                                     const cam = camareros.find(c => c.id === fila.asignacion.camarero_id);
                                     if (cam) setValoracionModal({ open: true, camarero: cam, pedido: fila.pedido });

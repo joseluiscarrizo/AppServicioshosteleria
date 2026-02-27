@@ -209,7 +209,7 @@ export default function ReglasAsignacion() {
   );
 }
 
-function FormularioRegla({ open, onClose, regla, clientes, camareros, onSubmit }) {
+function FormularioRegla({ open, onClose, regla, clientes, camareros: _camareros, onSubmit }) {
   const [formData, setFormData] = useState({
     nombre: '',
     tipo_regla: 'cliente_preferido',

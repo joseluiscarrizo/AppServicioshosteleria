@@ -18,7 +18,7 @@ vi.mock('@/components/pedidos/ParteServicio', () => ({ default: () => null }));
 vi.mock('@/components/pedidos/PedidoFormNuevo', () => ({
   default: ({ onSubmit, onCancel }) => (
     <div data-testid="pedido-form">
-      <button data-testid="form-submit-btn" onClick={() => onSubmit({
+      <button type="button" data-testid="form-submit-btn" onClick={() => onSubmit({
         cliente: 'Test Cliente',
         cliente_id: 'cliente-1',
         dia: '2026-06-01',
@@ -28,7 +28,7 @@ vi.mock('@/components/pedidos/PedidoFormNuevo', () => ({
         extra_transporte: false,
         notas: ''
       })}>Guardar Pedido</button>
-      <button data-testid="form-cancel-btn" onClick={onCancel}>Cancelar</button>
+      <button type="button" data-testid="form-cancel-btn" onClick={onCancel}>Cancelar</button>
     </div>
   )
 }));

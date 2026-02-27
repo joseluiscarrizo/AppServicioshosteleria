@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useMutation } from '@tanstack/react-query';
 
 export default function HojaAsistencia({ pedido, asignaciones, camareros }) {
-  const generarHojaHTML = () => {
+  const _generarHojaHTML = () => {
     const camarerosList = asignaciones
       .map(a => camareros.find(c => c.id === a.camarero_id))
       .filter(Boolean);

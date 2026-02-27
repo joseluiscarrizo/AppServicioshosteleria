@@ -30,7 +30,7 @@ export default function FiltrosAvanzadosCamareros({
   filtros,
   onFiltrosChange,
   camareros = [],
-  pedido = null,
+  pedido: _pedido = null,
 }) {
   const [expandido, setExpandido] = useState(false);
 
@@ -79,7 +79,7 @@ export default function FiltrosAvanzadosCamareros({
           />
           {filtros.busqueda && (
             <button
-              onClick={() => set('busqueda', '')}
+              type="button" onClick={() => set('busqueda', '')}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
             >
               <X className="w-3.5 h-3.5" />
@@ -189,7 +189,7 @@ export default function FiltrosAvanzadosCamareros({
               <div className="flex gap-1">
                 {[0, 3, 3.5, 4, 4.5].map(v => (
                   <button
-                    key={v}
+                    type="button" key={v}
                     onClick={() => set('valoracionMin', v)}
                     className={`flex-1 h-8 rounded text-xs font-medium border transition-all ${
                       filtros.valoracionMin === v
@@ -208,7 +208,7 @@ export default function FiltrosAvanzadosCamareros({
               <label className="text-xs font-medium text-slate-500 mb-1 block">Estado</label>
               <div className="flex gap-1">
                 <button
-                  onClick={() => set('soloDisponibles', true)}
+                  type="button" onClick={() => set('soloDisponibles', true)}
                   className={`flex-1 h-8 rounded text-xs font-medium border transition-all ${
                     filtros.soloDisponibles
                       ? 'bg-emerald-500 text-white border-emerald-500'
@@ -218,7 +218,7 @@ export default function FiltrosAvanzadosCamareros({
                   ✅ Disponibles
                 </button>
                 <button
-                  onClick={() => set('soloDisponibles', false)}
+                  type="button" onClick={() => set('soloDisponibles', false)}
                   className={`flex-1 h-8 rounded text-xs font-medium border transition-all ${
                     !filtros.soloDisponibles
                       ? 'bg-slate-600 text-white border-slate-600'
@@ -238,31 +238,31 @@ export default function FiltrosAvanzadosCamareros({
               {filtros.especialidad && (
                 <Badge variant="outline" className="text-xs gap-1 h-5 bg-blue-50 text-blue-700 border-blue-200">
                   {ESPECIALIDADES.find(e => e.value === filtros.especialidad)?.label}
-                  <button onClick={() => set('especialidad', '')}><X className="w-2.5 h-2.5" /></button>
+                  <button type="button" onClick={() => set('especialidad', '')}><X className="w-2.5 h-2.5" /></button>
                 </Badge>
               )}
               {filtros.nivel && (
                 <Badge variant="outline" className="text-xs gap-1 h-5 bg-violet-50 text-violet-700 border-violet-200">
                   {NIVELES.find(n => n.value === filtros.nivel)?.label}
-                  <button onClick={() => set('nivel', '')}><X className="w-2.5 h-2.5" /></button>
+                  <button type="button" onClick={() => set('nivel', '')}><X className="w-2.5 h-2.5" /></button>
                 </Badge>
               )}
               {filtros.habilidad && (
                 <Badge variant="outline" className="text-xs gap-1 h-5 bg-amber-50 text-amber-700 border-amber-200">
                   <Award className="w-2.5 h-2.5" />{filtros.habilidad}
-                  <button onClick={() => set('habilidad', '')}><X className="w-2.5 h-2.5" /></button>
+                  <button type="button" onClick={() => set('habilidad', '')}><X className="w-2.5 h-2.5" /></button>
                 </Badge>
               )}
               {filtros.turnoHorario && (
                 <Badge variant="outline" className="text-xs gap-1 h-5 bg-teal-50 text-teal-700 border-teal-200">
                   <Clock className="w-2.5 h-2.5" />{TURNOS_HORARIOS.find(t => t.value === filtros.turnoHorario)?.label?.split(' ')[1]}
-                  <button onClick={() => set('turnoHorario', '')}><X className="w-2.5 h-2.5" /></button>
+                  <button type="button" onClick={() => set('turnoHorario', '')}><X className="w-2.5 h-2.5" /></button>
                 </Badge>
               )}
               {filtros.valoracionMin > 0 && (
                 <Badge variant="outline" className="text-xs gap-1 h-5 bg-amber-50 text-amber-700 border-amber-200">
                   ★ ≥{filtros.valoracionMin}
-                  <button onClick={() => set('valoracionMin', 0)}><X className="w-2.5 h-2.5" /></button>
+                  <button type="button" onClick={() => set('valoracionMin', 0)}><X className="w-2.5 h-2.5" /></button>
                 </Badge>
               )}
             </div>
@@ -274,7 +274,7 @@ export default function FiltrosAvanzadosCamareros({
 }
 
 // Helper exportado para aplicar filtros a lista de camareros
-export function aplicarFiltrosCamareros(camareros, filtros, asignaciones = [], pedido = null) {
+export function aplicarFiltrosCamareros(camareros, filtros, _asignaciones = [], _pedido = null) {
   const TURNOS_HORARIOS_MAP = {
     manana: { desde: 6, hasta: 14 },
     tarde:  { desde: 14, hasta: 20 },

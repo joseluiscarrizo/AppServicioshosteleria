@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from '@base44/sdk';
 
 Deno.serve(async (req) => {
   try {
@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
       try {
         clienteInfo = await base44.asServiceRole.entities.Cliente.get(pedido.cliente_id);
       } catch (_e) {
+        // intentional
       }
     }
 

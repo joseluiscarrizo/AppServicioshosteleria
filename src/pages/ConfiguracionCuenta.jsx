@@ -153,7 +153,7 @@ export default function ConfiguracionCuenta() {
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Seguridad y privacidad</p>
           </div>
           <div className="divide-y divide-slate-100">
-            <button className="w-full flex items-center justify-between px-4 py-4 hover:bg-slate-50 transition-colors">
+            <button type="button" className="w-full flex items-center justify-between px-4 py-4 hover:bg-slate-50 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
                   <Shield className="w-4 h-4 text-purple-600" />
@@ -161,7 +161,7 @@ export default function ConfiguracionCuenta() {
                 <p className="text-sm font-medium text-slate-700">Política de privacidad</p>
               </div>
             </button>
-            <button className="w-full flex items-center justify-between px-4 py-4 hover:bg-slate-50 transition-colors">
+            <button type="button" className="w-full flex items-center justify-between px-4 py-4 hover:bg-slate-50 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
                   <Lock className="w-4 h-4 text-amber-600" />
@@ -177,7 +177,7 @@ export default function ConfiguracionCuenta() {
           <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sesión</p>
           </div>
-          <button className="w-full flex items-center gap-3 px-4 py-4 hover:bg-slate-50 transition-colors">
+          <button type="button" className="w-full flex items-center gap-3 px-4 py-4 hover:bg-slate-50 transition-colors">
             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
               <LogOut className="w-4 h-4 text-slate-600" />
             </div>

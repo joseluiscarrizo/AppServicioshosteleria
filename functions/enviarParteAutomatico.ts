@@ -1,6 +1,6 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { format, parseISO } from 'npm:date-fns@3.6.0';
-import { es } from 'npm:date-fns@3.6.0/locale';
+import { createClientFromRequest } from '@base44/sdk';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
 Deno.serve(async (req) => {

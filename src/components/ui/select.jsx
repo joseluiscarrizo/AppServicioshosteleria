@@ -9,7 +9,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 
 // ── Desktop Select (unchanged Radix) ────────────────────────────────────────
 
-const Select = SelectPrimitive.Root
+// Select alias intentionally unused (ResponsiveSelect is exported as Select below)
 const SelectGroup = SelectPrimitive.Group
 const SelectValue = SelectPrimitive.Value
 
@@ -111,7 +111,7 @@ SelectSeparator.displayName = SelectPrimitive.Separator.displayName
 // Collects SelectItem children and renders a Drawer on mobile instead of a popover.
 
 // Context to pass value/onValueChange down into MobileSelect
-const MobileSelectCtx = React.createContext(null)
+// Context placeholder for future mobile select implementation
 
 /**
  * MobileSelect: renders a button trigger + Drawer sheet on mobile.

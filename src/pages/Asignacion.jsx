@@ -59,15 +59,15 @@ export default function Asignacion() {
     valoracionMin: 0,
   });
   // Compat: aliases usados en las funciones legadas
-  const filtroHabilidad = filtrosCamareros.habilidad;
-  const filtroEspecialidad = filtrosCamareros.especialidad;
-  const busquedaCamarero = filtrosCamareros.busqueda;
-  const setBusquedaCamarero = (v) => setFiltrosCamareros(f => ({ ...f, busqueda: v }));
-  const setFiltroHabilidad = (v) => setFiltrosCamareros(f => ({ ...f, habilidad: v }));
-  const setFiltroEspecialidad = (v) => setFiltrosCamareros(f => ({ ...f, especialidad: v }));
+  const _filtroHabilidad = filtrosCamareros.habilidad;
+  const _filtroEspecialidad = filtrosCamareros.especialidad;
+  const _busquedaCamarero = filtrosCamareros.busqueda;
+  const _setBusquedaCamarero = (v) => setFiltrosCamareros(f => ({ ...f, busqueda: v }));
+  const _setFiltroHabilidad = (v) => setFiltrosCamareros(f => ({ ...f, habilidad: v }));
+  const _setFiltroEspecialidad = (v) => setFiltrosCamareros(f => ({ ...f, especialidad: v }));
   const [mostrarCarga, setMostrarCarga] = useState(false);
   const [showAsignacionAuto, setShowAsignacionAuto] = useState(false);
-  const [showReglas, setShowReglas] = useState(false);
+  const [_showReglas, _setShowReglas] = useState(false);
   const [vistaCalendario, setVistaCalendario] = useState('interactivo'); // 'interactivo', 'avanzado' o 'clasico'
   const [edicionRapida, setEdicionRapida] = useState({ open: false, pedido: null, campo: null });
   const [duplicarDialog, setDuplicarDialog] = useState({ open: false, pedido: null });
@@ -377,7 +377,7 @@ Sistema de Gestión de Camareros
   };
 
   // Calcular estado del pedido
-  const getEstadoPedido = (pedido) => {
+  const _getEstadoPedido = (pedido) => {
     const asignacionesPedido = getAsignacionesPedido(pedido.id);
     const cantidadNecesaria = pedido.cantidad_camareros || 0;
     
@@ -449,7 +449,7 @@ Sistema de Gestión de Camareros
   };
   
   // Obtener todas las habilidades únicas
-  const todasHabilidades = useMemo(() => {
+  const _todasHabilidades = useMemo(() => {
     const habs = new Set();
     camareros.forEach(c => c.habilidades?.forEach(h => habs.add(h)));
     return Array.from(habs).sort();
@@ -538,7 +538,7 @@ Sistema de Gestión de Camareros
     }
   };
 
-  const handleSalidaChange = (pedido, turnoIndex, camareroIndex, nuevaSalida) => {
+  const handleSalidaChange = (pedido, turnoIndex, _camareroIndex, nuevaSalida) => {
     const turnosActualizados = [...(pedido.turnos || [])];
     if (turnosActualizados[turnoIndex]) {
       turnosActualizados[turnoIndex] = {
@@ -641,7 +641,7 @@ Sistema de Gestión de Camareros
     }
   };
 
-  const isLoading = loadingPedidos;
+  const _isLoading = loadingPedidos;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
@@ -949,7 +949,7 @@ Sistema de Gestión de Camareros
                     </div>
                   </div>
 
-                  <Droppable droppableId="camareros-disponibles" isDropDisabled={true}>
+                  <Droppable droppableId="camareros-disponibles" isDropDisabled>
                     {(provided) => (
                       <div className="flex-1 overflow-y-auto">
                         <div className="space-y-3 p-4 min-h-[500px]" ref={provided.innerRef} {...provided.droppableProps}>

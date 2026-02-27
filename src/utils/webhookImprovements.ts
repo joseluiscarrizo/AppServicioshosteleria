@@ -5,7 +5,7 @@ class GmailApiError extends Error {
  }
 }
 
-async function executeGmailOperation(operation: () => Promise<any>): Promise<any> {
+async function executeGmailOperation(operation: () => Promise<unknown>): Promise<unknown> {
  try {
  const result = await operation();
  return result;

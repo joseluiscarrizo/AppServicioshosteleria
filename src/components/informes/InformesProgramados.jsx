@@ -81,7 +81,7 @@ export default function InformesProgramados() {
   const guardar = () => {
     if (!form.cliente) return toast.error('Selecciona un cliente');
     if (!form.destinatarios.length) return toast.error('Añade al menos un destinatario');
-    const { emailInput, ...data } = form;
+    const { emailInput: _emailInput, ...data } = form;
     crearMutation.mutate(data);
   };
 
@@ -210,7 +210,7 @@ export default function InformesProgramados() {
               {coordinadores.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-2">
                   {coordinadores.map(c => (
-                    <button key={c.id} onClick={() => agregarCoordinador(c.email)}
+                    <button type="button" key={c.id} onClick={() => agregarCoordinador(c.email)}
                       className="text-xs px-2 py-1 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100 transition-colors">
                       + {c.nombre}
                     </button>
@@ -228,7 +228,7 @@ export default function InformesProgramados() {
                   {form.destinatarios.map(email => (
                     <span key={email} className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-full">
                       {email}
-                      <button onClick={() => setForm(f => ({ ...f, destinatarios: f.destinatarios.filter(e => e !== email) }))}
+                      <button type="button" onClick={() => setForm(f => ({ ...f, destinatarios: f.destinatarios.filter(e => e !== email) }))}
                         className="text-slate-400 hover:text-red-500">×</button>
                     </span>
                   ))}

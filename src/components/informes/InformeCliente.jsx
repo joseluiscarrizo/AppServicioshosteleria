@@ -94,6 +94,7 @@ export default function InformeCliente() {
       {/* Selector de modo */}
       <div className="flex gap-2 bg-slate-100 p-1 rounded-lg w-fit">
         <button
+          type="button"
           onClick={() => handleModoChange('periodo')}
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
             modo === 'periodo'
@@ -105,6 +106,7 @@ export default function InformeCliente() {
           Rendimiento por período
         </button>
         <button
+          type="button"
           onClick={() => handleModoChange('evento')}
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
             modo === 'evento'

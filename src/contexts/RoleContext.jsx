@@ -4,13 +4,13 @@ const RoleContext = createContext();
 
 export const RoleProvider = ({ children, initialUser = null }) => {
   const [currentUser, setCurrentUser] = useState(initialUser);
-  const [permissions, setPermissions] = useState({});
+  const [permissions, _setPermissions] = useState({});
   const [loading, setLoading] = useState(initialUser !== null ? false : true);
 
   // Initialize user and load permissions
   useEffect(() => {
     if (initialUser !== null) return; // Skip when initialUser is provided (e.g. tests)
-    const loadUserRole = async () => {
+    const loadUserRole = () => {
       try {
         // Load from AuthContext or Firebase
         setLoading(false);

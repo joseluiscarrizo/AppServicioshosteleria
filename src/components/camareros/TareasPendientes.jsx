@@ -185,6 +185,7 @@ export default function TareasPendientes({ camareroId, pedidoId = null, compact 
                       >
                         <div className="flex items-start gap-3">
                           <button
+                            type="button"
                             onClick={() => !tarea.completada && completarTareaMutation.mutate(tarea.id)}
                             disabled={tarea.completada}
                             className={`mt-1 transition-colors ${

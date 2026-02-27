@@ -16,10 +16,10 @@ const QRCodeDisplay = () => {
     <div style={{ textAlign: 'center', margin: '20px' }}>
       <QRCode id="qrCodeCanvas" value={urlToShare} size={256} />
       <div>
-        <button onClick={handleDownload} style={{ margin: '10px' }}>
+        <button type="button" onClick={handleDownload} style={{ margin: '10px' }}>
           Download QR Code
         </button>
-        <button onClick={() => navigator.share({ title: 'QR Code', url: urlToShare })} style={{ margin: '10px' }}>
+        <button type="button" onClick={() => navigator.share({ title: 'QR Code', url: urlToShare })} style={{ margin: '10px' }}>
           Share QR Code
         </button>
       </div>

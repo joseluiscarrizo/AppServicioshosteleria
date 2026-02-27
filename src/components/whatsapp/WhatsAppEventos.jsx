@@ -248,6 +248,7 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
 
               return (
                 <button
+                  type="button"
                   key={pedido.id}
                   onClick={() => seleccionarEvento(pedido)}
                   className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors flex items-start gap-3 ${
@@ -344,9 +345,9 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
                   <p className="text-xs text-slate-500">{selectedCamareros.length} seleccionados</p>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={seleccionarTodos} className="text-xs text-[#1e3a5f] hover:underline">Todos</button>
+                  <button type="button" onClick={seleccionarTodos} className="text-xs text-[#1e3a5f] hover:underline">Todos</button>
                   <span className="text-slate-300">·</span>
-                  <button onClick={deseleccionarTodos} className="text-xs text-slate-400 hover:underline">Ninguno</button>
+                  <button type="button" onClick={deseleccionarTodos} className="text-xs text-slate-400 hover:underline">Ninguno</button>
                 </div>
               </div>
 
@@ -455,7 +456,7 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
                       <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
                         <FileText className="w-4 h-4 text-[#1e3a5f]" />
                         <span className="text-sm text-slate-700 flex-1 truncate">{archivoAdjunto.name}</span>
-                        <button onClick={() => { setArchivoAdjunto(null); setArchivoUrl(null); }}>
+                        <button type="button" onClick={() => { setArchivoAdjunto(null); setArchivoUrl(null); }}>
                           <X className="w-4 h-4 text-slate-400 hover:text-red-500" />
                         </button>
                       </div>

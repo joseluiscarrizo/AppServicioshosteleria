@@ -60,7 +60,7 @@ export default function InformeCamarero() {
     .map(a => {
       const pedido = pedidos.find(p => p.id === a.pedido_id);
       if (!pedido) return null;
-      let horas = pedido.turnos?.length > 0
+      const horas = pedido.turnos?.length > 0
         ? pedido.turnos.reduce((sum, t) => sum + (t.t_horas || 0), 0)
         : (pedido.t_horas || 0);
       return {
@@ -155,6 +155,7 @@ export default function InformeCamarero() {
           <div className="flex gap-2 bg-slate-100 p-1 rounded-lg w-fit">
             {MODOS.map(m => (
               <button
+                type="button"
                 key={m.id}
                 onClick={() => handleModoChange(m.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${

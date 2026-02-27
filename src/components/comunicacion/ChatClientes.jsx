@@ -18,7 +18,7 @@ function diasHastaEvento(dia) {
 }
 
 // --- Subcomponente: Sugerencia IA ---
-function SugerenciaIA({ sugerencia, onAplicar, onDescartar }) {
+function _SugerenciaIA({ sugerencia, onAplicar, onDescartar }) {
   return (
     <div className="mx-3 mb-2 p-3 rounded-xl border border-violet-200 bg-violet-50 text-sm">
       <div className="flex items-center gap-1.5 mb-2">
@@ -116,7 +116,7 @@ El mensaje debe:
   );
 }
 
-export default function ChatClientes({ user }) {
+export default function ChatClientes({ user: _user }) {
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [mensaje, setMensaje] = useState('');
   const [generandoIA, setGenerandoIA] = useState(false);
@@ -402,6 +402,7 @@ Redacta un mensaje de seguimiento profesional, cordial y personalizado en españ
                   <div className="flex flex-wrap gap-2">
                     {sugerencias.map((s, i) => (
                       <button
+                        type="button"
                         key={i}
                         onClick={() => setMensaje(s.texto)}
                         className="text-xs px-2.5 py-1 rounded-full border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors"

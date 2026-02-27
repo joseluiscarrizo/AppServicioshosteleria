@@ -3,7 +3,7 @@ import { useRole } from '@/contexts/RoleContext';
 import { usePermission } from '@/hooks/usePermission';
 
 export const UserManagement = () => {
-  const { isAdminLevel1, isAdminLevel2 } = useRole();
+  const { isAdminLevel1 } = useRole();
   const { can } = usePermission();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -58,6 +58,7 @@ export const UserManagement = () => {
       {canCreateUsers && (
         <>
           <button
+            type="button"
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="mb-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
