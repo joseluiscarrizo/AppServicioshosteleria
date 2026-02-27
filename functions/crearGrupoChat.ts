@@ -102,14 +102,13 @@ Deno.serve(async (req) => {
         miembros: miembros,
         activo: true,
         fecha_eliminacion_programada: fechaEliminacion.toISOString()
-      }),
-      // Rollback: desactivar el grupo si el siguiente paso falla
-      async () => {
-        if (grupo?.id) {
-          await base44.asServiceRole.entities.GrupoChat.update(grupo.id, { activo: false });
-        }
-      }
+      })
     );
+
+    // Rollback: desactivar el grupo si el siguiente paso falla
+    tx.addRollback(async () => {
+      await base44.asServiceRole.entities.GrupoChat.update(grupo.id, { activo: false });
+    });
 
     await audit.logCreate({
       entidad: 'GrupoChat',
