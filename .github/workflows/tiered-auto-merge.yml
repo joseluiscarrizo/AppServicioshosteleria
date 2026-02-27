@@ -1,0 +1,128 @@
+name: Tiered Auto Merge
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Specific PR number to merge (optional)'
+        required: false
+        type: string
+      merge_method:
+        description: 'Merge method: squash, merge, or rebase'
+        required: false
+        type: choice
+        options:
+          - squash
+          - merge
+          - rebase
+        default: squash
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  tiered-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge approved pull requests
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const targetPR = '${{ inputs.pr_number }}';
+
+            let pullRequests;
+            if (targetPR) {
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: parseInt(targetPR)
+              });
+              pullRequests = [pr];
+            } else {
+              const { data } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                per_page: 100
+              });
+              pullRequests = data;
+            }
+
+            let mergedCount = 0;
+            let skippedCount = 0;
+
+            for (const pr of pullRequests) {
+              if (pr.draft) {
+                skippedCount++;
+                continue;
+              }
+
+              const { data: prDetail } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              if (!prDetail.mergeable) {
+                console.log(`PR #${pr.number}: not mergeable (state: ${prDetail.mergeable_state})`);
+                skippedCount++;
+                continue;
+              }
+
+              if (prDetail.mergeable_state !== 'clean') {
+                console.log(`PR #${pr.number}: not clean (state: ${prDetail.mergeable_state})`);
+                skippedCount++;
+                continue;
+              }
+
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              const approved = reviews.some(r => r.state === 'APPROVED');
+              if (!approved) {
+                console.log(`PR #${pr.number}: no approvals yet`);
+                skippedCount++;
+                continue;
+              }
+
+              const { data: checkRuns } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: prDetail.head.sha
+              });
+
+              const allPassed = checkRuns.check_runs.length === 0 ||
+                checkRuns.check_runs.every(
+                  c => c.conclusion === 'success' || c.conclusion === 'skipped' || c.conclusion === 'neutral'
+                );
+
+              if (!allPassed) {
+                console.log(`PR #${pr.number}: checks not passed`);
+                skippedCount++;
+                continue;
+              }
+
+              try {
+                await github.rest.pulls.merge({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  merge_method: '${{ inputs.merge_method }}' || 'squash',
+                  commit_title: `${pr.title} (#${pr.number})`,
+                  commit_message: `Auto-merged by tiered acceleration system\n\nPR: #${pr.number}\nBranch: ${pr.head.ref}`
+                });
+                console.log(`PR #${pr.number}: merged successfully`);
+                mergedCount++;
+              } catch (err) {
+                console.log(`PR #${pr.number}: merge failed - ${err.message}`);
+                skippedCount++;
+              }
+            }
+
+            console.log(`=== TIERED MERGE COMPLETE: ${mergedCount} merged, ${skippedCount} skipped ===`);
