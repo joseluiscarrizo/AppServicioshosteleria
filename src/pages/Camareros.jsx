@@ -15,6 +15,7 @@ import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import Logger from '../utils/logger.js';
 import { validateEmail, validatePhoneNumber } from '../utils/validators.js';
+import { sanitizeSearchQuery } from '../utils/sanitizer';
 import GestionCamareros from '../components/asignacion/GestionCamareros';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import ValoracionesHistorial from '../components/camareros/ValoracionesHistorial';
@@ -415,7 +416,7 @@ export default function Camareros() {
               <Input
                 placeholder="Buscar camarero..."
                 value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
+                onChange={(e) => setBusqueda(sanitizeSearchQuery(e.target.value))}
                 className="pl-9"
               />
             </div>

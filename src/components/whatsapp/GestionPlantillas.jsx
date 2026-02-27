@@ -14,6 +14,15 @@ import { es } from 'date-fns/locale';
 import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { validateTemplateForm } from '@/utils/formValidators';
+import { sanitizeTemplateContent } from '@/utils/sanitizer';
+
+/** Allowed dynamic field names extracted from the {{...}} placeholders. */
+const ALLOWED_TEMPLATE_FIELDS = [
+  'cliente', 'dia', 'lugar_evento', 'hora_entrada',
+  'hora_salida', 'camisa', 'link_confirmar', 'link_rechazar',
+  'link_ubicacion', 'camarero_nombre'
+];
 
 export default function GestionPlantillas() {
   const [open, setOpen] = useState(false);
@@ -85,15 +94,29 @@ export default function GestionPlantillas() {
   };
 
   const handleGuardar = () => {
-    if (!form.nombre || !form.contenido) {
-      toast.error('Nombre y contenido son obligatorios');
+    const validation = validateTemplateForm(form.nombre, form.contenido);
+    if (!validation.valid) {
+      const firstError = Object.values(validation.errors)[0];
+      toast.error(firstError);
       return;
     }
 
+    // Warn about unknown template fields but still allow saving
+    const { unknownFields } = sanitizeTemplateContent(form.contenido, ALLOWED_TEMPLATE_FIELDS);
+    if (unknownFields.length > 0) {
+      toast.warning(`Campos dinámicos no reconocidos: ${unknownFields.map(f => `{{${f}}}`).join(', ')}`);
+    }
+
+    const dataToSave = {
+      ...form,
+      nombre: form.nombre.trim(),
+      contenido: form.contenido.trim(),
+    };
+
     if (editando) {
-      actualizarMutation.mutate({ id: editando, data: form });
+      actualizarMutation.mutate({ id: editando, data: dataToSave });
     } else {
-      crearMutation.mutate(form);
+      crearMutation.mutate(dataToSave);
     }
   };
 

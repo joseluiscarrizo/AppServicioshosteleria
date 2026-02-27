@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Users, Plus, Pencil, Mail, Phone, Search, Trash2, Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { sanitizeSearchQuery } from '../utils/sanitizer';
+import { validateClienteForm } from '../utils/formValidators';
 
 export default function Clientes() {
   const [showForm, setShowForm] = useState(false);
@@ -112,6 +114,14 @@ export default function Clientes() {
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    // Validate form fields
+    const validation = validateClienteForm(formData);
+    if (!validation.valid) {
+      const firstError = Object.values(validation.errors)[0];
+      toast.error(firstError);
+      return;
+    }
+
     let dataToSubmit = { ...formData };
     
     // Generar código automático si es nuevo cliente
@@ -279,7 +289,7 @@ export default function Clientes() {
             <Input
               placeholder="Buscar por código, nombre, email o teléfono..."
               value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
+              onChange={(e) => setBusqueda(sanitizeSearchQuery(e.target.value))}
               className="pl-9"
             />
           </div>
