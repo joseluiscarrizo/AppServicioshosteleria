@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppServicioshosteleria – Automation Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════ NAVBAR ═══════════════════════ -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="#">
+      <i class="bi bi-robot me-2"></i>Automation Dashboard
+    </a>
+    <div class="d-flex align-items-center gap-3 ms-auto">
+      <span id="last-updated" class="text-white-50 small">Loading…</span>
+      <button id="export-btn" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-download me-1"></i>Export JSON
+      </button>
+      <button id="dark-mode-btn" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-moon-fill"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid py-4 px-4">
+
+  <!-- ═══════════════════════ KPI CARDS ═══════════════════════ -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card kpi-card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="kpi-icon text-primary mb-2"><i class="bi bi-gear-wide-connected fs-2"></i></div>
+          <div class="kpi-value fs-1 fw-bold" id="kpi-total">–</div>
+          <div class="kpi-label text-muted small">Total Workflows</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card kpi-card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="kpi-icon text-success mb-2"><i class="bi bi-check-circle-fill fs-2"></i></div>
+          <div class="kpi-value fs-1 fw-bold" id="kpi-success-rate">–</div>
+          <div class="kpi-label text-muted small">Success Rate</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card kpi-card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="kpi-icon text-info mb-2"><i class="bi bi-stopwatch-fill fs-2"></i></div>
+          <div class="kpi-value fs-1 fw-bold" id="kpi-avg-exec">–</div>
+          <div class="kpi-label text-muted small">Avg Execution</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card kpi-card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="kpi-icon text-warning mb-2"><i class="bi bi-shield-check-fill fs-2"></i></div>
+          <div class="kpi-value fs-1 fw-bold" id="kpi-sla">–</div>
+          <div class="kpi-label text-muted small">SLA Compliance</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ CHARTS ═══════════════════════ -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent fw-semibold">
+          <i class="bi bi-graph-up-arrow me-2 text-primary"></i>Success vs Failure Trend
+        </div>
+        <div class="card-body">
+          <canvas id="trend-chart" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent fw-semibold">
+          <i class="bi bi-pie-chart-fill me-2 text-info"></i>Run Distribution
+        </div>
+        <div class="card-body d-flex align-items-center justify-content-center">
+          <canvas id="pie-chart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent fw-semibold">
+          <i class="bi bi-bar-chart-fill me-2 text-warning"></i>Execution Duration (last 20 runs, ms)
+        </div>
+        <div class="card-body">
+          <canvas id="duration-chart" height="130"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent fw-semibold">
+          <i class="bi bi-activity me-2 text-danger"></i>Workflow Count by Snapshot
+        </div>
+        <div class="card-body">
+          <canvas id="volume-chart" height="130"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ ALERTS ═══════════════════════ -->
+  <div class="row g-3 mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent fw-semibold">
+          <i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>Critical Alerts
+        </div>
+        <div class="card-body" id="alerts-container">
+          <span class="text-muted small">No alerts – loading data…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ AUDIT TRAIL ═══════════════════════ -->
+  <div class="row g-3">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent fw-semibold d-flex align-items-center justify-content-between">
+          <span><i class="bi bi-list-columns-reverse me-2 text-secondary"></i>Audit Trail – Last 50 Runs</span>
+          <input type="text" id="audit-search" class="form-control form-control-sm w-auto"
+                 placeholder="Filter by name / status…" />
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0 align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Workflow</th>
+                  <th>Branch</th>
+                  <th>Actor</th>
+                  <th>Status</th>
+                  <th>Conclusion</th>
+                  <th>Created At</th>
+                </tr>
+              </thead>
+              <tbody id="audit-tbody">
+                <tr><td colspan="7" class="text-center text-muted py-4">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+<script>
+/* ═══════════════════════ CONFIG ═══════════════════════ */
+const DATA_URL   = './data.json';
+const REFRESH_MS = 30_000;
+let   allRuns    = [];
+let   rawData    = null;
+
+/* ═══════════════════════ THEME ═══════════════════════ */
+const darkBtn = document.getElementById('dark-mode-btn');
+const html    = document.documentElement;
+
+function applyTheme(theme) {
+  html.setAttribute('data-theme', theme);
+  darkBtn.innerHTML = theme === 'dark'
+    ? '<i class="bi bi-sun-fill"></i>'
+    : '<i class="bi bi-moon-fill"></i>';
+  localStorage.setItem('dashboard-theme', theme);
+}
+
+darkBtn.addEventListener('click', () => {
+  applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+
+applyTheme(localStorage.getItem('dashboard-theme') || 'light');
+
+/* ═══════════════════════ EXPORT ═══════════════════════ */
+document.getElementById('export-btn').addEventListener('click', () => {
+  if (!rawData) return;
+  const blob = new Blob([JSON.stringify(rawData, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `dashboard-data-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+});
+
+/* ═══════════════════════ CHARTS ═══════════════════════ */
+const chartDefaults = {
+  responsive: true,
+  plugins: { legend: { display: false } },
+  animation: { duration: 400 }
+};
+
+const trendChart    = new Chart(document.getElementById('trend-chart'), {
+  type: 'line',
+  data: { labels: [], datasets: [
+    { label: 'Success', data: [], borderColor: '#28a745', backgroundColor: 'rgba(40,167,69,0.15)', tension: 0.4, fill: true },
+    { label: 'Failure', data: [], borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.10)', tension: 0.4, fill: true }
+  ]},
+  options: { ...chartDefaults, plugins: { legend: { display: true } } }
+});
+
+const pieChart      = new Chart(document.getElementById('pie-chart'), {
+  type: 'doughnut',
+  data: { labels: ['Success', 'Failure'], datasets: [{ data: [0,0], backgroundColor: ['#28a745','#dc3545'] }] },
+  options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+});
+
+const durationChart = new Chart(document.getElementById('duration-chart'), {
+  type: 'bar',
+  data: { labels: [], datasets: [{ label: 'Duration ms', data: [], backgroundColor: '#fd7e14' }] },
+  options: chartDefaults
+});
+
+const volumeChart   = new Chart(document.getElementById('volume-chart'), {
+  type: 'line',
+  data: { labels: [], datasets: [{
+    label: 'Total runs / snapshot', data: [], borderColor: '#6610f2',
+    backgroundColor: 'rgba(102,16,242,0.12)', fill: true, tension: 0.4
+  }]},
+  options: chartDefaults
+});
+
+/* ═══════════════════════ KPI HELPERS ═══════════════════════ */
+function setText(id, val) { document.getElementById(id).textContent = val; }
+
+function updateKPIs(latest) {
+  setText('kpi-total',        latest.totals?.total_runs ?? 0);
+  setText('kpi-success-rate', (latest.totals?.success_rate_pct ?? 0).toFixed(1) + '%');
+  const min = latest.performance?.avg_execution_min ?? 0;
+  setText('kpi-avg-exec',     min.toFixed(2) + ' min');
+  setText('kpi-sla',          (latest.performance?.sla_compliance_pct ?? 0).toFixed(1) + '%');
+}
+
+/* ═══════════════════════ ALERTS ═══════════════════════ */
+function updateAlerts(latest) {
+  const container = document.getElementById('alerts-container');
+  const alerts = [];
+
+  const sla = latest.performance?.sla_compliance_pct ?? 100;
+  if (sla < 95) {
+    alerts.push(`<div class="alert alert-danger py-2 mb-2">⚠️ SLA compliance is ${sla.toFixed(1)}% – below 95% threshold!</div>`);
+  }
+
+  const failures = latest.totals?.failures ?? 0;
+  if (failures > 0) {
+    alerts.push(`<div class="alert alert-warning py-2 mb-2">❌ ${failures} failed workflow run(s) in the last collection window.</div>`);
+  }
+
+  const rate = latest.totals?.success_rate_pct ?? 100;
+  if (rate < 90) {
+    alerts.push(`<div class="alert alert-danger py-2 mb-2">🚨 Success rate dropped to ${rate.toFixed(1)}% – manual investigation required.</div>`);
+  }
+
+  if (alerts.length === 0) {
+    container.innerHTML = '<span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>All systems nominal. No active alerts.</span>';
+  } else {
+    container.innerHTML = alerts.join('');
+  }
+}
+
+/* ═══════════════════════ AUDIT TRAIL ═══════════════════════ */
+function conclusionBadge(c) {
+  const map = { success: 'success', failure: 'danger', cancelled: 'secondary', skipped: 'warning' };
+  const cls = map[c] || 'secondary';
+  return `<span class="badge bg-${cls}">${c || 'n/a'}</span>`;
+}
+function statusBadge(s) {
+  const map = { completed: 'success', in_progress: 'primary', queued: 'secondary' };
+  const cls = map[s] || 'secondary';
+  return `<span class="badge bg-${cls} bg-opacity-25 text-${cls}">${s || 'n/a'}</span>`;
+}
+
+function renderAudit(runs) {
+  const tbody = document.getElementById('audit-tbody');
+  if (!runs || runs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No run data available yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = runs.slice(-50).reverse().map(r => `
+    <tr>
+      <td class="font-monospace small">${r.id ?? '–'}</td>
+      <td>${r.name ?? '–'}</td>
+      <td><code>${r.head_branch ?? '–'}</code></td>
+      <td>${r.actor ?? '–'}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td>${conclusionBadge(r.conclusion)}</td>
+      <td class="small text-muted">${r.created_at ? new Date(r.created_at).toLocaleString() : '–'}</td>
+    </tr>
+  `).join('');
+}
+
+/* ═══════════════════════ FILTER ═══════════════════════ */
+document.getElementById('audit-search').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  const filtered = allRuns.filter(r =>
+    (r.name || '').toLowerCase().includes(q) ||
+    (r.conclusion || '').toLowerCase().includes(q) ||
+    (r.status || '').toLowerCase().includes(q) ||
+    (r.actor || '').toLowerCase().includes(q)
+  );
+  renderAudit(filtered);
+});
+
+/* ═══════════════════════ CHART UPDATERS ═══════════════════════ */
+function updateTrendChart(history) {
+  const labels  = history.map((_, i) => `#${i + 1}`);
+  const success = history.map(h => h.totals?.successes ?? 0);
+  const failure = history.map(h => h.totals?.failures  ?? 0);
+  trendChart.data.labels              = labels;
+  trendChart.data.datasets[0].data   = success;
+  trendChart.data.datasets[1].data   = failure;
+  trendChart.update();
+}
+
+function updatePieChart(latest) {
+  pieChart.data.datasets[0].data = [
+    latest.totals?.successes ?? 0,
+    latest.totals?.failures  ?? 0
+  ];
+  pieChart.update();
+}
+
+function updateDurationChart(runs) {
+  const last20 = runs.slice(-20);
+  durationChart.data.labels            = last20.map((_, i) => `#${i + 1}`);
+  durationChart.data.datasets[0].data  = last20.map(r => {
+    try {
+      const s = new Date(r.created_at).getTime();
+      const e = new Date(r.updated_at).getTime();
+      return e - s;
+    } catch { return 0; }
+  });
+  durationChart.update();
+}
+
+function updateVolumeChart(history) {
+  volumeChart.data.labels             = history.map((_, i) => `S${i + 1}`);
+  volumeChart.data.datasets[0].data   = history.map(h => h.totals?.total_runs ?? 0);
+  volumeChart.update();
+}
+
+/* ═══════════════════════ DATA FETCH ═══════════════════════ */
+async function fetchData() {
+  try {
+    const res = await fetch(DATA_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // Cache for offline
+    localStorage.setItem('dashboard-cache', JSON.stringify(data));
+    rawData = data;
+    return data;
+  } catch (err) {
+    console.warn('Fetch failed, using cache:', err.message);
+    const cached = localStorage.getItem('dashboard-cache');
+    return cached ? JSON.parse(cached) : null;
+  }
+}
+
+async function refresh() {
+  const data = await fetchData();
+  if (!data) return;
+
+  const latest  = data.latest  || {};
+  const history = data.history || [];
+
+  allRuns = latest.recent_runs || [];
+
+  updateKPIs(latest);
+  updateAlerts(latest);
+  renderAudit(allRuns);
+  updateTrendChart(history);
+  updatePieChart(latest);
+  updateDurationChart(allRuns);
+  updateVolumeChart(history);
+
+  const ts = data.updated_at
+    ? new Date(data.updated_at).toLocaleString()
+    : new Date().toLocaleString();
+  document.getElementById('last-updated').textContent = `Updated: ${ts}`;
+}
+
+/* Boot */
+refresh();
+setInterval(refresh, REFRESH_MS);
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

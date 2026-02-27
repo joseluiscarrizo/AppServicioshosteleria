@@ -1,0 +1,167 @@
+name: Metrics Collector
+
+on:
+  workflow_run:
+    workflows:
+      - CI Workflow
+      - Deploy to Firebase Hosting
+      - Auto Merge Resolved PRs
+    types:
+      - completed
+  schedule:
+    # Run every hour to collect aggregate metrics
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  collect-metrics:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Collect workflow metrics
+        id: metrics
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TRIGGERING_WORKFLOW: ${{ github.event.workflow_run.name }}
+          TRIGGERING_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          TRIGGERING_RUN_ID: ${{ github.event.workflow_run.id }}
+          TRIGGERING_CREATED_AT: ${{ github.event.workflow_run.created_at }}
+          TRIGGERING_UPDATED_AT: ${{ github.event.workflow_run.updated_at }}
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          EPOCH=$(date +%s)
+
+          # Compute duration in ms when triggered by a workflow_run event
+          DURATION_MS=0
+          if [ -n "$TRIGGERING_CREATED_AT" ] && [ -n "$TRIGGERING_UPDATED_AT" ]; then
+            START=$(date -d "$TRIGGERING_CREATED_AT" +%s 2>/dev/null || echo 0)
+            END=$(date -d "$TRIGGERING_UPDATED_AT" +%s 2>/dev/null || echo 0)
+            DURATION_MS=$(( (END - START) * 1000 ))
+          fi
+
+          STATUS="${TRIGGERING_CONCLUSION:-scheduled}"
+
+          # Fetch recent workflow runs via GitHub CLI (last 50 across all workflows)
+          gh api \
+            "repos/${REPO}/actions/runs?per_page=50" \
+            --jq '.workflow_runs | map({
+              id: .id,
+              name: .name,
+              status: .status,
+              conclusion: .conclusion,
+              created_at: .created_at,
+              updated_at: .updated_at,
+              head_branch: .head_branch,
+              actor: .actor.login
+            })' > /tmp/recent_runs.json 2>/dev/null || echo "[]" > /tmp/recent_runs.json
+
+          # Calculate aggregate metrics
+          python3 - <<'PYEOF'
+          import json, math, os
+          from datetime import datetime, timezone
+
+          with open('/tmp/recent_runs.json') as f:
+              runs = json.load(f)
+
+          total = len(runs)
+          successes = sum(1 for r in runs if r.get('conclusion') == 'success')
+          failures  = sum(1 for r in runs if r.get('conclusion') == 'failure')
+          success_rate = round((successes / total * 100), 2) if total else 0.0
+
+          durations = []
+          for r in runs:
+              try:
+                  s = datetime.fromisoformat(r['created_at'].replace('Z','+00:00'))
+                  e = datetime.fromisoformat(r['updated_at'].replace('Z','+00:00'))
+                  durations.append((e - s).total_seconds() * 1000)
+              except Exception:
+                  pass
+
+          avg_exec_ms = round(sum(durations) / len(durations)) if durations else 0
+          # SLA: < 5 min execution
+          sla_ok = sum(1 for d in durations if d <= 300000)
+          sla_compliance = round((sla_ok / len(durations) * 100), 2) if durations else 100.0
+
+          metrics = {
+              "collected_at": datetime.now(timezone.utc).isoformat(),
+              "window": "last_50_runs",
+              "totals": {
+                  "total_runs": total,
+                  "successes": successes,
+                  "failures": failures,
+                  "success_rate_pct": success_rate
+              },
+              "performance": {
+                  "avg_execution_ms": avg_exec_ms,
+                  "avg_execution_min": round(avg_exec_ms / 60000, 2),
+                  "sla_compliance_pct": sla_compliance
+              },
+              "recent_runs": runs
+          }
+          with open('/tmp/metrics.json', 'w') as f:
+              json.dump(metrics, f, indent=2)
+          print(json.dumps(metrics, indent=2))
+          PYEOF
+
+      - name: Upload metrics artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-metrics-${{ github.run_id }}
+          path: /tmp/metrics.json
+          retention-days: 30
+
+      - name: Append metrics to docs/data.json
+        run: |
+          DOCS_DIR="${GITHUB_WORKSPACE}/docs"
+          DATA_FILE="${DOCS_DIR}/data.json"
+
+          # Load existing data or start fresh
+          if [ -f "$DATA_FILE" ]; then
+            python3 - <<'PYEOF'
+          import json
+          from datetime import datetime, timezone
+
+          with open('/tmp/metrics.json') as f:
+              new_metric = json.load(f)
+
+          data_file = '${DATA_FILE}'
+          try:
+              with open(data_file) as f:
+                  existing = json.load(f)
+          except Exception:
+              existing = {"history": [], "latest": {}}
+
+          existing["history"].append(new_metric)
+          # Keep last 168 entries (1 week at hourly collection)
+          existing["history"] = existing["history"][-168:]
+          existing["latest"] = new_metric
+          existing["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+          with open(data_file, 'w') as f:
+              json.dump(existing, f, indent=2)
+          print("data.json updated")
+          PYEOF
+          else
+            python3 - <<'PYEOF'
+          import json
+          from datetime import datetime, timezone
+
+          with open('/tmp/metrics.json') as f:
+              new_metric = json.load(f)
+
+          data = {
+              "history": [new_metric],
+              "latest": new_metric,
+              "updated_at": datetime.now(timezone.utc).isoformat()
+          }
+          with open('${DATA_FILE}', 'w') as f:
+              json.dump(data, f, indent=2)
+          print("data.json created")
+          PYEOF
+          fi

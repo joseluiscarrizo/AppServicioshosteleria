@@ -1,0 +1,112 @@
+name: Slack Notifier
+
+on:
+  workflow_call:
+    inputs:
+      status:
+        description: 'Status of the event (success, failure, warning, info)'
+        required: true
+        type: string
+      title:
+        description: 'Notification title'
+        required: true
+        type: string
+      message:
+        description: 'Notification message body'
+        required: true
+        type: string
+      pr_number:
+        description: 'Pull request number (optional)'
+        required: false
+        type: string
+        default: ''
+      workflow_name:
+        description: 'Name of the triggering workflow'
+        required: false
+        type: string
+        default: ''
+      duration:
+        description: 'Execution duration (e.g. 1.2s)'
+        required: false
+        type: string
+        default: ''
+      is_critical:
+        description: 'Whether to mention @channel'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: false
+
+jobs:
+  notify-slack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build and send Slack message
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          STATUS: ${{ inputs.status }}
+          TITLE: ${{ inputs.title }}
+          MESSAGE: ${{ inputs.message }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          WORKFLOW_NAME: ${{ inputs.workflow_name }}
+          DURATION: ${{ inputs.duration }}
+          IS_CRITICAL: ${{ inputs.is_critical }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL not set – skipping notification"
+            exit 0
+          fi
+
+          case "$STATUS" in
+            success) COLOR="#36a64f"; EMOJI="✅" ;;
+            failure) COLOR="#e01e5a"; EMOJI="❌" ;;
+            warning) COLOR="#ecb22e"; EMOJI="⚠️" ;;
+            *)        COLOR="#2196f3"; EMOJI="🔄" ;;
+          esac
+
+          MENTION=""
+          if [ "$IS_CRITICAL" = "true" ]; then
+            MENTION="<!channel> "
+          fi
+
+          PR_FIELD=""
+          if [ -n "$PR_NUMBER" ]; then
+            PR_FIELD=", \"PR\": \"#${PR_NUMBER}\""
+          fi
+
+          DURATION_FIELD=""
+          if [ -n "$DURATION" ]; then
+            DURATION_FIELD=", \"Duration\": \"${DURATION}\""
+          fi
+
+          WORKFLOW_FIELD=""
+          if [ -n "$WORKFLOW_NAME" ]; then
+            WORKFLOW_FIELD=", \"Workflow\": \"${WORKFLOW_NAME}\""
+          fi
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "attachments": [
+              {
+                "color": "${COLOR}",
+                "title": "${EMOJI} ${TITLE}",
+                "text": "${MENTION}${MESSAGE}",
+                "fields": [
+                  {"title": "Repository", "value": "${REPO}", "short": true},
+                  {"title": "Status", "value": "${STATUS}", "short": true}
+                ],
+                "footer": "AppServicioshosteleria Automation | <${RUN_URL}|View Run>",
+                "ts": $(date +%s)
+              }
+            ]
+          }
+          EOF
+          )
+
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data "$PAYLOAD"
