@@ -1,3 +1,23 @@
+/**
+ * verificarYCrearGruposChat
+ *
+ * Scheduled job that scans upcoming confirmed `Pedido` records and ensures
+ * each one has an associated WhatsApp group. Creates missing groups.
+ *
+ * @method POST
+ * @auth Bearer token required (or service role for scheduler)
+ * @rbac admin, coordinador
+ * @schedule 0 8 * * * (daily at 08:00)
+ *
+ * @returns {{ procesados: number, creados: number, omitidos: number }}
+ *
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/verificarYCrearGruposChat
+ * Authorization: Bearer <token>
+ * {}
+ */
 import { createClientFromRequest } from '@base44/sdk';
 
 Deno.serve(async (req) => {

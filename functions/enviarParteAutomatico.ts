@@ -1,5 +1,30 @@
+/**
+ * enviarParteAutomatico
+ *
+ * Generates and sends an automatic service report for a completed `Pedido`.
+ * The report includes the waiter list, hours worked, and any incidences,
+ * delivered via WhatsApp and/or email.
+ *
+ * @method POST
+ * @auth Bearer token required
+ * @rbac admin, coordinador
+ *
+ * @param {string} pedido_id - Order ID for which to send the report
+ *
+ * @returns {{ success: boolean, enviado_whatsapp: boolean, enviado_email: boolean }}
+ *
+ * @throws {400} pedido_id requerido
+ * @throws {401} No autorizado - Token inválido o expirado
+ * @throws {403} No autorizado - Rol insuficiente
+ * @throws {404} Pedido no encontrado
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/enviarParteAutomatico
+ * Authorization: Bearer <token>
+ * { "pedido_id": "ped456" }
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { format, parseISO } from 'npm:date-fns@3.6.0';
 import { es } from 'npm:date-fns@3.6.0/locale';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 

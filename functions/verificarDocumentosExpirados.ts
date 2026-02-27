@@ -1,3 +1,26 @@
+/**
+ * verificarDocumentosExpirados
+ *
+ * Scheduled job that scans `Camarero` records for documents (health
+ * certificates, contracts, etc.) whose expiration date falls within the
+ * configured alert window. Creates `Notificacion` records for the coordinator.
+ *
+ * @method POST
+ * @auth Bearer token required (or service role for scheduler)
+ * @rbac admin, coordinador
+ * @schedule 0 8 * * 1 (every Monday at 08:00)
+ *
+ * @param {number} [dias_alerta=30] - Days before expiration to raise an alert
+ *
+ * @returns {{ revisados: number, alertas: number }}
+ *
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/verificarDocumentosExpirados
+ * Authorization: Bearer <token>
+ * { "dias_alerta": 30 }
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {

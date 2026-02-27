@@ -1,3 +1,54 @@
+/**
+ * enviarWhatsAppDirecto
+ *
+ * Sends a WhatsApp message to a single phone number via the WhatsApp Business API.
+ * Falls back to a `wa.me` link when the API credentials are unavailable.
+ * Every attempt (success or failure) is recorded in the `HistorialWhatsApp` entity.
+ *
+ * @method POST
+ * @auth Bearer token required
+ * @rbac admin, coordinador
+ * @rateLimit 100 requests / 60 s
+ *
+ * @param {string} telefono - Recipient phone number (Spanish format accepted)
+ * @param {string} mensaje - Message body text
+ * @param {string} [camarero_id] - Waiter ID for history logging
+ * @param {string} [camarero_nombre] - Waiter display name for history logging
+ * @param {string} [pedido_id] - Associated order ID
+ * @param {string} [asignacion_id] - Assignment ID — required for interactive confirm/reject buttons
+ * @param {string} [plantilla_usada] - Name of the WhatsApp template used
+ * @param {string} [link_confirmar] - Confirm deep-link URL (triggers interactive buttons)
+ * @param {string} [link_rechazar] - Reject deep-link URL (triggers interactive buttons)
+ *
+ * @returns {{ success: boolean, telefono: string, whatsapp_url: string|null,
+ *             enviado_por_api: boolean, mensaje_id: string|null,
+ *             mensaje_enviado: boolean, error_api: string|null, timestamp: string }}
+ *
+ * @throws {400} Teléfono y mensaje son requeridos
+ * @throws {400} Número de teléfono con formato inválido
+ * @throws {401} No autorizado - Token inválido o expirado
+ * @throws {403} No autorizado - Rol insuficiente
+ * @throws {500} Internal server error
+ *
+ * @example
+ * // Simple text message
+ * POST /functions/v1/enviarWhatsAppDirecto
+ * Authorization: Bearer <token>
+ * { "telefono": "612345678", "mensaje": "Hola, tienes servicio mañana." }
+ *
+ * @example
+ * // Interactive message with confirm/reject buttons
+ * POST /functions/v1/enviarWhatsAppDirecto
+ * Authorization: Bearer <token>
+ * {
+ *   "telefono": "612345678",
+ *   "mensaje": "Tienes un servicio asignado. ¿Lo aceptas?",
+ *   "camarero_id": "cam1",
+ *   "asignacion_id": "asig789",
+ *   "link_confirmar": "https://app.example.com/confirmar/asig789",
+ *   "link_rechazar": "https://app.example.com/rechazar/asig789"
+ * }
+ */
 import { createClientFromRequest } from '@base44/sdk';
 import Logger from '../utils/logger.ts';
 import { validatePhoneNumber } from '../utils/validators.ts';

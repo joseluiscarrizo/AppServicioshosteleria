@@ -1,3 +1,28 @@
+/**
+ * exportarAsignacionesExcel
+ *
+ * Exports all orders and their waiter assignments as structured row data
+ * suitable for Excel or Google Sheets import.
+ *
+ * Columns: Cod. Coordinador | Fecha | Cliente | Evento | Cod. Camarero |
+ *          Nombre Camarero | Nº Camarero | Hora Entrada | Hora Salida |
+ *          Total Horas | Estado Asignado | Transporte
+ *
+ * @method POST
+ * @auth Bearer token required
+ * @rbac admin, coordinador
+ *
+ * @returns {{ success: boolean, filas: Array<Array<any>>, total: number }}
+ *          First element of `filas` is the header row.
+ *
+ * @throws {403} No autorizado
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/exportarAsignacionesExcel
+ * Authorization: Bearer <token>
+ * {}
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {

@@ -1,3 +1,27 @@
+/**
+ * crearGrupoChat
+ *
+ * Manually creates a WhatsApp Business group for a `Pedido` and adds all
+ * confirmed waiters. Stores the resulting group ID on the `Pedido` entity.
+ *
+ * @method POST
+ * @auth Bearer token required
+ * @rbac admin, coordinador
+ *
+ * @param {string} pedido_id - Order ID for which to create the group
+ *
+ * @returns {{ success: boolean, grupo_id: string }}
+ *
+ * @throws {400} pedido_id requerido
+ * @throws {401} No autorizado - Token inválido o expirado
+ * @throws {403} No autorizado - Rol insuficiente
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/crearGrupoChat
+ * Authorization: Bearer <token>
+ * { "pedido_id": "ped456" }
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {

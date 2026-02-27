@@ -1,0 +1,1636 @@
+openapi: 3.0.3
+info:
+  title: AppServicioshosteleria API
+  description: |
+    REST API for the AppServicioshosteleria hospitality services management platform.
+    All endpoints are Deno/Base44 Cloud Functions hosted on the Base44 serverless platform.
+
+    ## Authentication
+    Most endpoints require a Bearer token obtained after logging in through Base44 Auth.
+    Pass it as `Authorization: Bearer <token>` in the request header.
+
+    ## Roles
+    - **admin**: Full access to all endpoints
+    - **coordinador**: Access to coordination and assignment operations
+    - **camarero**: Limited access (QR check-in only via token, no auth header required)
+    - **(public)**: No authentication required
+
+    ## Base URL
+    `https://<project-id>.base44.app/functions/v1`
+  version: "1.0.0"
+  contact:
+    name: AppServicioshosteleria
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://{projectId}.base44.app/functions/v1
+    variables:
+      projectId:
+        default: your-project-id
+        description: Base44 project identifier
+
+tags:
+  - name: WhatsApp
+    description: WhatsApp messaging operations
+  - name: Assignments
+    description: Waiter assignment and confirmation operations
+  - name: Exports
+    description: Data export operations (Excel, Sheets, Calendar)
+  - name: Attendance
+    description: QR check-in, attendance sheets, and absence detection
+  - name: Chat Groups
+    description: WhatsApp chat group management
+  - name: Reports
+    description: Automatic report generation and scheduled sending
+  - name: Documents
+    description: Service documentation generation and verification
+  - name: Scheduling
+    description: Scheduled background jobs
+  - name: Users
+    description: User management
+
+paths:
+
+  # ──────────────────────────────────────────────
+  # WhatsApp
+  # ──────────────────────────────────────────────
+
+  /enviarWhatsAppDirecto:
+    post:
+      tags: [WhatsApp]
+      summary: Send a direct WhatsApp message to a single recipient
+      description: |
+        Sends a WhatsApp message to a single phone number via the WhatsApp Business API.
+        Falls back to a `wa.me` link when the API is unavailable.
+        Logs every attempt to the `HistorialWhatsApp` entity.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnviarWhatsAppDirectoRequest'
+            examples:
+              simple:
+                summary: Plain text message
+                value:
+                  telefono: "612345678"
+                  mensaje: "Hola, tienes un servicio mañana."
+              withButtons:
+                summary: Interactive message with confirm/reject buttons
+                value:
+                  telefono: "612345678"
+                  mensaje: "Tienes asignado un servicio. ¿Lo aceptas?"
+                  camarero_id: "abc123"
+                  camarero_nombre: "Juan García"
+                  pedido_id: "ped456"
+                  asignacion_id: "asig789"
+                  link_confirmar: "https://app.example.com/confirmar/asig789"
+                  link_rechazar: "https://app.example.com/rechazar/asig789"
+      responses:
+        '200':
+          description: Message processed (sent or queued as wa.me fallback)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnviarWhatsAppDirectoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+      x-rateLimit:
+        requests: 100
+        window: 60s
+
+  /enviarWhatsAppMasivo:
+    post:
+      tags: [WhatsApp]
+      summary: Send bulk WhatsApp messages to multiple waiters
+      description: |
+        Sends a WhatsApp message to a list of waiters, optionally using a stored message
+        template and personalising it with order (`Pedido`) data.
+        Returns a per-recipient delivery report.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnviarWhatsAppMasivoRequest'
+            example:
+              camareros_ids: ["cam1", "cam2", "cam3"]
+              pedido_id: "ped456"
+              mensaje: "Hola {{camarero}}, tienes servicio el {{dia}} en {{cliente}}."
+              coordinador_id: "coord001"
+      responses:
+        '200':
+          description: Batch result with per-recipient status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnviarWhatsAppMasivoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+      x-rateLimit:
+        requests: 20
+        window: 60s
+
+  /webhookWhatsAppRespuestas:
+    get:
+      tags: [WhatsApp]
+      summary: Verify WhatsApp webhook (Meta handshake)
+      description: |
+        Meta calls this endpoint once when the webhook URL is registered.
+        The function validates `hub.verify_token` against `WHATSAPP_WEBHOOK_VERIFY_TOKEN`
+        and echoes back `hub.challenge`.
+      parameters:
+        - name: hub.mode
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [subscribe]
+        - name: hub.verify_token
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: hub.challenge
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Challenge echoed back (webhook verified)
+          content:
+            text/plain:
+              schema:
+                type: string
+        '403':
+          description: Invalid verify token
+      security: []
+    post:
+      tags: [WhatsApp]
+      summary: Receive incoming WhatsApp messages and status updates
+      description: |
+        Receives POST events from the WhatsApp Cloud API.
+        Handles:
+        - **Reply buttons**: `confirmar::<asignacion_id>` marks the assignment as confirmed;
+          `rechazar::<asignacion_id>` removes the assignment and alerts the coordinator.
+        - **Interactive list selections**: menu-driven conversation flow.
+        - **Status updates**: delivery and read receipts logged to `HistorialWhatsApp`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsAppWebhookPayload'
+      responses:
+        '200':
+          description: Event processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+      x-webhook: true
+
+  # ──────────────────────────────────────────────
+  # Assignments
+  # ──────────────────────────────────────────────
+
+  /confirmarServicioAutomatico:
+    post:
+      tags: [Assignments]
+      summary: Confirm a waiter assignment and send notification
+      description: |
+        Marks an `AsignacionCamarero` as confirmed and sends a WhatsApp confirmation
+        message to the waiter. Coordinator/admin only.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [asignacion_id]
+              properties:
+                asignacion_id:
+                  type: string
+                  description: ID of the assignment to confirm
+            example:
+              asignacion_id: "asig789"
+      responses:
+        '200':
+          description: Assignment confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmarServicioResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+
+  /sugerirCamarerosInteligente:
+    post:
+      tags: [Assignments]
+      summary: AI-powered waiter suggestion for an event
+      description: |
+        Scores all available waiters for a given `Pedido` using:
+        - Historical ratings (`Valoracion`)
+        - Availability (`Disponibilidad`)
+        - Past experience with the same client
+        - Day conflicts with other assignments
+        - Active assignment rules (`ReglaAsignacion`)
+        Returns a ranked list of recommended waiters.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pedido_id]
+              properties:
+                pedido_id:
+                  type: string
+                  description: ID of the order/event
+                limite:
+                  type: integer
+                  default: 10
+                  description: Maximum number of suggestions to return
+            example:
+              pedido_id: "ped456"
+              limite: 5
+      responses:
+        '200':
+          description: Ranked list of waiter suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SugerirCamarerosResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+
+  /autoCrearGrupoChatConfirmado:
+    post:
+      tags: [Chat Groups, Assignments]
+      summary: Automatically create a WhatsApp chat group when an assignment is confirmed
+      description: |
+        Triggered by a Base44 database webhook when an `AsignacionCamarero` record
+        transitions to `estado = "confirmado"`. Creates (or reuses) a WhatsApp group
+        for the associated `Pedido` and adds the newly confirmed waiter.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseWebhookPayload'
+            example:
+              event:
+                type: update
+              data:
+                id: "asig789"
+                estado: "confirmado"
+                pedido_id: "ped456"
+                camarero_id: "cam1"
+              old_data:
+                estado: "pendiente"
+      responses:
+        '200':
+          description: Group created/updated or event skipped
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  skipped:
+                    type: boolean
+                  reason:
+                    type: string
+                  grupo_id:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-webhook: true
+
+  # ──────────────────────────────────────────────
+  # Exports
+  # ──────────────────────────────────────────────
+
+  /exportarAsignacionesExcel:
+    post:
+      tags: [Exports]
+      summary: Export all waiter assignments to Excel format
+      description: |
+        Generates a CSV/Excel-compatible payload containing all orders and their
+        waiter assignments. Columns include coordinator code, date, client, event,
+        waiter code, name, phone, entry/exit times, total hours, assignment status,
+        and transport.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filters:
+                  type: object
+                  description: Optional filter parameters (passed through to Base44 query)
+      responses:
+        '200':
+          description: Excel data as JSON array of rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+
+  /exportarAsistenciaSheets:
+    post:
+      tags: [Exports]
+      summary: Export attendance data for a specific order to Google Sheets format
+      description: |
+        Returns attendance data for a single `Pedido` including confirmed waiter
+        assignments with actual check-in/check-out times. Intended for Google Sheets
+        import via Apps Script.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pedido_id]
+              properties:
+                pedido_id:
+                  type: string
+            example:
+              pedido_id: "ped456"
+      responses:
+        '200':
+          description: Attendance rows as JSON array
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador, camarero]
+
+  /exportarCalendarioEventos:
+    post:
+      tags: [Exports]
+      summary: Export upcoming events in iCalendar (ICS) format
+      description: |
+        Generates an `.ics` calendar feed of scheduled `Pedido` events so that
+        coordinators and waiters can subscribe from any calendar application.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                desde:
+                  type: string
+                  format: date
+                  description: Start date (ISO 8601). Defaults to today.
+                hasta:
+                  type: string
+                  format: date
+                  description: End date (ISO 8601). Defaults to 90 days from today.
+      responses:
+        '200':
+          description: ICS calendar data
+          content:
+            text/calendar:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+
+  # ──────────────────────────────────────────────
+  # Attendance / QR check-in
+  # ──────────────────────────────────────────────
+
+  /registrarFichajeQR:
+    get:
+      tags: [Attendance]
+      summary: Get assignment info for a QR token (public)
+      description: |
+        Returns assignment and event details for the given QR token.
+        No authentication required — the token itself acts as a credential.
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 32-character alphanumeric QR token
+      responses:
+        '200':
+          description: Assignment and event info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FichajeQRGetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [Attendance]
+      summary: Register entry or exit via QR token (public)
+      description: |
+        Records a waiter's actual entry (`entrada`) or exit (`salida`) time.
+        Idempotent guard: returns 409 if the same type was already registered.
+        No authentication required — the token itself acts as a credential.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FichajeQRPostRequest'
+            examples:
+              entrada:
+                value:
+                  token: "AbCdEfGhIjKlMnOpQrStUvWxYz123456"
+                  tipo: "entrada"
+              salida:
+                value:
+                  token: "AbCdEfGhIjKlMnOpQrStUvWxYz123456"
+                  tipo: "salida"
+      responses:
+        '200':
+          description: Check-in registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FichajeQRPostResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Check-in already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /generarTokensQR:
+    post:
+      tags: [Attendance]
+      summary: Generate QR tokens for all confirmed assignments of an order
+      description: |
+        Creates (or refreshes) a unique 32-character alphanumeric QR token for each
+        confirmed `AsignacionCamarero` belonging to the given `Pedido`.
+        Returns the check-in page URL for each waiter.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pedido_id]
+              properties:
+                pedido_id:
+                  type: string
+            example:
+              pedido_id: "ped456"
+      responses:
+        '200':
+          description: Generated tokens and check-in URLs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerarTokensQRResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+
+  /detectarAusencias:
+    post:
+      tags: [Attendance, Scheduling]
+      summary: Detect waiters who have not checked in (scheduled job)
+      description: |
+        Runs periodically (every 30 minutes during event hours). Flags waiters who
+        should have checked in but have not yet done so (30-minute tolerance).
+        Creates a high-priority `Notificacion` for the coordinator.
+        Can also be triggered manually from the admin panel.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: List of detected absences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetectarAusenciasResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+      x-schedule: "*/30 * * * *"
+
+  /enviarHojaAsistenciaGmail:
+    post:
+      tags: [Attendance]
+      summary: Send attendance sheet via Gmail
+      description: |
+        Composes an HTML attendance sheet for an event and sends it to a specified
+        email address via Gmail SMTP. Requires `GMAIL_USER` and `GMAIL_PASS`
+        environment variables.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnviarHojaAsistenciaRequest'
+            example:
+              pedido_id: "ped456"
+              destinatario: "coordinador@empresa.com"
+      responses:
+        '200':
+          description: Email sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  mensaje:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+
+  # ──────────────────────────────────────────────
+  # Chat Groups
+  # ──────────────────────────────────────────────
+
+  /crearGrupoChat:
+    post:
+      tags: [Chat Groups]
+      summary: Manually create a WhatsApp group for an order
+      description: |
+        Creates a WhatsApp Business group for a `Pedido` and adds all confirmed
+        waiters. Stores the group ID in the `Pedido` entity.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pedido_id]
+              properties:
+                pedido_id:
+                  type: string
+            example:
+              pedido_id: "ped456"
+      responses:
+        '200':
+          description: Group created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  grupo_id:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+
+  /verificarYCrearGruposChat:
+    post:
+      tags: [Chat Groups, Scheduling]
+      summary: Verify and create missing WhatsApp groups (scheduled job)
+      description: |
+        Scheduled job that scans upcoming confirmed `Pedido` records and ensures
+        each one has an associated WhatsApp group. Creates missing groups.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Groups created or verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  procesados:
+                    type: integer
+                  creados:
+                    type: integer
+                  omitidos:
+                    type: integer
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+      x-schedule: "0 8 * * *"
+
+  /eliminarGruposExpirados:
+    post:
+      tags: [Chat Groups, Scheduling]
+      summary: Delete expired WhatsApp groups (scheduled job)
+      description: |
+        Removes WhatsApp groups for `Pedido` records whose event date has passed
+        (default: 7-day grace period). Frees up WhatsApp group quota.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dias_gracia:
+                  type: integer
+                  default: 7
+                  description: Days after event before the group is deleted
+      responses:
+        '200':
+          description: Deletion summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eliminados:
+                    type: integer
+                  errores:
+                    type: integer
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+      x-schedule: "0 3 * * *"
+
+  # ──────────────────────────────────────────────
+  # Reports
+  # ──────────────────────────────────────────────
+
+  /enviarParteAutomatico:
+    post:
+      tags: [Reports]
+      summary: Send automatic service report for an order
+      description: |
+        Generates and sends a summary report (via WhatsApp and/or email) for a
+        completed `Pedido`. Includes waiter list, hours worked, and any incidences.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pedido_id]
+              properties:
+                pedido_id:
+                  type: string
+            example:
+              pedido_id: "ped456"
+      responses:
+        '200':
+          description: Report sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  enviado_whatsapp:
+                    type: boolean
+                  enviado_email:
+                    type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+
+  /enviarInformesProgramados:
+    post:
+      tags: [Reports, Scheduling]
+      summary: Send all scheduled periodic reports (scheduled job)
+      description: |
+        Iterates over all configured `Informe` entities and sends those due today
+        based on their frequency (daily / weekly / monthly). Requires admin or
+        coordinator role, or is called automatically by the scheduler (service role).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Reports sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  procesados:
+                    type: integer
+                  enviados:
+                    type: integer
+                  omitidos:
+                    type: integer
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+      x-schedule: "0 7 * * *"
+
+  /procesarEnviosProgramados:
+    post:
+      tags: [Reports, Scheduling]
+      summary: Process all queued scheduled sends (scheduled job)
+      description: |
+        Dispatches any `EnvioProgramado` records whose `fecha_envio` has arrived.
+        Handles WhatsApp, email, and push notification channels.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Queued sends dispatched
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  procesados:
+                    type: integer
+                  exitosos:
+                    type: integer
+                  fallidos:
+                    type: integer
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+      x-schedule: "*/15 * * * *"
+
+  /notificarAsignacionesProximas:
+    post:
+      tags: [Reports, Scheduling]
+      summary: Notify waiters of upcoming assignments (scheduled job)
+      description: |
+        Sends reminder WhatsApp messages to waiters with confirmed assignments
+        occurring today or tomorrow. Prevents duplicate reminders via a flag on
+        the assignment record.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Notifications sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notificados:
+                    type: integer
+                  omitidos:
+                    type: integer
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-schedule: "0 9 * * *"
+
+  /sugerirYNotificarPedido:
+    post:
+      tags: [Assignments, Reports]
+      summary: Suggest and notify waiters for an order
+      description: |
+        Runs the intelligent suggestion algorithm and then automatically sends
+        WhatsApp notifications to the top-ranked available waiters asking them
+        to confirm or reject the assignment.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pedido_id]
+              properties:
+                pedido_id:
+                  type: string
+                limite:
+                  type: integer
+                  default: 10
+            example:
+              pedido_id: "ped456"
+              limite: 5
+      responses:
+        '200':
+          description: Suggestions sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  notificados:
+                    type: integer
+                  sugerencias:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CamareroSugerencia'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+
+  # ──────────────────────────────────────────────
+  # Documents
+  # ──────────────────────────────────────────────
+
+  /generarDocumentacionServicio:
+    post:
+      tags: [Documents]
+      summary: Generate service documentation PDF for an order
+      description: |
+        Compiles a structured PDF document for a `Pedido` containing client details,
+        waiter list, schedule, and special instructions. Returns the document as a
+        Base64-encoded PDF or a download URL.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pedido_id]
+              properties:
+                pedido_id:
+                  type: string
+            example:
+              pedido_id: "ped456"
+      responses:
+        '200':
+          description: Document generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerarDocumentacionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+
+  /verificarDocumentosExpirados:
+    post:
+      tags: [Documents, Scheduling]
+      summary: Check for expired waiter documents (scheduled job)
+      description: |
+        Scans `Camarero` records for documents (health certificates, contracts, etc.)
+        whose expiration date is within the configured alert window. Creates
+        `Notificacion` records for the coordinator.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dias_alerta:
+                  type: integer
+                  default: 30
+                  description: Days before expiration to raise an alert
+      responses:
+        '200':
+          description: Expiration check results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revisados:
+                    type: integer
+                  alertas:
+                    type: integer
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin, coordinador]
+      x-schedule: "0 8 * * 1"
+
+  # ──────────────────────────────────────────────
+  # Users
+  # ──────────────────────────────────────────────
+
+  /createUser:
+    post:
+      tags: [Users]
+      summary: Create a new user account
+      description: |
+        Creates a new user in Supabase Auth and inserts a matching profile row
+        with the specified role. Requires admin privileges.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            example:
+              email: "nuevo@empresa.com"
+              password: "SecurePass123!"
+              role: "coordinador"
+              name: "María López"
+      responses:
+        '200':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+      x-rbac:
+        roles: [admin]
+
+  /getUser:
+    get:
+      tags: [Users]
+      summary: Get the authenticated user's profile
+      description: |
+        Returns the Supabase Auth user and the associated profile row (including role).
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Base44 session token obtained from `base44.auth.signIn()`.
+        Pass as `Authorization: Bearer <token>`.
+
+  # ──────────────────────────────────────────────
+  # Reusable Responses
+  # ──────────────────────────────────────────────
+  responses:
+    BadRequest:
+      description: Missing or invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "pedido_id es requerido"
+    Unauthorized:
+      description: Missing or expired authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "No autorizado - Token inválido o expirado"
+    Forbidden:
+      description: Authenticated user lacks the required role
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "No autorizado - Rol insuficiente"
+    NotFound:
+      description: Requested resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Pedido no encontrado"
+    InternalError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "Internal server error"
+
+  # ──────────────────────────────────────────────
+  # Schemas
+  # ──────────────────────────────────────────────
+  schemas:
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+
+    # --- WhatsApp ---
+
+    EnviarWhatsAppDirectoRequest:
+      type: object
+      required: [telefono, mensaje]
+      properties:
+        telefono:
+          type: string
+          description: Recipient phone number (digits only, Spanish format accepted)
+          example: "612345678"
+        mensaje:
+          type: string
+          description: Message body
+        camarero_id:
+          type: string
+          description: ID of the waiter (for history logging)
+        camarero_nombre:
+          type: string
+          description: Waiter display name (for history logging)
+        pedido_id:
+          type: string
+          description: Order ID to associate with this message
+        asignacion_id:
+          type: string
+          description: Assignment ID — required when sending interactive confirm/reject buttons
+        plantilla_usada:
+          type: string
+          description: Name of the WhatsApp template used
+        link_confirmar:
+          type: string
+          format: uri
+          description: Deep-link URL for the confirm action (triggers interactive buttons)
+        link_rechazar:
+          type: string
+          format: uri
+          description: Deep-link URL for the reject action (triggers interactive buttons)
+
+    EnviarWhatsAppDirectoResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        telefono:
+          type: string
+        whatsapp_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Fallback `wa.me` URL when the API is unavailable
+        enviado_por_api:
+          type: boolean
+        mensaje_id:
+          type: string
+          nullable: true
+          description: WhatsApp message ID returned by the Cloud API
+        mensaje_enviado:
+          type: boolean
+        error_api:
+          type: string
+          nullable: true
+          description: API error message if sending failed
+        timestamp:
+          type: string
+          format: date-time
+
+    EnviarWhatsAppMasivoRequest:
+      type: object
+      required: [camareros_ids]
+      properties:
+        camareros_ids:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: List of waiter IDs to message
+        pedido_id:
+          type: string
+          description: Order ID for template variable substitution
+        mensaje:
+          type: string
+          description: |
+            Message body. Supports template variables:
+            `{{camarero}}`, `{{cliente}}`, `{{dia}}`, `{{lugar_evento}}`,
+            `{{hora_entrada}}`, `{{hora_salida}}`, `{{camisa}}`
+        plantilla_id:
+          type: string
+          description: ID of a stored `PlantillaWhatsApp` entity (overrides `mensaje`)
+        coordinador_id:
+          type: string
+          description: Coordinator ID for history logging
+
+    EnviarWhatsAppMasivoResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        total:
+          type: integer
+        exitosos:
+          type: integer
+        fallidos:
+          type: integer
+        detalles:
+          type: array
+          items:
+            type: object
+            properties:
+              camarero:
+                type: string
+              telefono:
+                type: string
+              estado:
+                type: string
+                enum: [enviado, pendiente, fallido]
+              proveedor:
+                type: string
+                enum: [whatsapp_api, whatsapp_web]
+              mensaje_id:
+                type: string
+                nullable: true
+              enviado_por_api:
+                type: boolean
+              error:
+                type: string
+                nullable: true
+        mensaje:
+          type: string
+
+    WhatsAppWebhookPayload:
+      type: object
+      description: Payload sent by the WhatsApp Cloud API
+      properties:
+        object:
+          type: string
+          example: whatsapp_business_account
+        entry:
+          type: array
+          items:
+            type: object
+
+    # --- Assignments ---
+
+    ConfirmarServicioResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        asignacion_id:
+          type: string
+        estado:
+          type: string
+          example: confirmado
+        mensaje_enviado:
+          type: boolean
+
+    SugerirCamarerosResponse:
+      type: object
+      properties:
+        sugerencias:
+          type: array
+          items:
+            $ref: '#/components/schemas/CamareroSugerencia'
+        total:
+          type: integer
+        pedido_id:
+          type: string
+
+    CamareroSugerencia:
+      type: object
+      properties:
+        camarero_id:
+          type: string
+        nombre:
+          type: string
+        puntuacion:
+          type: number
+          format: float
+          description: Composite score (higher is better)
+        disponible:
+          type: boolean
+        motivo:
+          type: string
+          description: Human-readable explanation of the score
+
+    # --- Exports ---
+
+    ExportResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        filas:
+          type: array
+          description: Array of row arrays (first row is the header)
+          items:
+            type: array
+            items: {}
+        total:
+          type: integer
+
+    # --- QR Check-in ---
+
+    FichajeQRGetResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        asignacion:
+          type: object
+          properties:
+            id:
+              type: string
+            camarero_nombre:
+              type: string
+            camarero_codigo:
+              type: string
+            estado:
+              type: string
+            hora_entrada:
+              type: string
+              example: "09:00"
+            hora_salida:
+              type: string
+              example: "17:00"
+            hora_entrada_real:
+              type: string
+              nullable: true
+            hora_salida_real:
+              type: string
+              nullable: true
+            horas_reales:
+              type: number
+              nullable: true
+            fecha_pedido:
+              type: string
+              format: date
+        pedido:
+          type: object
+          nullable: true
+          properties:
+            cliente:
+              type: string
+            lugar_evento:
+              type: string
+            dia:
+              type: string
+              format: date
+
+    FichajeQRPostRequest:
+      type: object
+      required: [token, tipo]
+      properties:
+        token:
+          type: string
+          minLength: 32
+          maxLength: 32
+          description: QR token from the assignment record
+        tipo:
+          type: string
+          enum: [entrada, salida]
+
+    FichajeQRPostResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        tipo:
+          type: string
+          enum: [entrada, salida]
+        hora:
+          type: string
+          example: "09:03"
+        camarero_nombre:
+          type: string
+        horas_reales:
+          type: number
+          nullable: true
+
+    GenerarTokensQRResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        tokens:
+          type: array
+          items:
+            type: object
+            properties:
+              asignacion_id:
+                type: string
+              camarero_nombre:
+                type: string
+              token:
+                type: string
+              url_fichaje:
+                type: string
+                format: uri
+
+    DetectarAusenciasResponse:
+      type: object
+      properties:
+        ausencias:
+          type: array
+          items:
+            type: object
+            properties:
+              asignacion_id:
+                type: string
+              camarero_nombre:
+                type: string
+              hora_prevista:
+                type: string
+              minutos_retraso:
+                type: integer
+        total:
+          type: integer
+        notificaciones_creadas:
+          type: integer
+
+    # --- Documents ---
+
+    GenerarDocumentacionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        documento_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Download URL for the generated PDF
+        documento_base64:
+          type: string
+          nullable: true
+          description: Base64-encoded PDF content (if URL is not available)
+        nombre_archivo:
+          type: string
+
+    # --- Attendance Email ---
+
+    EnviarHojaAsistenciaRequest:
+      type: object
+      required: [pedido_id, destinatario]
+      properties:
+        pedido_id:
+          type: string
+        destinatario:
+          type: string
+          format: email
+
+    # --- Users ---
+
+    CreateUserRequest:
+      type: object
+      required: [email, password, role]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        role:
+          type: string
+          enum: [admin, coordinador, camarero]
+        name:
+          type: string
+
+    CreateUserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        user_id:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+
+    GetUserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    # --- Webhooks ---
+
+    DatabaseWebhookPayload:
+      type: object
+      description: Payload sent by Base44 database triggers
+      required: [event, data]
+      properties:
+        event:
+          type: object
+          required: [type]
+          properties:
+            type:
+              type: string
+              enum: [insert, update, delete]
+        data:
+          type: object
+          description: Current state of the record
+        old_data:
+          type: object
+          nullable: true
+          description: Previous state of the record (for update/delete events)

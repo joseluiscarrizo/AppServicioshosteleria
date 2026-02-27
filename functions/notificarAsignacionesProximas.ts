@@ -1,3 +1,22 @@
+/**
+ * notificarAsignacionesProximas
+ *
+ * Scheduled job that sends WhatsApp reminder messages to waiters with
+ * confirmed assignments occurring today or tomorrow. Uses a flag on the
+ * assignment record to prevent duplicate reminders.
+ *
+ * @method POST
+ * @auth Service role (scheduler) or Bearer token
+ * @schedule 0 9 * * * (daily at 09:00)
+ *
+ * @returns {{ notificados: number, omitidos: number }}
+ *
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/notificarAsignacionesProximas
+ * {}
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {

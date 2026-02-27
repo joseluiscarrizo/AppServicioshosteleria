@@ -1,7 +1,30 @@
 /**
  * sugerirYNotificarPedido
- * Triggered automatically when a new Pedido is created.
- * Runs AI suggestions and notifies coordinators with the top candidates.
+ *
+ * Runs the intelligent waiter-suggestion algorithm for a `Pedido` and
+ * immediately sends WhatsApp invitations to the top-ranked available waiters
+ * asking them to confirm or reject the assignment.
+ *
+ * @method POST
+ * @auth Bearer token required
+ * @rbac admin, coordinador
+ *
+ * @param {string} pedido_id   - Event/order ID
+ * @param {number} [limite=10] - Maximum number of waiters to notify
+ *
+ * @returns {{ success: boolean, notificados: number,
+ *             sugerencias: Array<{ camarero_id: string, nombre: string,
+ *             puntuacion: number, disponible: boolean, motivo: string }> }}
+ *
+ * @throws {400} pedido_id es requerido
+ * @throws {401} No autorizado - Token inválido o expirado
+ * @throws {403} No autorizado - Rol insuficiente
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/sugerirYNotificarPedido
+ * Authorization: Bearer <token>
+ * { "pedido_id": "ped456", "limite": 5 }
  */
 
 import { createClientFromRequest } from '@base44/sdk';

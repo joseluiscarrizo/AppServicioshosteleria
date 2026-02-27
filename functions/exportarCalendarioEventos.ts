@@ -1,3 +1,26 @@
+/**
+ * exportarCalendarioEventos
+ *
+ * Generates an iCalendar (ICS) feed of scheduled `Pedido` events so that
+ * coordinators and waiters can subscribe from any calendar application.
+ *
+ * @method POST
+ * @auth Bearer token required
+ * @rbac admin, coordinador
+ *
+ * @param {string} [desde] - Start date (ISO 8601). Defaults to today.
+ * @param {string} [hasta] - End date (ISO 8601). Defaults to today + 90 days.
+ *
+ * @returns {string} ICS calendar data (text/calendar) or JSON row data
+ *
+ * @throws {403} No autorizado
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/exportarCalendarioEventos
+ * Authorization: Bearer <token>
+ * { "desde": "2024-01-01", "hasta": "2024-03-31" }
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
