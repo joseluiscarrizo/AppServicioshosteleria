@@ -5,6 +5,8 @@ const config = defineConfig({
   plugins: [react()], // Updated usage
   test: {
     environment: 'jsdom', // Configured jsdom environment
+    globals: true,
+    setupFiles: ['./tests/setup.js'],
     alias: {
       '@': '/src', // Set up path aliases
     }
