@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import PullToRefresh from '../components/ui/PullToRefresh';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageCircle, Users, Building2, FileText, Loader2 } from 'lucide-react';
@@ -10,12 +9,8 @@ import ChatClientes from '../components/comunicacion/ChatClientes';
 import PartesTrabajos from '../components/comunicacion/PartesTrabajos';
 
 export default function Comunicacion() {
-  const [user, setUser] = useState(null);
+  const { user, isLoadingAuth } = useAuth();
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
-  }, []);
 
   const handleRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['grupos-chat'] });
@@ -23,7 +18,7 @@ export default function Comunicacion() {
     await queryClient.invalidateQueries({ queryKey: ['pedidos-partes'] });
   };
 
-  if (!user) {
+  if (isLoadingAuth || !user) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
