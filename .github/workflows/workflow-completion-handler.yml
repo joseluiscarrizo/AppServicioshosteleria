@@ -1,0 +1,155 @@
+name: Workflow Completion Handler
+
+on:
+  workflow_run:
+    workflows: ["*"]
+    types:
+      - completed
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  handle-completion:
+    name: Handle Workflow Completion
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate Correlation ID
+        id: correlation
+        run: |
+          CORRELATION_ID="completion-$(date +%Y%m%d%H%M%S)-${{ github.run_id }}"
+          echo "id=${CORRELATION_ID}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Correlation ID::${CORRELATION_ID}"
+
+      - name: Log Completion Event
+        id: log-event
+        run: |
+          echo "::group::Completion Handler — Event Details"
+          echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "correlation_id=${{ steps.correlation.outputs.id }}"
+          echo "completed_workflow=${{ github.event.workflow_run.name }}"
+          echo "run_id=${{ github.event.workflow_run.id }}"
+          echo "conclusion=${{ github.event.workflow_run.conclusion }}"
+          echo "branch=${{ github.event.workflow_run.head_branch }}"
+          echo "actor=${{ github.event.workflow_run.actor.login }}"
+          echo "run_started_at=${{ github.event.workflow_run.run_started_at }}"
+          echo "updated_at=${{ github.event.workflow_run.updated_at }}"
+
+          CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+          echo "conclusion=${CONCLUSION}" >> "$GITHUB_OUTPUT"
+          echo "::endgroup::"
+
+      - name: Evaluate Final Status
+        id: evaluate
+        run: |
+          CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+          case "$CONCLUSION" in
+            success)
+              echo "status_emoji=✅" >> "$GITHUB_OUTPUT"
+              echo "status_label=SUCCESS" >> "$GITHUB_OUTPUT"
+              echo "::notice title=Workflow Succeeded::${{ github.event.workflow_run.name }} completed successfully."
+              ;;
+            failure|timed_out)
+              echo "status_emoji=❌" >> "$GITHUB_OUTPUT"
+              echo "status_label=FAILURE" >> "$GITHUB_OUTPUT"
+              echo "::error title=Workflow Failed::${{ github.event.workflow_run.name }} concluded with '${CONCLUSION}'."
+              ;;
+            cancelled)
+              echo "status_emoji=⚠️" >> "$GITHUB_OUTPUT"
+              echo "status_label=CANCELLED" >> "$GITHUB_OUTPUT"
+              echo "::warning title=Workflow Cancelled::${{ github.event.workflow_run.name }} was cancelled."
+              ;;
+            skipped|neutral)
+              echo "status_emoji=ℹ️" >> "$GITHUB_OUTPUT"
+              echo "status_label=NEUTRAL" >> "$GITHUB_OUTPUT"
+              echo "::notice title=Workflow Skipped::${{ github.event.workflow_run.name }} was skipped or neutral."
+              ;;
+            *)
+              echo "status_emoji=❓" >> "$GITHUB_OUTPUT"
+              echo "status_label=UNKNOWN" >> "$GITHUB_OUTPUT"
+              echo "::warning title=Unknown Conclusion::Conclusion '${CONCLUSION}' not recognized."
+              ;;
+          esac
+
+      - name: List and Archive Artifacts
+        id: artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_ID="${{ github.event.workflow_run.id }}"
+          REPO="${{ github.repository }}"
+
+          echo "::group::Artifact Inventory for run ${RUN_ID}"
+          ARTIFACTS=$(gh api "repos/${REPO}/actions/runs/${RUN_ID}/artifacts" \
+            --jq '.artifacts | map({name: .name, size_in_bytes: .size_in_bytes, expired: .expired}) | .' 2>/dev/null || echo "[]")
+
+          ARTIFACT_COUNT=$(echo "$ARTIFACTS" | jq 'length')
+          echo "artifact_count=${ARTIFACT_COUNT}" >> "$GITHUB_OUTPUT"
+          echo "Found ${ARTIFACT_COUNT} artifact(s):"
+          echo "$ARTIFACTS" | jq -r '.[] | "  - \(.name) (\(.size_in_bytes) bytes, expired=\(.expired))"'
+          echo "::endgroup::"
+
+      - name: Generate Completion Report
+        id: report
+        run: |
+          RUN_ID="${{ github.event.workflow_run.id }}"
+          WF_NAME="${{ github.event.workflow_run.name }}"
+          CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          ACTOR="${{ github.event.workflow_run.actor.login }}"
+          STARTED="${{ github.event.workflow_run.run_started_at }}"
+          UPDATED="${{ github.event.workflow_run.updated_at }}"
+          EMOJI="${{ steps.evaluate.outputs.status_emoji }}"
+          LABEL="${{ steps.evaluate.outputs.status_label }}"
+          ARTIFACTS="${{ steps.artifacts.outputs.artifact_count }}"
+          CORRELATION="${{ steps.correlation.outputs.id }}"
+
+          echo "::group::Completion Report"
+          cat <<EOF
+          ════════════════════════════════════════════════════════════
+          ${EMOJI} WORKFLOW COMPLETION REPORT — ${LABEL}
+          ════════════════════════════════════════════════════════════
+          Workflow  : ${WF_NAME}
+          Run ID    : ${RUN_ID}
+          Branch    : ${BRANCH}
+          Actor     : ${ACTOR}
+          Started   : ${STARTED}
+          Completed : ${UPDATED}
+          Conclusion: ${CONCLUSION}
+          Artifacts : ${ARTIFACTS}
+          Correlation ID: ${CORRELATION}
+          ════════════════════════════════════════════════════════════
+          EOF
+          echo "::endgroup::"
+
+      - name: Notify on Failure
+        if: |
+          github.event.workflow_run.conclusion == 'failure' ||
+          github.event.workflow_run.conclusion == 'timed_out'
+        run: |
+          echo "::error title=Action Required::Workflow '${{ github.event.workflow_run.name }}' failed."
+          echo "Consider triggering failure-recovery.yml to attempt rollback."
+
+      - name: Emit Audit Event
+        if: always()
+        run: |
+          echo "::group::Audit Trail Entry"
+          cat <<EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "correlation_id": "${{ steps.correlation.outputs.id }}",
+            "event": "workflow_completion_handler",
+            "workflow_name": "${{ github.event.workflow_run.name }}",
+            "run_id": "${{ github.event.workflow_run.id }}",
+            "branch": "${{ github.event.workflow_run.head_branch }}",
+            "actor": "${{ github.event.workflow_run.actor.login }}",
+            "conclusion": "${{ github.event.workflow_run.conclusion }}",
+            "status_label": "${{ steps.evaluate.outputs.status_label }}",
+            "artifact_count": "${{ steps.artifacts.outputs.artifact_count }}",
+            "automator": "workflow-completion-handler",
+            "result": "${{ job.status }}"
+          }
+          EOF
+          echo "::endgroup::"

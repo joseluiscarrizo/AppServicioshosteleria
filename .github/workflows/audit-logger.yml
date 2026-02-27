@@ -1,0 +1,170 @@
+name: Audit Logger
+
+on:
+  workflow_run:
+    workflows: ["*"]
+    types:
+      - completed
+      - requested
+  workflow_dispatch:
+    inputs:
+      event_type:
+        description: 'Type of audit event to log'
+        required: true
+        type: string
+      event_payload:
+        description: 'JSON payload describing the event'
+        required: false
+        type: string
+      correlation_id:
+        description: 'Correlation ID to associate this log entry with'
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  log-audit-event:
+    name: Record Audit Trail Entry
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve Correlation ID
+        id: correlation
+        run: |
+          CID="${{ inputs.correlation_id }}"
+          if [ -z "$CID" ]; then
+            CID="audit-$(date +%Y%m%d%H%M%S)-${{ github.run_id }}"
+          fi
+          echo "id=${CID}" >> "$GITHUB_OUTPUT"
+
+      - name: Collect Event Metadata
+        id: metadata
+        run: |
+          TRIGGER="${{ github.event_name }}"
+          echo "trigger=${TRIGGER}" >> "$GITHUB_OUTPUT"
+
+          if [ "$TRIGGER" = "workflow_run" ]; then
+            EVENT_TYPE="workflow_run.${{ github.event.action }}"
+            WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+            RUN_ID="${{ github.event.workflow_run.id }}"
+            BRANCH="${{ github.event.workflow_run.head_branch }}"
+            ACTOR="${{ github.event.workflow_run.actor.login }}"
+            STATUS="${{ github.event.workflow_run.status }}"
+            CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+          else
+            EVENT_TYPE="${{ inputs.event_type }}"
+            WORKFLOW_NAME="${{ github.workflow }}"
+            RUN_ID="${{ github.run_id }}"
+            BRANCH="${{ github.ref_name }}"
+            ACTOR="${{ github.actor }}"
+            STATUS="manual"
+            CONCLUSION="n/a"
+          fi
+
+          echo "event_type=${EVENT_TYPE}" >> "$GITHUB_OUTPUT"
+          echo "workflow_name=${WORKFLOW_NAME}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "actor=${ACTOR}" >> "$GITHUB_OUTPUT"
+          echo "status=${STATUS}" >> "$GITHUB_OUTPUT"
+          echo "conclusion=${CONCLUSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build Structured Log Entry
+        id: build-log
+        run: |
+          TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          EPOCH="$(date +%s)"
+          CORRELATION="${{ steps.correlation.outputs.id }}"
+          EVENT_TYPE="${{ steps.metadata.outputs.event_type }}"
+          WORKFLOW="${{ steps.metadata.outputs.workflow_name }}"
+          RUN_ID="${{ steps.metadata.outputs.run_id }}"
+          BRANCH="${{ steps.metadata.outputs.branch }}"
+          ACTOR="${{ steps.metadata.outputs.actor }}"
+          STATUS="${{ steps.metadata.outputs.status }}"
+          CONCLUSION="${{ steps.metadata.outputs.conclusion }}"
+          PAYLOAD='${{ inputs.event_payload }}'
+
+          LOG_ENTRY=$(cat <<EOF
+          {
+            "schema_version": "1.0",
+            "timestamp": "${TIMESTAMP}",
+            "epoch": ${EPOCH},
+            "correlation_id": "${CORRELATION}",
+            "event_type": "${EVENT_TYPE}",
+            "workflow": {
+              "name": "${WORKFLOW}",
+              "run_id": "${RUN_ID}",
+              "branch": "${BRANCH}",
+              "status": "${STATUS}",
+              "conclusion": "${CONCLUSION}"
+            },
+            "actor": {
+              "login": "${ACTOR}",
+              "type": "automated"
+            },
+            "repository": "${{ github.repository }}",
+            "automator": "audit-logger",
+            "payload": ${PAYLOAD:-null}
+          }
+          EOF
+          )
+
+          echo "$LOG_ENTRY" | jq '.' || echo "::warning::Log entry JSON may be malformed."
+
+          # Summary for GitHub UI
+          echo "## 📋 Audit Log Entry" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Timestamp | \`${TIMESTAMP}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Correlation ID | \`${CORRELATION}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Event Type | \`${EVENT_TYPE}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Workflow | \`${WORKFLOW}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Run ID | \`${RUN_ID}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Branch | \`${BRANCH}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Actor | \`${ACTOR}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Status | \`${STATUS}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Conclusion | \`${CONCLUSION}\` |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Compute Event Metrics
+        id: metrics
+        run: |
+          EVENT_TYPE="${{ steps.metadata.outputs.event_type }}"
+          CONCLUSION="${{ steps.metadata.outputs.conclusion }}"
+
+          SUCCESS_EVENT=0
+          FAILURE_EVENT=0
+          NEUTRAL_EVENT=0
+
+          if echo "$CONCLUSION" | grep -qE "^success$"; then
+            SUCCESS_EVENT=1
+          elif echo "$CONCLUSION" | grep -qE "^(failure|timed_out)$"; then
+            FAILURE_EVENT=1
+          else
+            NEUTRAL_EVENT=1
+          fi
+
+          echo "success_event=${SUCCESS_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "failure_event=${FAILURE_EVENT}" >> "$GITHUB_OUTPUT"
+          echo "neutral_event=${NEUTRAL_EVENT}" >> "$GITHUB_OUTPUT"
+
+          echo "::notice title=Metrics::success=${SUCCESS_EVENT} failure=${FAILURE_EVENT} neutral=${NEUTRAL_EVENT}"
+
+      - name: Export Audit Summary
+        run: |
+          echo "::group::Audit Export Summary"
+          echo "Correlation ID  : ${{ steps.correlation.outputs.id }}"
+          echo "Event Type      : ${{ steps.metadata.outputs.event_type }}"
+          echo "Workflow        : ${{ steps.metadata.outputs.workflow_name }}"
+          echo "Run ID          : ${{ steps.metadata.outputs.run_id }}"
+          echo "Branch          : ${{ steps.metadata.outputs.branch }}"
+          echo "Actor           : ${{ steps.metadata.outputs.actor }}"
+          echo "Status          : ${{ steps.metadata.outputs.status }}"
+          echo "Conclusion      : ${{ steps.metadata.outputs.conclusion }}"
+          echo "Success Events  : ${{ steps.metrics.outputs.success_event }}"
+          echo "Failure Events  : ${{ steps.metrics.outputs.failure_event }}"
+          echo "Neutral Events  : ${{ steps.metrics.outputs.neutral_event }}"
+          echo "::endgroup::"

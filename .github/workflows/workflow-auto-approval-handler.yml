@@ -1,0 +1,145 @@
+name: Workflow Auto-Approval Handler
+
+on:
+  workflow_run:
+    workflows: ["*"]
+    types:
+      - requested
+
+permissions:
+  actions: write
+  deployments: write
+  contents: read
+
+jobs:
+  detect-and-approve:
+    name: Detect and Auto-Approve Environment Approvals
+    runs-on: ubuntu-latest
+    outputs:
+      approval_found: ${{ steps.detect.outputs.approval_found }}
+      environment_name: ${{ steps.detect.outputs.environment_name }}
+      run_id: ${{ steps.detect.outputs.run_id }}
+
+    steps:
+      - name: Generate Correlation ID
+        id: correlation
+        run: |
+          CORRELATION_ID="auto-approve-$(date +%Y%m%d%H%M%S)-${{ github.run_id }}"
+          echo "id=${CORRELATION_ID}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Correlation ID::${CORRELATION_ID}"
+
+      - name: Log Detection Start
+        run: |
+          echo "::group::Auto-Approval Handler — Detection Phase"
+          echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "correlation_id=${{ steps.correlation.outputs.id }}"
+          echo "triggered_by_workflow=${{ github.event.workflow_run.name }}"
+          echo "triggered_by_run=${{ github.event.workflow_run.id }}"
+          echo "branch=${{ github.event.workflow_run.head_branch }}"
+          echo "actor=${{ github.event.workflow_run.actor.login }}"
+          echo "::endgroup::"
+
+      - name: Validate Branch
+        id: branch-check
+        run: |
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          ALLOWED_BRANCHES="main develop staging"
+          ALLOWED=false
+          for b in $ALLOWED_BRANCHES; do
+            if [ "$BRANCH" = "$b" ]; then
+              ALLOWED=true
+              break
+            fi
+          done
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "allowed=${ALLOWED}" >> "$GITHUB_OUTPUT"
+          if [ "$ALLOWED" = "false" ]; then
+            echo "::warning title=Branch Skipped::Branch '${BRANCH}' is not in the allowed list — skipping auto-approval."
+          else
+            echo "::notice title=Branch Validated::Branch '${BRANCH}' is allowed for auto-approval."
+          fi
+
+      - name: Detect Pending Environment Approvals
+        id: detect
+        if: steps.branch-check.outputs.allowed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_ID="${{ github.event.workflow_run.id }}"
+          REPO="${{ github.repository }}"
+
+          echo "Querying pending approvals for run ${RUN_ID}…"
+          PENDING=$(gh api \
+            "repos/${REPO}/actions/runs/${RUN_ID}/pending_deployments" \
+            --jq '.[0] | {env: .environment.name, id: .environment.id}' 2>/dev/null || echo "null")
+
+          if [ "$PENDING" = "null" ] || [ -z "$PENDING" ]; then
+            echo "approval_found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=No Pending Approvals::No pending environment approvals found for run ${RUN_ID}."
+          else
+            ENV_NAME=$(echo "$PENDING" | jq -r '.env')
+            ENV_ID=$(echo "$PENDING" | jq -r '.id')
+            echo "approval_found=true" >> "$GITHUB_OUTPUT"
+            echo "environment_name=${ENV_NAME}" >> "$GITHUB_OUTPUT"
+            echo "environment_id=${ENV_ID}" >> "$GITHUB_OUTPUT"
+            echo "run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Pending Approval Found::Environment '${ENV_NAME}' (id=${ENV_ID}) is awaiting approval."
+          fi
+
+      - name: Auto-Approve Environment
+        id: approve
+        if: steps.detect.outputs.approval_found == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_ID="${{ steps.detect.outputs.run_id }}"
+          REPO="${{ github.repository }}"
+          CORRELATION="${{ steps.correlation.outputs.id }}"
+
+          echo "::group::Auto-Approving Environment: ${{ steps.detect.outputs.environment_name }}"
+
+          # Collect all environment IDs pending approval
+          ENV_IDS=$(gh api \
+            "repos/${REPO}/actions/runs/${RUN_ID}/pending_deployments" \
+            --jq '[.[].environment.id]' 2>/dev/null || echo "[]")
+
+          if [ "$ENV_IDS" = "[]" ] || [ -z "$ENV_IDS" ]; then
+            echo "::warning title=No IDs::No environment IDs available to approve."
+            echo "::endgroup::"
+            exit 0
+          fi
+
+          RESPONSE=$(echo "{\"environment_ids\":${ENV_IDS},\"state\":\"approved\",\"comment\":\"Auto-approved by workflow-auto-approval-handler [correlation=${CORRELATION}]\"}" | \
+            gh api \
+              --method POST \
+              "repos/${REPO}/actions/runs/${RUN_ID}/pending_deployments" \
+              --input - \
+            2>&1)
+
+          echo "API Response: ${RESPONSE}"
+          echo "approved=true" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Auto-Approved::Environment '${{ steps.detect.outputs.environment_name }}' approved successfully."
+          echo "::endgroup::"
+
+      - name: Emit Audit Event
+        if: always()
+        run: |
+          echo "::group::Audit Trail Entry"
+          cat <<EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "correlation_id": "${{ steps.correlation.outputs.id }}",
+            "event": "auto_approval_handler",
+            "workflow_run_id": "${{ github.event.workflow_run.id }}",
+            "workflow_name": "${{ github.event.workflow_run.name }}",
+            "branch": "${{ github.event.workflow_run.head_branch }}",
+            "actor": "${{ github.event.workflow_run.actor.login }}",
+            "branch_allowed": "${{ steps.branch-check.outputs.allowed }}",
+            "approval_found": "${{ steps.detect.outputs.approval_found }}",
+            "environment": "${{ steps.detect.outputs.environment_name }}",
+            "approved": "${{ steps.approve.outputs.approved }}",
+            "automator": "workflow-auto-approval-handler",
+            "result": "${{ job.status }}"
+          }
+          EOF
+          echo "::endgroup::"

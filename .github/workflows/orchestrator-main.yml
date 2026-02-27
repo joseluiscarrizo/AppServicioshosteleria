@@ -1,0 +1,265 @@
+name: Orchestrator Main
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Operation to orchestrate'
+        required: true
+        type: choice
+        options:
+          - full-pipeline
+          - approval-only
+          - execution-only
+          - status-check
+          - recovery
+      target_workflow:
+        description: 'Target workflow name/file (for execution-only)'
+        required: false
+        type: string
+      target_ref:
+        description: 'Branch/ref to target'
+        required: false
+        default: 'main'
+        type: string
+      priority:
+        description: 'Pipeline priority (low | normal | high)'
+        required: false
+        default: 'normal'
+        type: choice
+        options:
+          - low
+          - normal
+          - high
+  workflow_run:
+    workflows: ["Workflow Auto-Approval Handler"]
+    types:
+      - completed
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  orchestrate:
+    name: Orchestrate Automation Pipeline
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    outputs:
+      correlation_id: ${{ steps.correlation.outputs.id }}
+      state: ${{ steps.state-machine.outputs.state }}
+      operation: ${{ steps.resolve-operation.outputs.operation }}
+
+    steps:
+      - name: Generate Correlation ID
+        id: correlation
+        run: |
+          CID="orch-$(date +%Y%m%d%H%M%S)-${{ github.run_id }}"
+          echo "id=${CID}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Orchestrator Started::Correlation ID: ${CID}"
+
+      - name: Resolve Operation
+        id: resolve-operation
+        run: |
+          TRIGGER="${{ github.event_name }}"
+          if [ "$TRIGGER" = "workflow_dispatch" ]; then
+            OP="${{ inputs.operation }}"
+            PRIORITY="${{ inputs.priority }}"
+          else
+            OP="full-pipeline"
+            PRIORITY="normal"
+          fi
+          echo "operation=${OP}" >> "$GITHUB_OUTPUT"
+          echo "priority=${PRIORITY}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Operation Resolved::op=${OP} priority=${PRIORITY}"
+
+      - name: Initialize State Machine
+        id: state-machine
+        run: |
+          echo "state=INITIALIZING" >> "$GITHUB_OUTPUT"
+          echo "::notice title=State Machine::Transitioned to INITIALIZING"
+
+      - name: Apply Rate Limiting
+        id: rate-limit
+        run: |
+          PRIORITY="${{ steps.resolve-operation.outputs.priority }}"
+          case "$PRIORITY" in
+            high)   DELAY=0  ;;
+            normal) DELAY=5  ;;
+            low)    DELAY=15 ;;
+            *)      DELAY=5  ;;
+          esac
+          echo "delay=${DELAY}" >> "$GITHUB_OUTPUT"
+          if [ "$DELAY" -gt 0 ]; then
+            echo "Rate limiting: sleeping ${DELAY}s (priority=${PRIORITY})…"
+            sleep "$DELAY"
+          fi
+
+      - name: Validate Dependencies
+        id: validate-deps
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          OP="${{ steps.resolve-operation.outputs.operation }}"
+
+          echo "::group::Dependency Validation for op=${OP}"
+
+          REQUIRED_WORKFLOWS="workflow-auto-approval-handler.yml workflow-executor.yml security-validator.yml"
+          ALL_OK=true
+
+          for WF in $REQUIRED_WORKFLOWS; do
+            EXISTS=$(gh api "repos/${REPO}/contents/.github/workflows/${WF}" \
+              --jq '.name' 2>/dev/null || echo "")
+            if [ -z "$EXISTS" ]; then
+              echo "::warning::Required workflow not found: ${WF}"
+              ALL_OK=false
+            else
+              echo "✅ Found: ${WF}"
+            fi
+          done
+
+          echo "all_deps_ok=${ALL_OK}" >> "$GITHUB_OUTPUT"
+          if [ "$ALL_OK" = "false" ]; then
+            echo "::warning title=Missing Dependencies::Some required workflows are missing. Proceeding with degraded mode."
+          fi
+          echo "::endgroup::"
+
+      - name: Execute Full Pipeline
+        id: full-pipeline
+        if: steps.resolve-operation.outputs.operation == 'full-pipeline'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          CORRELATION="${{ steps.correlation.outputs.id }}"
+
+          echo "::group::Full Pipeline Execution"
+          echo "Phase 1: Security validation"
+          gh api \
+            --method POST \
+            "repos/${REPO}/actions/workflows/security-validator.yml/dispatches" \
+            --field "ref=main" \
+            --field "inputs[correlation_id]=${CORRELATION}" \
+            2>/dev/null || echo "::warning::Security validator dispatch failed (non-fatal)."
+
+          sleep 5
+
+          echo "Phase 2: Auto-approval handler already triggered by workflow_run event."
+          echo "Phase 3: Executor and completion handler are event-driven."
+          echo "::endgroup::"
+          echo "pipeline_triggered=true" >> "$GITHUB_OUTPUT"
+
+      - name: Execute Approval Only
+        id: approval-only
+        if: steps.resolve-operation.outputs.operation == 'approval-only'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          CORRELATION="${{ steps.correlation.outputs.id }}"
+          echo "::group::Approval-Only Operation"
+          gh api \
+            --method POST \
+            "repos/${REPO}/actions/workflows/workflow-auto-approval-handler.yml/dispatches" \
+            --field "ref=main" \
+            2>/dev/null || echo "::warning::Dispatch failed (non-fatal — handler is event-driven)."
+          echo "::endgroup::"
+
+      - name: Execute Workflow Execution Only
+        id: execution-only
+        if: steps.resolve-operation.outputs.operation == 'execution-only'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TARGET="${{ inputs.target_workflow }}"
+          REF="${{ inputs.target_ref }}"
+          REPO="${{ github.repository }}"
+          CORRELATION="${{ steps.correlation.outputs.id }}"
+
+          if [ -z "$TARGET" ]; then
+            echo "::error::target_workflow is required for execution-only operation."
+            exit 1
+          fi
+
+          echo "::group::Triggering Workflow Executor"
+          gh api \
+            --method POST \
+            "repos/${REPO}/actions/workflows/workflow-executor.yml/dispatches" \
+            --field "ref=main" \
+            --field "inputs[target_workflow]=${TARGET}" \
+            --field "inputs[target_ref]=${REF}" \
+            --field "inputs[correlation_id]=${CORRELATION}" \
+            2>/dev/null || echo "::warning::Executor dispatch failed."
+          echo "::endgroup::"
+
+      - name: Status Check
+        id: status-check
+        if: steps.resolve-operation.outputs.operation == 'status-check'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          echo "::group::Automation System Status Check"
+          gh api "repos/${REPO}/actions/runs" \
+            --jq '.workflow_runs[:5] | map({name: .name, status: .status, conclusion: .conclusion, created_at: .created_at}) | .' \
+            2>/dev/null || echo "[]"
+          echo "::endgroup::"
+
+      - name: Recovery Operation
+        id: recovery
+        if: steps.resolve-operation.outputs.operation == 'recovery'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          CORRELATION="${{ steps.correlation.outputs.id }}"
+          echo "::group::Triggering Failure Recovery"
+          echo "::warning title=Recovery::Manual recovery initiated via orchestrator."
+          echo "Please provide failed_run_id and failed_workflow to failure-recovery.yml directly."
+          echo "::endgroup::"
+
+      - name: Update State Machine
+        if: always()
+        run: |
+          JOB_RESULT="${{ job.status }}"
+          if [ "$JOB_RESULT" = "success" ]; then
+            echo "::notice title=State Machine::Transitioned to COMPLETED"
+          else
+            echo "::notice title=State Machine::Transitioned to FAILED"
+          fi
+
+      - name: Write Pipeline Summary
+        if: always()
+        run: |
+          OP="${{ steps.resolve-operation.outputs.operation }}"
+          CORRELATION="${{ steps.correlation.outputs.id }}"
+          PRIORITY="${{ steps.resolve-operation.outputs.priority }}"
+
+          echo "## 🎛️ Orchestrator Pipeline Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Correlation ID | \`${CORRELATION}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Operation | \`${OP}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Priority | \`${PRIORITY}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| All Deps OK | \`${{ steps.validate-deps.outputs.all_deps_ok }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Result | \`${{ job.status }}\` |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Emit Audit Event
+        if: always()
+        run: |
+          echo "::group::Audit Trail Entry"
+          cat <<EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "correlation_id": "${{ steps.correlation.outputs.id }}",
+            "event": "orchestrator_main",
+            "operation": "${{ steps.resolve-operation.outputs.operation }}",
+            "priority": "${{ steps.resolve-operation.outputs.priority }}",
+            "all_deps_ok": "${{ steps.validate-deps.outputs.all_deps_ok }}",
+            "automator": "orchestrator-main",
+            "result": "${{ job.status }}"
+          }
+          EOF
+          echo "::endgroup::"
