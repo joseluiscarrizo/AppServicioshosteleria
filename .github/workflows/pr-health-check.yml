@@ -30,7 +30,6 @@ jobs:
             let conflicted = 0;
             let stale = 0;
             let healthy = 0;
-            const now = new Date();
 
             for (const pr of prs) {
               const updatedAt = new Date(pr.updated_at);
