@@ -12,7 +12,7 @@ import { format, parseISO, subDays } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ExportadorExcel } from './ExportadorExcel';
 
-const COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'];
+const _COLORS = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'];
 
 export default function RendimientoCamareros() {
   const [busqueda, setBusqueda] = useState('');

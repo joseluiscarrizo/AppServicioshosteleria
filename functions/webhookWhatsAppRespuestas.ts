@@ -13,9 +13,9 @@
  *   WHATSAPP_API_TOKEN              — token de acceso permanente de la app
  *   WHATSAPP_PHONE_NUMBER           — ID del número de WhatsApp Business
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { format, parseISO } from 'npm:date-fns@3.6.0';
-import { es } from 'npm:date-fns@3.6.0/locale';
+import { createClientFromRequest } from '@base44/sdk';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import Logger from '../utils/logger.ts';
 import { validateEmail, validatePhoneNumber, validateDate } from '../utils/validators.ts';
 import {
@@ -30,7 +30,7 @@ import { confirmCamareroAssignment } from '../utils/confirmationService.ts';
 const WA_TOKEN = Deno.env.get('WHATSAPP_API_TOKEN');
 const WA_PHONE = Deno.env.get('WHATSAPP_PHONE_NUMBER');
 
-async function sendWAMessage(to, payload) {
+function sendWAMessage(to, payload) {
   if (!to) throw new ValidationError('sendWAMessage: parámetro "to" es requerido');
   if (!payload) throw new ValidationError('sendWAMessage: parámetro "payload" es requerido');
   return executeWhatsAppOperation(async () => {
@@ -101,7 +101,7 @@ const PASOS_PEDIDO = [
   { id: 'telefono_contacto',  prompt: '8️⃣ ¿Cuál es tu *número de teléfono*?' },
 ];
 
-function handleFlujoPedido(base44, telefono, sesion, textoMensaje) {
+function handleFlujoPedido(_base44, telefono, sesion, textoMensaje) {
   const pasoActual = sesion.paso;
 
   // Guardar respuesta del paso actual

@@ -26,7 +26,7 @@ export default function ServicioRecordatorios() {
     refetchInterval: 60000
   });
 
-  const generarMensajeRecordatorio = async (asignacion, pedido, camarero, tipo) => {
+  const generarMensajeRecordatorio = async (asignacion, pedido, _camarero, tipo) => {
     const horasRestantes = tipo === '24h' ? 24 : 2;
     const emoji = tipo === '24h' ? '🔔' : '⏰';
     

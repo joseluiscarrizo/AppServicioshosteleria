@@ -24,7 +24,7 @@ import { createPageUrl } from '../utils';
 import { motion } from 'framer-motion';
 
 export default function DashboardCoordinador() {
-  const [filtroAlertas, setFiltroAlertas] = useState('todas'); // todas, urgentes, pedidos, cancelaciones
+  const [filtroAlertas, _setFiltroAlertas] = useState('todas');
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // Fetch data
@@ -148,7 +148,7 @@ export default function DashboardCoordinador() {
     return prioridades[b.prioridad] - prioridades[a.prioridad];
   });
 
-  const alertasFiltradas = alertas.filter(a => {
+  const _alertasFiltradas = alertas.filter(a => {
     if (filtroAlertas === 'todas') return true;
     if (filtroAlertas === 'urgentes') return a.prioridad === 'urgente';
     if (filtroAlertas === 'pedidos') return a.tipo === 'pedido_incompleto';

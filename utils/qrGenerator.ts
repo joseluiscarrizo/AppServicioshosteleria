@@ -1,7 +1,7 @@
 // qrGenerator.ts
 // Generates QR codes for event confirmations sent to camareros via WhatsApp.
 
-import QRCode from 'npm:qrcode@^1.5.0';
+import QRCode from 'qrcode';
 import Logger from './logger.ts';
 
 export interface EventQRData {

@@ -74,7 +74,7 @@ export default function ParteServicio({ pedido, open, onOpenChange }) {
   const exportarPDF = () => {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageW = 297;
-    const pageH = 210;
+    const _pageH = 210;
     const margin = 14;
     const colW = pageW - margin * 2;
     let y = 14;

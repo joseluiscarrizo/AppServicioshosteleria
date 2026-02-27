@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from '@base44/sdk';
 
 Deno.serve(async (req) => {
   try {
@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
           fechaFormato = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
           diaSemana = DIAS_SEMANA[fecha.getDay()];
         } catch (_e) {
+          // intentional
         }
       }
 

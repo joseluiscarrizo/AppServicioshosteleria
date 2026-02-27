@@ -5,7 +5,7 @@ import { CheckCheck, Check, FileIcon, ExternalLink, Megaphone } from 'lucide-rea
 import { Badge } from "@/components/ui/badge";
 import { cn } from '@/lib/utils';
 
-function LecturaBadge({ mensaje, user, miembros }) {
+function LecturaBadge({ mensaje, user: _user, miembros }) {
   const [mostrar, setMostrar] = useState(false);
   const leidoPor = mensaje.leido_por || [];
   const leidoSinMi = leidoPor.filter(id => id !== mensaje.user_id);
@@ -18,6 +18,7 @@ function LecturaBadge({ mensaje, user, miembros }) {
   return (
     <div className="relative inline-flex items-center">
       <button
+        type="button"
         onClick={() => setMostrar(!mostrar)}
         className="flex items-center gap-0.5"
         title={`Leído por ${leidoSinMi.length}/${totalDestinatarios}`}

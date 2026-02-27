@@ -4,7 +4,7 @@
  * fichado entrada siendo que ya debería haber empezado su servicio (tolerancia 30 min).
  * Crea una Notificacion de alta prioridad para el coordinador.
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from '@base44/sdk';
 
 Deno.serve(async (req) => {
   try {

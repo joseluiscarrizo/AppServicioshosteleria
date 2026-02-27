@@ -1,3 +1,4 @@
+import process from "node:process";
 import nodemailer from 'nodemailer';
 import * as validator from 'validator';
 import * as sanitizeHtml from 'sanitize-html';

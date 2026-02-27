@@ -404,6 +404,7 @@ export default function CalendarioInteractivo({
                                                 {slot.asig.camarero_nombre?.split(' ')[0]}
                                               </span>
                                               <button
+                                                type="button"
                                                 onClick={() => onDesasignar?.(slot.asig)}
                                                 className="text-slate-400 hover:text-red-500 ml-1"
                                               >
@@ -445,7 +446,7 @@ export default function CalendarioInteractivo({
                               />
 
                               {/* Lista draggable de camareros */}
-                              <Droppable droppableId="cal-camareros-panel" isDropDisabled={true}>
+                              <Droppable droppableId="cal-camareros-panel" isDropDisabled>
                                 {(prov) => (
                                   <div
                                     ref={prov.innerRef}

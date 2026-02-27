@@ -1,5 +1,10 @@
 {
   "imports": {
-    "@base44/sdk": "npm:@base44/sdk@0.8.6"
+    "@base44/sdk": "npm:@base44/sdk@0.8.6",
+    "date-fns": "npm:date-fns@3.6.0",
+    "date-fns/locale": "npm:date-fns@3.6.0/locale",
+    "qrcode": "npm:qrcode@^1.5.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "std/http/server": "https://deno.land/std@0.168.0/http/server.ts"
   }
 }

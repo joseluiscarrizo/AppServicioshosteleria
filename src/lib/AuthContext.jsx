@@ -10,10 +10,7 @@ import {
   getTimeUntilExpiration
 } from '../utils/tokenRefresh';
 import ErrorNotificationService from '../utils/errorNotificationService';
-import {
-  ValidationError,
-  handleWebhookError
-} from '../utils/webhookImprovements';
+import { handleWebhookError } from '../utils/webhookImprovements';
 
 const AuthContext = createContext();
 

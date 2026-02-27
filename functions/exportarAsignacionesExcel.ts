@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from '@base44/sdk';
 
 Deno.serve(async (req) => {
   try {
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
         try {
           const [y, m, d] = pedido.dia.split('-');
           fechaFormato = `${d}/${m}/${y}`;
-        } catch (_e) {}
+        } catch (_e) { /* intentional */ }
       }
       let codCoordinador = '-';
       // Intentar obtenerlo del cliente vinculado

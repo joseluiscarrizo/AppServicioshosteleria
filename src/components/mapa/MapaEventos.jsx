@@ -15,7 +15,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-export default function MapaEventos({ pedidos, camareroNombre }) {
+export default function MapaEventos({ pedidos, camareroNombre: _camareroNombre }) {
   // Filtrar pedidos con coordenadas
   const pedidosConUbicacion = pedidos.filter(p => p.latitud && p.longitud);
   const pedidosSinUbicacion = pedidos.filter(p => !p.latitud || !p.longitud);
@@ -56,6 +56,7 @@ export default function MapaEventos({ pedidos, camareroNombre }) {
                     {pedido.dia ? format(new Date(pedido.dia), 'dd MMM', { locale: es }) : ''} | {pedido.entrada}-{pedido.salida}
                     <br />
                     <button 
+                      type="button"
                       onClick={() => abrirNavegacion(pedido)}
                       className="text-blue-600 underline mt-1"
                     >

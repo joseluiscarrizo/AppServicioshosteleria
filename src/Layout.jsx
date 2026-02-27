@@ -231,6 +231,7 @@ export default function Layout({ children, currentPageName }) {
               {/* Back button — mobile only, sub-pages only */}
               {isSubPage && (
                 <button
+                  type="button"
                   onClick={handleBack}
                   className="md:hidden flex items-center gap-1 text-orange-700 font-medium text-sm btn-no-min-h min-h-0 px-0"
                   style={{ minHeight: 0 }}

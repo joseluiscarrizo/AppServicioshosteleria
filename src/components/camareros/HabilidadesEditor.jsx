@@ -65,7 +65,7 @@ export default function HabilidadesEditor({
           {habilidades.map(hab => (
             <Badge key={hab} variant="secondary" className="flex items-center gap-1">
               {hab}
-              <button onClick={() => quitarHabilidad(hab)} className="ml-1 hover:text-red-500">
+              <button type="button" onClick={() => quitarHabilidad(hab)} className="ml-1 hover:text-red-500">
                 <X className="w-3 h-3" />
               </button>
             </Badge>

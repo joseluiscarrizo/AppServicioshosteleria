@@ -29,7 +29,7 @@ export const AdminDashboard = () => {
 
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-gray-600 text-sm font-medium">Reportes</h3>
-          <button className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          <button type="button" className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             Ver Todos
           </button>
         </div>
@@ -39,13 +39,13 @@ export const AdminDashboard = () => {
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-bold mb-4">Gestionar Usuarios</h2>
           <div className="space-y-2">
-            <button className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <button type="button" className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
               + Crear Usuario
             </button>
-            <button className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+            <button type="button" className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
               + Crear Admin Level 2
             </button>
-            <button className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+            <button type="button" className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
               Ver Todos los Usuarios
             </button>
           </div>
@@ -54,13 +54,13 @@ export const AdminDashboard = () => {
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-bold mb-4">Configuración del Sistema</h2>
           <div className="space-y-2">
-            <button className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <button type="button" className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
               Configurar Parámetros
             </button>
-            <button className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <button type="button" className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
               Ver Logs del Sistema
             </button>
-            <button className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <button type="button" className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
               Backup & Restore
             </button>
           </div>

@@ -32,13 +32,13 @@ export const ManagerAdminDashboard = () => {
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-bold mb-4">Gestionar Personal</h2>
           <div className="space-y-2">
-            <button className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <button type="button" className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
               + Agregar Camarero
             </button>
-            <button className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+            <button type="button" className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
               Ver Mi Personal
             </button>
-            <button className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+            <button type="button" className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
               Asignar a Eventos
             </button>
           </div>
@@ -47,13 +47,13 @@ export const ManagerAdminDashboard = () => {
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-bold mb-4">Comunicaciones</h2>
           <div className="space-y-2">
-            <button className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+            <button type="button" className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
               Enviar WhatsApp Masivo
             </button>
-            <button className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <button type="button" className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
               Notificar Personal
             </button>
-            <button className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+            <button type="button" className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
               Ver Historial
             </button>
           </div>

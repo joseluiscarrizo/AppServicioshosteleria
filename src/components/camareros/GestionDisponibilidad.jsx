@@ -140,6 +140,7 @@ function CalendarioSemana({ camarero }) {
                   >
                     <span className="truncate">{tipoDispLabels[d.tipo]?.slice(0, 3)}</span>
                     <button
+                      type="button"
                       className="hover:opacity-70 flex-shrink-0"
                       onClick={(e) => { e.stopPropagation(); eliminarMutation.mutate(d.id); }}
                     >×</button>
@@ -342,6 +343,7 @@ export default function GestionDisponibilidad({ open, onClose }) {
                 <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
                   {camareros.map(c => (
                     <button
+                      type="button"
                       key={c.id}
                       onClick={() => setCamareroSeleccionado(c)}
                       className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg text-left hover:border-[#1e3a5f] hover:bg-blue-50/30 transition-colors"

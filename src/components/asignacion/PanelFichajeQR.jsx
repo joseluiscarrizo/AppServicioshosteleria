@@ -91,6 +91,7 @@ function FilaFichaje({ asignacion, onUpdate }) {
           </div>
         ) : (
           <button
+            type="button"
             onClick={() => iniciarEdicion('entrada')}
             className={`text-sm font-mono flex items-center gap-1 px-2 py-0.5 rounded hover:bg-slate-100 transition-colors ${tieneEntrada ? 'text-emerald-700 font-semibold' : 'text-slate-300'}`}
             title="Editar hora de entrada"
@@ -122,6 +123,7 @@ function FilaFichaje({ asignacion, onUpdate }) {
           </div>
         ) : (
           <button
+            type="button"
             onClick={() => iniciarEdicion('salida')}
             className={`text-sm font-mono flex items-center gap-1 px-2 py-0.5 rounded hover:bg-slate-100 transition-colors ${tieneSalida ? 'text-blue-700 font-semibold' : 'text-slate-300'}`}
             title="Editar hora de salida"

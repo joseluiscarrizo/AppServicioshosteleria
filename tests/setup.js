@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
 // Mock global fetch
-global.fetch = vi.fn();
+globalThis.fetch = vi.fn();
 
 // Mock Audio as a proper class constructor
 class MockAudio {
@@ -13,28 +13,28 @@ class MockAudio {
     this.load = vi.fn();
   }
 }
-global.Audio = MockAudio;
+globalThis.Audio = MockAudio;
 
 // Mock window.location for URL param tests
 delete globalThis.location;
 globalThis.location = { search: '', href: '', pathname: '/' };
 
 // Mock IntersectionObserver
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+globalThis.IntersectionObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn()
 }));
 
 // Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
+globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn()
 }));
 
 // Mock matchMedia
-global.matchMedia = vi.fn().mockImplementation((query) => ({
+globalThis.matchMedia = vi.fn().mockImplementation((query) => ({
   matches: false,
   media: query,
   onchange: null,
