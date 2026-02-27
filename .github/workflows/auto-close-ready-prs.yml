@@ -1,0 +1,129 @@
+name: Auto Merge Ready PRs
+
+on:
+  check_suite:
+    types: [completed]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+      checks: read
+
+    steps:
+      - name: Auto-merge PRs without conflicts or errors
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+
+            // Determine which PRs to evaluate
+            let prNumbers = [];
+
+            if (context.eventName === 'pull_request') {
+              prNumbers = [context.payload.pull_request.number];
+            } else if (context.eventName === 'check_suite') {
+              const suite = context.payload.check_suite;
+              if (suite.pull_requests && suite.pull_requests.length > 0) {
+                prNumbers = suite.pull_requests.map(pr => pr.number);
+              }
+            }
+
+            // For scheduled runs or when no specific PR is found, scan all open PRs
+            if (prNumbers.length === 0) {
+              const { data: openPRs } = await github.rest.pulls.list({
+                owner,
+                repo,
+                state: 'open',
+                per_page: 100
+              });
+              prNumbers = openPRs.map(pr => pr.number);
+            }
+
+            console.log(`Evaluating ${prNumbers.length} PR(s): ${prNumbers.join(', ')}`);
+
+            for (const prNumber of prNumbers) {
+              const { data: pr } = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber
+              });
+
+              // Skip draft PRs
+              if (pr.draft) {
+                console.log(`PR #${prNumber} skipped: draft`);
+                continue;
+              }
+
+              // Skip PRs that are not open
+              if (pr.state !== 'open') {
+                console.log(`PR #${prNumber} skipped: already ${pr.state}`);
+                continue;
+              }
+
+              // Check for merge conflicts
+              if (pr.mergeable === false) {
+                console.log(`PR #${prNumber} skipped: has merge conflicts`);
+                continue;
+              }
+
+              // mergeable can be null while GitHub is computing it — skip for now
+              if (pr.mergeable === null) {
+                console.log(`PR #${prNumber} skipped: mergeability not yet determined`);
+                continue;
+              }
+
+              // Check all CI check runs for this PR's head commit
+              const { data: checkData } = await github.rest.checks.listForRef({
+                owner,
+                repo,
+                ref: pr.head.sha
+              });
+
+              const checks = checkData.check_runs;
+
+              if (checks.length === 0) {
+                console.log(`PR #${prNumber} skipped: no check runs found`);
+                continue;
+              }
+
+              const allCompleted = checks.every(c => c.status === 'completed');
+              if (!allCompleted) {
+                console.log(`PR #${prNumber} skipped: checks still in progress`);
+                continue;
+              }
+
+              const allPassed = checks.every(
+                c => c.conclusion === 'success' || c.conclusion === 'skipped' || c.conclusion === 'neutral'
+              );
+
+              if (!allPassed) {
+                const failed = checks
+                  .filter(c => c.conclusion !== 'success' && c.conclusion !== 'skipped' && c.conclusion !== 'neutral')
+                  .map(c => `${c.name} (${c.conclusion})`);
+                console.log(`PR #${prNumber} skipped: failing checks — ${failed.join(', ')}`);
+                continue;
+              }
+
+              // All conditions met — merge the PR
+              try {
+                await github.rest.pulls.merge({
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                  merge_method: 'squash',
+                  commit_title: `Auto-merge PR #${prNumber}: ${pr.title}`,
+                  commit_message: `Automatically merged by CI automation.\n\nAll checks passed and no merge conflicts detected.`
+                });
+                console.log(`✅ Merged PR #${prNumber}: ${pr.title}`);
+              } catch (err) {
+                console.log(`❌ Failed to merge PR #${prNumber}: ${err.message}`);
+              }
+            }
