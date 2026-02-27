@@ -5,6 +5,7 @@
  */
 
 import { createClientFromRequest } from '@base44/sdk';
+import Logger from '../utils/logger.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -61,7 +62,11 @@ Deno.serve(async (req) => {
     return Response.json({ ok: true, sugerencias_count: sugerencias.length });
 
   } catch (error) {
-    console.error('Error en sugerirYNotificarPedido:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    Logger.error(`Error en sugerirYNotificarPedido: ${message}`);
+    return Response.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message }, metadata: { timestamp: new Date().toISOString() } },
+      { status: 500 }
+    );
   }
 });

@@ -175,7 +175,10 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     if (error instanceof RBACError) {
-      return Response.json({ error: error.message }, { status: error.statusCode });
+      return Response.json(
+        { success: false, error: { code: 'RBAC_ERROR', message: error.message }, metadata: { timestamp: new Date().toISOString() } },
+        { status: error.statusCode }
+      );
     }
     Logger.error(`Error en enviarWhatsAppDirecto: ${(error as Error).message}`);
     return handleWebhookError(error as Error, 500);

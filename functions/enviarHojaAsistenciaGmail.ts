@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import * as validator from 'validator';
 import * as sanitizeHtml from 'sanitize-html';
+import Logger from '../utils/logger.ts';
 
 const MAX_RETRIES = 3;
 
@@ -50,10 +51,10 @@ async function enviarHojaAsistenciaGmail(user: User, subject: string, rawHtml: s
     while (retries < MAX_RETRIES) {
         try {
             await sendEmail(user.email, subject, sanitizedHtml);
-            console.log('Email sent successfully');
+            Logger.info('Email sent successfully');
             return;
         } catch (error) {
-            console.error('Error sending email:', error);
+            Logger.error(`Error sending email: ${error instanceof Error ? error.message : String(error)}`);
             retries++;
             if (retries >= MAX_RETRIES) {
                 throw new Error('Failed to send email after multiple attempts');

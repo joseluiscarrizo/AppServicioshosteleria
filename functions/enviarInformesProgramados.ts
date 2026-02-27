@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import Logger from '../utils/logger.ts';
 
 function calcularPeriodo(frecuencia) {
   const hoy = new Date();
@@ -159,6 +160,11 @@ Deno.serve(async (req) => {
 
     return Response.json({ ok: true, enviados, errores });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    Logger.error(`Error en enviarInformesProgramados: ${message}`);
+    return Response.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message }, metadata: { timestamp: new Date().toISOString() } },
+      { status: 500 }
+    );
   }
 });

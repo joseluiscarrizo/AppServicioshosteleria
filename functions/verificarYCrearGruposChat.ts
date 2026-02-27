@@ -1,4 +1,5 @@
 import { createClientFromRequest } from '@base44/sdk';
+import Logger from '../utils/logger.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -132,7 +133,7 @@ Deno.serve(async (req) => {
           resultados.errores.push({
             pedido_id: pedido.id,
             cliente: pedido.cliente,
-            error: error.message
+            error: error instanceof Error ? error.message : String(error)
           });
         }
       }
@@ -144,10 +145,11 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error verificando y creando grupos:', error);
-    return Response.json({ 
-      error: error.message,
-      stack: error.stack
-    }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    Logger.error(`Error en verificarYCrearGruposChat: ${message}`);
+    return Response.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message }, metadata: { timestamp: new Date().toISOString() } },
+      { status: 500 }
+    );
   }
 });

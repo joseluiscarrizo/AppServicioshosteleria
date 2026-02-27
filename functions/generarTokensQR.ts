@@ -5,6 +5,7 @@
  * Solo accesible por admin/coordinador.
  */
 import { createClientFromRequest } from '@base44/sdk';
+import Logger from '../utils/logger.ts';
 
 function generarToken() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -66,7 +67,11 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error en generarTokensQR:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    Logger.error(`Error en generarTokensQR: ${message}`);
+    return Response.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message }, metadata: { timestamp: new Date().toISOString() } },
+      { status: 500 }
+    );
   }
 });
