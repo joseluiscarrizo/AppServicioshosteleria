@@ -12,20 +12,44 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No autorizado - Rol insuficiente' }, { status: 403 });
     }
 
-    // Obtener un pedido con asignaciones confirmadas (Grupo Valera - 14/02)
-    const pedido = await base44.asServiceRole.entities.Pedido.get('6989c6136b2403e88b6af96f');
+    // Obtener pedido_id como query parameter
+    const url = new URL(req.url);
+    const pedido_id = url.searchParams.get('pedido_id');
+
+    if (!pedido_id) {
+      return Response.json({ error: 'Se requiere el parámetro pedido_id' }, { status: 400 });
+    }
+
+    const pedido = await base44.asServiceRole.entities.Pedido.get(pedido_id);
+    if (!pedido) {
+      return Response.json({ error: 'Pedido no encontrado' }, { status: 404 });
+    }
+
+    if (!pedido.cliente || !pedido.dia) {
+      return Response.json({ error: 'El pedido no tiene cliente o día asignado' }, { status: 400 });
+    }
+
     const asignaciones = await base44.asServiceRole.entities.AsignacionCamarero.filter({
       pedido_id: pedido.id
     });
+
+    if (asignaciones.length === 0) {
+      return Response.json({ error: 'No hay camareros asignados a este pedido' }, { status: 400 });
+    }
+
     const camareros = await base44.asServiceRole.entities.Camarero.list();
-    
-    // Obtener cliente para emails
-    const _cliente = await base44.asServiceRole.entities.Cliente.get(pedido.cliente_id);
-    
+    const camarerosMap = new Map(camareros.map(c => [c.id, c]));
+
+    const esc = (v: unknown) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
     // Generar HTML de la hoja
     const camarerosList = asignaciones
-      .map(a => camareros.find(c => c.id === a.camarero_id))
-      .filter(Boolean);
+      .map(a => ({ camarero: camarerosMap.get(a.camarero_id), asignacion: a }))
+      .filter(item => item.camarero);
+
+    if (camarerosList.length === 0) {
+      return Response.json({ error: 'No se encontraron datos de camareros para las asignaciones' }, { status: 400 });
+    }
 
     const hojaHTML = `
       <!DOCTYPE html>
@@ -54,12 +78,12 @@ Deno.serve(async (req) => {
       <body>
         <div class="header">
           <div>
-            <strong>Cliente:</strong> ${pedido.cliente}<br>
-            <strong>Día:</strong> ${pedido.dia}
+            <strong>Cliente:</strong> ${esc(pedido.cliente)}<br>
+            <strong>Día:</strong> ${esc(pedido.dia)}
           </div>
           <div style="text-align: right;">
-            <strong>Evento:</strong> ${pedido.lugar_evento || 'No especificado'}<br>
-            <strong>Horario:</strong> ${pedido.entrada} - ${pedido.salida || 'Por confirmar'}
+            <strong>Evento:</strong> ${esc(pedido.lugar_evento || 'No especificado')}<br>
+            <strong>Horario:</strong> ${esc(pedido.entrada)} - ${esc(pedido.salida || 'Por confirmar')}
           </div>
         </div>
 
@@ -76,11 +100,11 @@ Deno.serve(async (req) => {
             </tr>
           </thead>
           <tbody>
-            ${camarerosList.map(c => `
+            ${camarerosList.map(({ camarero, asignacion }) => `
               <tr>
-                <td>${c.nombre}</td>
-                <td>${pedido.entrada || ''}</td>
-                <td></td>
+                <td>${esc(camarero.nombre)}</td>
+                <td>${esc(asignacion.entrada || pedido.entrada)}</td>
+                <td>${esc(asignacion.salida || pedido.salida)}</td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -96,13 +120,13 @@ Deno.serve(async (req) => {
       </html>
     `;
     
-    // Para pruebas, enviamos al coordinador (usuario autenticado)
+    // Para pruebas, enviamos la hoja al primer usuario coordinador/admin con email encontrado
     const usuario = await base44.asServiceRole.entities.User.list();
-    const coordinador = usuario.find(u => u.role === 'coordinador' || u.role === 'admin');
+    const coordinador = usuario.find(u => (u.role === 'coordinador' || u.role === 'admin') && u.email);
     
     if (!coordinador) {
       return Response.json({ 
-        error: 'No se encontró un coordinador para enviar la prueba',
+        error: 'No se encontró un coordinador con email para enviar la prueba',
         usuarios_count: usuario.length
       }, { status: 400 });
     }
@@ -126,7 +150,7 @@ Deno.serve(async (req) => {
         lugar: pedido.lugar_evento
       },
       email_enviado_a: coordinador.email,
-      camareros_incluidos: camarerosList.map(c => c.nombre),
+      camareros_incluidos: camarerosList.map(({ camarero }) => camarero.nombre),
       asignaciones_count: asignaciones.length
     });
     
