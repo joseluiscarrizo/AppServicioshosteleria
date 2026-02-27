@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { format, parseISO } from 'npm:date-fns@3.6.0';
 import { es } from 'npm:date-fns@3.6.0/locale';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
+import { validateId } from '../utils/validators.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -12,8 +13,9 @@ Deno.serve(async (req) => {
 
     const { pedido_id } = await req.json();
 
-    if (!pedido_id) {
-      return Response.json({ error: 'pedido_id requerido' }, { status: 400 });
+    const idCheck = validateId(pedido_id);
+    if (!idCheck.valid) {
+      return Response.json({ error: `pedido_id inválido: ${idCheck.error}` }, { status: 400 });
     }
 
     // Obtener pedido

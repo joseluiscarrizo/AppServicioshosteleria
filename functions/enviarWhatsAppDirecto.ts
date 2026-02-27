@@ -1,10 +1,11 @@
 import { createClientFromRequest } from '@base44/sdk';
 import Logger from '../utils/logger.ts';
-import { validatePhoneNumber } from '../utils/validators.ts';
+import { validatePhoneNumber, sanitizeString } from '../utils/validators.ts';
 import {
   handleWebhookError
 } from '../utils/webhookImprovements.ts';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
+import { checkRateLimit, rateLimitExceeded } from '../utils/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -13,15 +14,26 @@ Deno.serve(async (req) => {
 
     validateUserAccess(user, ['admin', 'coordinador']);
 
+    // Rate limiting per user
+    const rl = checkRateLimit(`whatsapp-directo:${user.id}`, { limit: 30, windowMs: 60_000 });
+    if (!rl.allowed) return rateLimitExceeded(rl.resetAt);
+
     const { telefono, mensaje, camarero_id, camarero_nombre, pedido_id, asignacion_id, plantilla_usada, link_confirmar, link_rechazar } = await req.json();
     
     if (!telefono || !mensaje) {
       return Response.json({ error: 'Teléfono y mensaje son requeridos' }, { status: 400 });
     }
 
+    const mensajeCheck = validateString(mensaje, 1, 4096);
+    if (!mensajeCheck.valid) {
+      return Response.json({ error: `Mensaje inválido: ${mensajeCheck.error}` }, { status: 400 });
+    }
+
     if (!validatePhoneNumber(telefono)) {
       return Response.json({ error: 'Número de teléfono con formato inválido' }, { status: 400 });
     }
+
+    const mensajeSanitizado = sanitizeString(mensaje);
     
     // Limpiar el número de teléfono (solo dígitos)
     const telefonoLimpio = telefono.replace(/\D/g, '');
@@ -63,7 +75,7 @@ Deno.serve(async (req) => {
             type: 'interactive',
             interactive: {
               type: 'button',
-              body: { text: mensaje },
+              body: { text: mensajeSanitizado },
               action: {
                 buttons: [
                   { type: 'reply', reply: { id: `confirmar::${asignacion_id}`, title: 'ACEPTO ✅' } },
@@ -77,7 +89,7 @@ Deno.serve(async (req) => {
             messaging_product: 'whatsapp',
             to: numeroWhatsApp,
             type: 'text',
-            text: { body: mensaje }
+            text: { body: mensajeSanitizado }
           };
         }
 
@@ -115,7 +127,7 @@ Deno.serve(async (req) => {
                   messaging_product: 'whatsapp',
                   to: numeroWhatsApp,
                   type: 'text',
-                  text: { body: mensaje }
+                  text: { body: mensajeSanitizado }
                 })
               }
             );
@@ -140,7 +152,7 @@ Deno.serve(async (req) => {
     }
     
     // Construir URL de WhatsApp Web como fallback
-    const mensajeCodificado = encodeURIComponent(mensaje);
+    const mensajeCodificado = encodeURIComponent(mensajeSanitizado);
     const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${mensajeCodificado}`;
     
     // Registrar en historial de WhatsApp
@@ -149,7 +161,7 @@ Deno.serve(async (req) => {
         destinatario_id: camarero_id || null,
         destinatario_nombre: camarero_nombre || 'Desconocido',
         telefono: numeroWhatsApp,
-        mensaje: mensaje,
+        mensaje: mensajeSanitizado,
         plantilla_usada: plantilla_usada || null,
         pedido_id: pedido_id || null,
         asignacion_id: asignacion_id || null,
