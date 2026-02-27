@@ -3,7 +3,7 @@ import { useRole } from '@/contexts/RoleContext';
 import { usePermission } from '@/hooks/usePermission';
 
 export const UserManagement = () => {
-  const { isAdminLevel1, isAdminLevel2 } = useRole();
+  const { isAdminLevel1, isAdminLevel2: _isAdminLevel2 } = useRole();
   const { can } = usePermission();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [formData, setFormData] = useState({

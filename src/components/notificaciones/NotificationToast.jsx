@@ -33,7 +33,7 @@ export const showNotificationToast = (tipo, titulo, mensaje, duracion = 5000) =>
   const config = tipoConfig[tipo] || tipoConfig.recordatorio;
   const Icon = config.icon;
 
-  toast.custom((t) => (
+  toast.custom((_t) => (
     <div 
       className={`${config.bg} border border-slate-200 rounded-xl shadow-lg p-4 max-w-md animate-in slide-in-from-right`}
     >

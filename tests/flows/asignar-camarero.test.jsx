@@ -5,18 +5,18 @@ import '../utils/mocks.js';
 import { mockBase44 } from '../utils/mocks.js';
 import { createAsignacion, createCamarero, createPedido, fixtures } from '../utils/factories.js';
 import { renderWithProviders } from '../utils/render.jsx';
-import { toast } from 'sonner';
+import { toast as _toast } from 'sonner';
 
 // Mockear componentes pesados
 vi.mock('@hello-pangea/dnd', () => ({
   DragDropContext: ({ children, onDragEnd }) => (
     <div data-testid="drag-drop-context" data-ondragend={!!onDragEnd}>{children}</div>
   ),
-  Droppable: ({ children, droppableId }) => children(
+  Droppable: ({ children, droppableId: _droppableId }) => children(
     { innerRef: vi.fn(), droppableProps: {}, placeholder: null },
     { isDraggingOver: false }
   ),
-  Draggable: ({ children, draggableId }) => children(
+  Draggable: ({ children, draggableId: _draggableId }) => children(
     { innerRef: vi.fn(), draggableProps: {}, dragHandleProps: {} },
     { isDragging: false }
   )

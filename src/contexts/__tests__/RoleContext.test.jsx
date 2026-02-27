@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { RoleProvider, useRole } from '@/contexts/RoleContext';
 
 const TestComponent = () => {
-  const { currentUser, hasPermission, isAdminLevel1 } = useRole();
+  const { currentUser, hasPermission: _hasPermission, isAdminLevel1 } = useRole();
 
   return (
     <div>

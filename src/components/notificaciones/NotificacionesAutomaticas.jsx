@@ -46,7 +46,7 @@ export default function NotificacionesAutomaticas({ showPushNotifications }) {
         
         const fechaEvento = new Date(pedido.dia);
         const horasHastaEvento = differenceInHours(fechaEvento, ahora);
-        const diasHastaEvento = differenceInDays(fechaEvento, ahora);
+        const _diasHastaEvento = differenceInDays(fechaEvento, ahora);
         
         // Notificar 24 horas antes (entre 23 y 25 horas para dar margen)
         if (horasHastaEvento > 23 && horasHastaEvento < 25) {

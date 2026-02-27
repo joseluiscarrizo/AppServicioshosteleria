@@ -78,7 +78,7 @@ export function validateAndCheckTokenStatus(token: string | null | undefined): T
  */
 export async function refreshTokenIfNeeded(
     currentToken: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // deno-lint-ignore no-explicit-any
     base44Client: any
 ): Promise<{ token: string; expiresIn: number } | null> {
     const status = validateAndCheckTokenStatus(currentToken);

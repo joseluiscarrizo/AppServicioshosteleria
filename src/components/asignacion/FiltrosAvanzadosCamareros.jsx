@@ -30,7 +30,7 @@ export default function FiltrosAvanzadosCamareros({
   filtros,
   onFiltrosChange,
   camareros = [],
-  pedido = null,
+  pedido: _pedido = null,
 }) {
   const [expandido, setExpandido] = useState(false);
 
@@ -274,7 +274,7 @@ export default function FiltrosAvanzadosCamareros({
 }
 
 // Helper exportado para aplicar filtros a lista de camareros
-export function aplicarFiltrosCamareros(camareros, filtros, asignaciones = [], pedido = null) {
+export function aplicarFiltrosCamareros(camareros, filtros, _asignaciones = [], _pedido = null) {
   const TURNOS_HORARIOS_MAP = {
     manana: { desde: 6, hasta: 14 },
     tarde:  { desde: 14, hasta: 20 },

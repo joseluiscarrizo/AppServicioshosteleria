@@ -125,7 +125,7 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    let dataToSubmit = { ...formData };
+    const dataToSubmit = { ...formData };
     
     // Generar código automático si es nuevo perfil
     if (!editingCamarero) {
