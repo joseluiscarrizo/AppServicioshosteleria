@@ -37,6 +37,12 @@ Estos valores los obtenes desde el Dashboard de Base44 → Settings → API Keys
 ## Instalación y desarrollo
 
 ```bash
+# Clonar el repositorio
+git clone https://github.com/joseluiscarrizo/AppServicioshosteleria.git
+
+# Navegar al directorio del proyecto (importante: ejecutar los comandos npm desde aquí)
+cd AppServicioshosteleria
+
 # Instalar dependencias
 npm install
 
