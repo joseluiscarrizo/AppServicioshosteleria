@@ -134,7 +134,6 @@ Deno.serve(async (req) => {
     console.error('Error en registrarFichajeQR:', (error as Error).message);
     const errorResponse = handleWebhookError(error, 500);
     // Preserve CORS headers on error responses
-    const body = await errorResponse.json();
-    return Response.json(body, { status: errorResponse.status, headers: corsHeaders });
+    return new Response(errorResponse.body, { status: errorResponse.status, headers: corsHeaders });
   }
 });

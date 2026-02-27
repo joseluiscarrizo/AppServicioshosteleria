@@ -1,7 +1,7 @@
 import { createClientFromRequest } from '@base44/sdk';
 import Logger from '../utils/logger.ts';
 import { validatePhoneNumber } from '../utils/validators.ts';
-import { handleWebhookError, ValidationError, ExternalServiceError, DatabaseError } from '../utils/errorHandler.ts';
+import { handleWebhookError, ValidationError } from '../utils/errorHandler.ts';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
 Deno.serve(async (req) => {
@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
         }
       } catch (e) {
         errorAPI = (e as Error).message;
-        Logger.error('Error llamando a la API de WhatsApp:', new ExternalServiceError('WhatsApp API').message);
+        Logger.error(`Error llamando a la API de WhatsApp: ${(e as Error).message}`);
       }
     }
     
@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
         coordinador_id: user.id
       });
     } catch (e) {
-      Logger.error('Error registrando en historial:', new DatabaseError((e as Error).message).message);
+      Logger.error(`Error registrando en historial: ${(e as Error).message}`);
     }
     
     return Response.json({
