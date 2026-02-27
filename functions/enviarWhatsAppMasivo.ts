@@ -1,12 +1,23 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
+import { RateLimiter, rateLimitResponse, addRateLimitHeaders } from '../utils/rateLimit.ts';
+
+// 5 bulk-send calls per minute per user
+const whatsappMasivoLimiter = new RateLimiter({ windowMs: 60_000, maxRequests: 5 });
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
+    // Authenticate and authorize before rate limiting so unauthenticated callers
+    // do not consume quota from a shared 'anonymous' bucket.
     validateUserAccess(user, ['admin', 'coordinador']);
+
+    const rateLimitResult = whatsappMasivoLimiter.check(user.id);
+    if (!rateLimitResult.allowed) {
+      return rateLimitResponse(rateLimitResult, 5);
+    }
 
     const { 
       camareros_ids,
@@ -209,14 +220,18 @@ Deno.serve(async (req) => {
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    return Response.json({
-      success: true,
-      total: camarerosSeleccionados.length,
-      exitosos: resultados.exitosos,
-      fallidos: resultados.fallidos,
-      detalles: resultados.detalles,
-      mensaje: `Mensajes procesados: ${resultados.exitosos} exitosos, ${resultados.fallidos} fallidos`
-    });
+    return addRateLimitHeaders(
+      Response.json({
+        success: true,
+        total: camarerosSeleccionados.length,
+        exitosos: resultados.exitosos,
+        fallidos: resultados.fallidos,
+        detalles: resultados.detalles,
+        mensaje: `Mensajes procesados: ${resultados.exitosos} exitosos, ${resultados.fallidos} fallidos`
+      }),
+      rateLimitResult,
+      5
+    );
 
   } catch (error) {
     if (error instanceof RBACError) {
