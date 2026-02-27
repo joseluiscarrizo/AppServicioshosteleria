@@ -1,6 +1,10 @@
-#env
+# Environment variables
 .env
 .env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Logs
 logs
@@ -11,20 +15,53 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+.pnpm-store/
+
+# Build output
 dist
 dist-ssr
+build
 *.local
+
+# Test coverage
+coverage
+.nyc_output
+
+# Cache
+.cache
+.firebase
+.turbo
+.parcel-cache
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-.env
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Java / Android
+.gradle/
+*.class
+*.jar
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
