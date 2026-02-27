@@ -1,0 +1,57 @@
+name: Auto Approve Pending Workflow Runs
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  approve-pending-runs:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Approve pending workflow runs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Get all workflow runs with action_required status (waiting for approval), with pagination
+            let page = 1;
+            const workflow_runs = [];
+            while (true) {
+              const { data } = await github.rest.actions.listWorkflowRunsForRepo({
+                owner,
+                repo,
+                status: 'action_required',
+                per_page: 100,
+                page,
+              });
+              workflow_runs.push(...data.workflow_runs);
+              if (data.workflow_runs.length < 100) break;
+              page++;
+            }
+
+            if (workflow_runs.length === 0) {
+              console.log('No pending workflow runs to approve.');
+              return;
+            }
+
+            console.log(`Found ${workflow_runs.length} pending workflow run(s) to approve.`);
+
+            for (const run of workflow_runs) {
+              console.log(`Approving workflow run #${run.id}: "${run.name}" (PR: ${run.pull_requests.map(pr => '#' + pr.number).join(', ') || 'none'})`);
+              try {
+                await github.rest.actions.approveWorkflowRun({
+                  owner,
+                  repo,
+                  run_id: run.id,
+                });
+                console.log(`  ✓ Approved run #${run.id}`);
+              } catch (err) {
+                console.log(`  ✗ Could not approve run #${run.id}: ${err.message}`);
+              }
+            }
