@@ -1,0 +1,123 @@
+name: Validate PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+jobs:
+  validate-checks:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      statuses: read
+      checks: read
+      contents: read
+    steps:
+      - name: Wait for checks and validate PR readiness
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const sha = pr.head.sha;
+            const prNumber = pr.number;
+
+            console.log(`Validating checks for PR #${prNumber} (${sha})`);
+
+            // Poll until all checks are no longer pending (max 5 minutes)
+            const MAX_WAIT_MS = 5 * 60 * 1000;
+            const POLL_INTERVAL_MS = 30 * 1000;
+            const startTime = Date.now();
+
+            let allComplete = false;
+            let checkRuns = [];
+
+            while (!allComplete && (Date.now() - startTime) < MAX_WAIT_MS) {
+              const { data } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: sha,
+                per_page: 100
+              });
+              checkRuns = data.check_runs.filter(c => c.name !== 'validate-checks');
+
+              allComplete = checkRuns.length > 0 && checkRuns.every(
+                c => c.status === 'completed'
+              );
+
+              if (!allComplete) {
+                const pending = checkRuns.filter(c => c.status !== 'completed').map(c => c.name);
+                console.log(`Waiting for: ${pending.join(', ')}`);
+                await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+              }
+            }
+
+            const failed = checkRuns.filter(c => c.conclusion === 'failure');
+            const passed = checkRuns.filter(
+              c => c.conclusion === 'success' || c.conclusion === 'skipped'
+            );
+            const actionRequired = checkRuns.filter(c => c.conclusion === 'action_required');
+            const pending = checkRuns.filter(c => c.status !== 'completed');
+
+            // Build status report
+            let body = `<!-- pr-validation-report -->\n## ✅ PR Validation Report\n\n`;
+            body += `**PR #${prNumber}** — Checks evaluated at ${new Date().toISOString()}\n\n`;
+            body += `| Status | Count |\n|--------|-------|\n`;
+            body += `| ✅ Passed | ${passed.length} |\n`;
+            body += `| ❌ Failed | ${failed.length} |\n`;
+            body += `| ⏳ Pending | ${pending.length} |\n`;
+            body += `| ⚠️ Action Required | ${actionRequired.length} |\n\n`;
+
+            if (failed.length > 0) {
+              body += `### ❌ Failed Checks\n`;
+              failed.forEach(c => {
+                body += `- **${c.name}**: [View details](${c.html_url})\n`;
+              });
+              body += '\n';
+            }
+
+            if (actionRequired.length > 0) {
+              body += `### ⚠️ Checks Requiring Action\n`;
+              actionRequired.forEach(c => {
+                body += `- **${c.name}**: [View details](${c.html_url})\n`;
+              });
+              body += '\n';
+            }
+
+            if (failed.length === 0 && actionRequired.length === 0 && pending.length === 0) {
+              body += `> 🎉 All checks passed! This PR is ready for review and merge.\n`;
+            } else if (failed.length > 0) {
+              body += `> ⛔ This PR has failing checks. Please fix them before merging.\n`;
+            }
+
+            // Update or create a single validation comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const existingComment = comments.find(c => c.body.includes('<!-- pr-validation-report -->'));
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body
+              });
+              console.log(`Updated validation comment on PR #${prNumber}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body
+              });
+              console.log(`Created validation comment on PR #${prNumber}`);
+            }
+
+            if (failed.length > 0) {
+              core.setFailed(`${failed.length} check(s) failed on PR #${prNumber}`);
+            }
