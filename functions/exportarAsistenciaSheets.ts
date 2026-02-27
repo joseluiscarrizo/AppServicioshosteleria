@@ -1,13 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
+/**
+ * exportarAsistenciaSheets
+ * Exporta hoja de asistencia de un pedido a Google Sheets.
+ * Roles requeridos: admin, coordinador
+ */
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
         const user = await base44.auth.me();
 
-        if (!user) {
-            return Response.json({ error: 'No autenticado' }, { status: 401 });
-        }
+        validateUserAccess(user, ['admin', 'coordinador']);
 
         const { pedido_id } = await req.json();
 
@@ -195,6 +199,9 @@ Deno.serve(async (req) => {
         });
 
     } catch (error) {
+        if (error instanceof RBACError) {
+            return Response.json({ error: error.message }, { status: error.statusCode });
+        }
         console.error('Error:', error);
         return Response.json({
             error: error.message

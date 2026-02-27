@@ -1,13 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
+/**
+ * sugerirCamarerosInteligente
+ * Sugiere camareros para un pedido usando criterios de disponibilidad y experiencia.
+ * Roles requeridos: admin, coordinador
+ */
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
-    if (!user || (user.role !== 'admin' && user.role !== 'coordinador')) {
-      return Response.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    validateUserAccess(user, ['admin', 'coordinador']);
 
     const { pedido_id, limite = 10 } = await req.json();
 
@@ -322,10 +326,12 @@ Genera un ranking de los mejores ${limite} camareros ordenados por idoneidad. Pa
     });
 
   } catch (error) {
+    if (error instanceof RBACError) {
+      return Response.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('Error en sugerirCamarerosInteligente:', error);
     return Response.json({ 
-      error: error.message,
-      stack: error.stack 
+      error: error.message
     }, { status: 500 });
   }
 });

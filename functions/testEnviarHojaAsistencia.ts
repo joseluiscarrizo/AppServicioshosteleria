@@ -1,16 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
+/**
+ * testEnviarHojaAsistencia
+ * Función de prueba para enviar hoja de asistencia.
+ * Roles requeridos: admin, coordinador
+ */
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
     const user = await base44.auth.me();
-    if (!user) {
-      return Response.json({ error: 'No autorizado - Token inválido o expirado' }, { status: 401 });
-    }
-    if (user.role !== 'admin' && user.role !== 'coordinador') {
-      return Response.json({ error: 'No autorizado - Rol insuficiente' }, { status: 403 });
-    }
+    validateUserAccess(user, ['admin', 'coordinador']);
 
     // Obtener un pedido con asignaciones confirmadas (Grupo Valera - 14/02)
     const pedido = await base44.asServiceRole.entities.Pedido.get('6989c6136b2403e88b6af96f');
@@ -131,10 +132,12 @@ Deno.serve(async (req) => {
     });
     
   } catch (error) {
+    if (error instanceof RBACError) {
+      return Response.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('❌ Error enviando hoja:', error);
     return Response.json({ 
-      error: error.message,
-      stack: error.stack
+      error: error.message
     }, { status: 500 });
   }
 });
