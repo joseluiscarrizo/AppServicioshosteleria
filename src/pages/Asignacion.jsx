@@ -6,7 +6,8 @@ import ScoreBadge from '../components/asignacion/ScoreBadge';
 import CalendarioInteractivo from '../components/asignacion/CalendarioInteractivo';
 import FiltrosAvanzadosCamareros, { aplicarFiltrosCamareros } from '../components/asignacion/FiltrosAvanzadosCamareros';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOptimizedPedidosWithAsignaciones, useOptimizedCamarerosWithDisponibilidad } from '@/hooks/useOptimizedQueries';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -83,48 +84,8 @@ export default function Asignacion() {
   // Escuchar cambios en tiempo real sobre asignaciones y pedidos
   useAsignacionesRealtime();
 
-  const { data: pedidos = [], isLoading: loadingPedidos } = useQuery({
-    queryKey: ['pedidos'],
-    queryFn: async () => {
-      try {
-        const hoy      = new Date();
-        const desde    = new Date(hoy.getFullYear(), hoy.getMonth() - 3, 1);
-        const hasta    = new Date(hoy.getFullYear(), hoy.getMonth() + 6, 0);
-        return await base44.entities.Pedido.filter({
-          dia: { $gte: format(desde, 'yyyy-MM-dd'), $lte: format(hasta, 'yyyy-MM-dd') }
-        }, '-dia', 300);
-      } catch (error) {
-        console.error('Error cargando pedidos con filtro, usando fallback:', error);
-        return await base44.entities.Pedido.list('-dia', 300);
-      }
-    }
-  });
-
-  const { data: camareros = [] } = useQuery({
-    queryKey: ['camareros'],
-    queryFn: () => base44.entities.Camarero.list('nombre')
-  });
-
-  const { data: asignaciones = [] } = useQuery({
-    queryKey: ['asignaciones'],
-    queryFn: async () => {
-      try {
-        const hoy      = new Date();
-        const desde    = new Date(hoy.getFullYear(), hoy.getMonth() - 3, 1);
-        const hasta    = new Date(hoy.getFullYear(), hoy.getMonth() + 6, 0);
-        return await base44.entities.AsignacionCamarero.filter({
-          fecha_pedido: { $gte: format(desde, 'yyyy-MM-dd'), $lte: format(hasta, 'yyyy-MM-dd') }
-        }, '-created_date', 500);
-      } catch {
-        return await base44.entities.AsignacionCamarero.list('-created_date', 500);
-      }
-    }
-  });
-
-  const { data: disponibilidades = [] } = useQuery({
-    queryKey: ['disponibilidades'],
-    queryFn: () => base44.entities.Disponibilidad.list('-fecha', 500)
-  });
+  const { pedidos, asignaciones, isLoading: loadingPedidos } = useOptimizedPedidosWithAsignaciones();
+  const { camareros, disponibilidades } = useOptimizedCamarerosWithDisponibilidad();
 
   // Detectar conflictos de horario entre asignaciones
   useConflictosHorario({ asignaciones, pedidos, enabled: !loadingPedidos });
