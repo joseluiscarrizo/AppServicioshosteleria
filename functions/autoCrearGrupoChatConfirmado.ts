@@ -7,12 +7,27 @@ import {
   DatabaseError,
   WhatsAppApiError
 } from '../utils/webhookImprovements.ts';
+import { validateId } from '../utils/validators.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     
-    const { event, data, old_data } = await req.json();
+    const body = await req.json();
+
+    if (!body || typeof body !== 'object') {
+      return Response.json({ error: 'Cuerpo de petición inválido' }, { status: 400 });
+    }
+
+    const { event, data, old_data } = body;
+
+    if (!event || typeof event !== 'object' || typeof event.type !== 'string') {
+      return Response.json({ error: 'Estructura de evento inválida' }, { status: 400 });
+    }
+
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return Response.json({ error: 'Datos de evento inválidos: se esperaba un objeto' }, { status: 400 });
+    }
     
     // Solo procesar actualizaciones donde el estado cambia a 'confirmado'
     if (event.type !== 'update' || data.estado !== 'confirmado' || old_data?.estado === 'confirmado') {
@@ -22,9 +37,10 @@ Deno.serve(async (req) => {
     const asignacion = data;
     const pedidoId = asignacion.pedido_id;
 
-    if (!pedidoId) {
-      Logger.error('Asignación sin pedido_id');
-      return Response.json({ error: 'Asignación sin pedido_id' }, { status: 400 });
+    const pedidoIdCheck = validateId(pedidoId);
+    if (!pedidoIdCheck.valid) {
+      Logger.error('Asignación sin pedido_id válido');
+      return Response.json({ error: 'Asignación sin pedido_id válido' }, { status: 400 });
     }
 
     Logger.info(`Procesando confirmación de asignación. pedido_id=${pedidoId}, camarero_id=${asignacion.camarero_id}`);

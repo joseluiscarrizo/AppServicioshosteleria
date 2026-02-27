@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
+import { validateArray, validateString } from '../utils/validators.ts';
+import { checkRateLimit, rateLimitExceeded } from '../utils/rateLimit.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -7,6 +9,10 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
 
     validateUserAccess(user, ['admin', 'coordinador']);
+
+    // Rate limiting per user
+    const rl = checkRateLimit(`whatsapp-masivo:${user.id}`, { limit: 10, windowMs: 60_000 });
+    if (!rl.allowed) return rateLimitExceeded(rl.resetAt);
 
     const { 
       camareros_ids,
@@ -16,12 +22,20 @@ Deno.serve(async (req) => {
       coordinador_id 
     } = await req.json();
 
-    if (!camareros_ids || camareros_ids.length === 0) {
-      return Response.json({ error: 'Debe seleccionar al menos un camarero' }, { status: 400 });
+    const idsCheck = validateArray(camareros_ids, 1, 200);
+    if (!idsCheck.valid) {
+      return Response.json({ error: `camareros_ids inválido: ${idsCheck.error}` }, { status: 400 });
     }
 
     if (!mensaje && !plantilla_id) {
       return Response.json({ error: 'Debe proporcionar un mensaje o plantilla' }, { status: 400 });
+    }
+
+    if (mensaje) {
+      const mensajeCheck = validateString(mensaje, 1, 4096);
+      if (!mensajeCheck.valid) {
+        return Response.json({ error: `Mensaje inválido: ${mensajeCheck.error}` }, { status: 400 });
+      }
     }
 
     // Obtener camareros
