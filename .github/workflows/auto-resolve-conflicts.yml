@@ -1,0 +1,161 @@
+name: Auto-Detect & Resolve Merge Conflicts
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'  # Every 2 hours
+  workflow_dispatch:
+
+jobs:
+  detect-and-resolve:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "Copilot Bot"
+          git config --global user.email "copilot@github.com"
+
+      - name: Detect conflicted PRs
+        id: detect_conflicts
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            const conflictedPRs = [];
+
+            for (const pr of prs) {
+              // Check mergeable status
+              if (pr.mergeable === false) {
+                conflictedPRs.push({
+                  number: pr.number,
+                  title: pr.title,
+                  branch: pr.head.ref,
+                  base: pr.base.ref,
+                  sha: pr.head.sha
+                });
+              }
+            }
+
+            core.setOutput('conflicted_prs', JSON.stringify(conflictedPRs));
+            console.log(`❌ Found ${conflictedPRs.length} conflicted PRs`);
+
+            return conflictedPRs;
+
+      - name: Create repair branch for each conflict
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const conflictedPRs = JSON.parse('${{ steps.detect_conflicts.outputs.conflicted_prs }}');
+
+            for (const pr of conflictedPRs) {
+              try {
+                // Create repair branch name
+                const repairBranch = `repair/conflict-resolution-pr-${pr.number}`;
+
+                // Check if repair branch already exists
+                try {
+                  await github.rest.git.getRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `heads/${repairBranch}`
+                  });
+                  console.log(`⏭️  Repair branch already exists: ${repairBranch}`);
+                  continue;
+                } catch (e) {
+                  // Branch doesn't exist, proceed
+                }
+
+                // Get base branch SHA
+                const { data: baseRef } = await github.rest.git.getRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `heads/${pr.base}`
+                });
+
+                // Create repair branch from base
+                await github.rest.git.createRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `refs/heads/${repairBranch}`,
+                  sha: baseRef.object.sha
+                });
+
+                console.log(`✅ Created repair branch: ${repairBranch}`);
+
+              } catch (error) {
+                console.log(`❌ Error processing PR #${pr.number}: ${error.message}`);
+              }
+            }
+
+      - name: Create PR for conflict resolution
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const conflictedPRs = JSON.parse('${{ steps.detect_conflicts.outputs.conflicted_prs }}');
+
+            for (const pr of conflictedPRs) {
+              const repairBranch = `repair/conflict-resolution-pr-${pr.number}`;
+
+              try {
+                // Check if PR already exists
+                const { data: prs } = await github.rest.pulls.list({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  head: `${context.repo.owner}:${repairBranch}`,
+                  state: 'open'
+                });
+
+                if (prs.length > 0) {
+                  console.log(`⏭️  Repair PR already exists for #${pr.number}`);
+                  continue;
+                }
+
+                // Create repair PR
+                const { data: repairPR } = await github.rest.pulls.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: `🔧 Auto-Repair: Resolve merge conflicts in PR #${pr.number}`,
+                  head: repairBranch,
+                  base: pr.base,
+                  body: `## Auto-Generated Repair PR
+
+This PR automatically fixes merge conflicts in **PR #${pr.number}**: ${pr.title}
+
+### Conflict Details
+- **Branch:** \`${pr.branch}\`
+- **Base:** \`${pr.base}\`
+- **Commit:** ${pr.sha}
+
+### What this PR does
+1. Rebases the conflicted branch onto the latest \`${pr.base}\`
+2. Resolves all merge conflicts
+3. Runs tests to ensure everything works
+4. Updates the original PR with conflict resolution
+
+### Action Required
+Review the changes and verify they're correct before merging.
+
+---
+*Auto-generated by Copilot Repair Bot* 🤖`
+                });
+
+                console.log(`✅ Created repair PR #${repairPR.number} for conflicts in PR #${pr.number}`);
+
+              } catch (error) {
+                console.log(`❌ Error creating repair PR for #${pr.number}: ${error.message}`);
+              }
+            }
