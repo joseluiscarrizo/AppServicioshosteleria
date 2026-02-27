@@ -56,6 +56,37 @@ npm run lint:fix
 
 ---
 
+## Integración con Slack
+
+El repositorio envía notificaciones automáticas a Slack mediante GitHub Actions para los siguientes eventos:
+
+| Evento | Descripción |
+|--------|-------------|
+| 🔀 Push a `main` | Se notifica el commit, autor y mensaje |
+| 🟢 PR abierta / reabierta | Número, título, rama y autor |
+| 🟣 PR mergeada | Confirmación del merge |
+| 🔴 PR cerrada sin merge | Aviso de cierre sin integración |
+| ✅ / ❌ Despliegue a Firebase | Resultado del workflow de deploy |
+
+### Configuración inicial
+
+1. **Crear una Slack App con Incoming Webhook:**
+   - Ve a [https://api.slack.com/apps](https://api.slack.com/apps) e inicia sesión en tu workspace.
+   - Haz clic en **"Create New App"** → **"From scratch"**, elige un nombre (p.ej. `GitHub AppHosteleria`) y tu workspace.
+   - En el menú izquierdo, selecciona **"Incoming Webhooks"** y actívalo.
+   - Haz clic en **"Add New Webhook to Workspace"**, elige el canal donde quieres recibir las notificaciones y confirma.
+   - Copia la **Webhook URL** generada (formato: `https://hooks.slack.com/services/...`).
+
+2. **Añadir el secreto en GitHub:**
+   - En el repositorio de GitHub, ve a **Settings → Secrets and variables → Actions**.
+   - Crea un nuevo secreto llamado exactamente `SLACK_WEBHOOK_URL` y pega la Webhook URL copiada.
+
+3. **Verificar:** A partir del siguiente push a `main` o apertura de PR, recibirás notificaciones en el canal de Slack elegido.
+
+> **Nota:** El canal de Slack destino se configura en el Incoming Webhook de la Slack App. Para cambiar el canal, edita o crea un nuevo webhook en [api.slack.com/apps](https://api.slack.com/apps) y actualiza el secreto `SLACK_WEBHOOK_URL`.
+
+---
+
 ## Despliegue
 
 La app está desplegada en Firebase Hosting:
