@@ -112,7 +112,7 @@ export default function Clientes() {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    let dataToSubmit = { ...formData };
+    const dataToSubmit = { ...formData };
     
     // Generar código automático si es nuevo cliente
     if (!editingCliente) {

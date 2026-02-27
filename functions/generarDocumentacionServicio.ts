@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
       try {
         clienteInfo = await base44.asServiceRole.entities.Cliente.get(pedido.cliente_id);
       } catch (_e) {
+        // intentionally empty
       }
     }
 

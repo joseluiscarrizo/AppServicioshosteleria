@@ -20,7 +20,7 @@ export default function CargaTrabajoCamareros({ mes = new Date() }) {
     queryFn: () => base44.entities.AsignacionCamarero.list('-fecha_pedido', 2000)
   });
 
-  const { data: pedidos = [] } = useQuery({
+  const { data: _pedidos = [] } = useQuery({
     queryKey: ['pedidos'],
     queryFn: () => base44.entities.Pedido.list('-dia', 500)
   });
@@ -38,7 +38,7 @@ export default function CargaTrabajoCamareros({ mes = new Date() }) {
       const asignsCamarero = asignacionesMes.filter(a => a.camarero_id === camarero.id);
       
       let totalHoras = 0;
-      let diasUnicos = new Set();
+      const diasUnicos = new Set();
       let confirmadas = 0;
       let pendientes = 0;
       

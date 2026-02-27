@@ -15,7 +15,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-export default function MapaEventos({ pedidos, camareroNombre }) {
+export default function MapaEventos({ pedidos, camareroNombre: _camareroNombre }) {
   // Filtrar pedidos con coordenadas
   const pedidosConUbicacion = pedidos.filter(p => p.latitud && p.longitud);
   const pedidosSinUbicacion = pedidos.filter(p => !p.latitud || !p.longitud);

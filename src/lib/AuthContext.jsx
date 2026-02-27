@@ -11,7 +11,7 @@ import {
 } from '../utils/tokenRefresh';
 import ErrorNotificationService from '../utils/errorNotificationService';
 import {
-  ValidationError,
+  ValidationError as _ValidationError,
   handleWebhookError
 } from '../utils/webhookImprovements';
 

@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-export default function AsignacionAutomatica({ open, onClose, pedido }) {
+export default function AsignacionAutomatica({ open, onClose, pedido: _pedido }) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>

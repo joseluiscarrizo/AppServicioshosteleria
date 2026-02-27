@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
         try {
           const [y, m, d] = pedido.dia.split('-');
           fechaFormato = `${d}/${m}/${y}`;
-        } catch (_e) {}
+        } catch (_e) { /* intentionally empty */ }
       }
       let codCoordinador = '-';
       // Intentar obtenerlo del cliente vinculado

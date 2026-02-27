@@ -81,7 +81,7 @@ export default function InformesProgramados() {
   const guardar = () => {
     if (!form.cliente) return toast.error('Selecciona un cliente');
     if (!form.destinatarios.length) return toast.error('Añade al menos un destinatario');
-    const { emailInput, ...data } = form;
+    const { _emailInput, ...data } = form;
     crearMutation.mutate(data);
   };
 

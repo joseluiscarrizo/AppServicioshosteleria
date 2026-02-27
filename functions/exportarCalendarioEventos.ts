@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
           fechaFormato = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
           diaSemana = DIAS_SEMANA[fecha.getDay()];
         } catch (_e) {
+          // intentionally empty
         }
       }
 

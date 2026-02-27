@@ -33,7 +33,7 @@ const WA_PHONE = Deno.env.get('WHATSAPP_PHONE_NUMBER');
 async function sendWAMessage(to, payload) {
   if (!to) throw new ValidationError('sendWAMessage: parámetro "to" es requerido');
   if (!payload) throw new ValidationError('sendWAMessage: parámetro "payload" es requerido');
-  return executeWhatsAppOperation(async () => {
+  return await executeWhatsAppOperation(async () => {
     const res = await fetch(`https://graph.facebook.com/v18.0/${WA_PHONE}/messages`, {
       method: 'POST',
       headers: {
@@ -101,7 +101,7 @@ const PASOS_PEDIDO = [
   { id: 'telefono_contacto',  prompt: '8️⃣ ¿Cuál es tu *número de teléfono*?' },
 ];
 
-function handleFlujoPedido(base44, telefono, sesion, textoMensaje) {
+function handleFlujoPedido(_base44, telefono, sesion, textoMensaje) {
   const pasoActual = sesion.paso;
 
   // Guardar respuesta del paso actual
