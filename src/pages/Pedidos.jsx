@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOptimizedPedidosWithAsignaciones } from '@/hooks/useOptimizedQueries';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,55 +58,11 @@ export default function Pedidos() {
 
   const queryClient = useQueryClient();
 
-  const { data: pedidos = [], isLoading } = useQuery({
-    queryKey: ['pedidos'],
-    queryFn: async () => {
-      try {
-        // Ventana de 3 meses atrás → 6 meses adelante para tener contexto operativo completo
-        const hoy         = new Date();
-        const desde       = new Date(hoy.getFullYear(), hoy.getMonth() - 3, 1);
-        const hasta       = new Date(hoy.getFullYear(), hoy.getMonth() + 6, 0);
-        const desdeStr    = format(desde, 'yyyy-MM-dd');
-        const hastaStr    = format(hasta, 'yyyy-MM-dd');
-
-        const data = await base44.entities.Pedido.filter({
-          dia: { $gte: desdeStr, $lte: hastaStr }
-        }, '-dia', 300);
-        return data.sort((a, b) => (a.dia || '').localeCompare(b.dia || ''));
-      } catch (error) {
-        // Fallback al list si el filter falla (p.ej. operador no soportado en esta versión SDK)
-        console.error('Error cargando pedidos con filtro, usando fallback:', error);
-        try {
-          const data = await base44.entities.Pedido.list('-dia', 300);
-          return data.sort((a, b) => (a.dia || '').localeCompare(b.dia || ''));
-        } catch (fallbackError) {
-          console.error('Error cargando pedidos:', fallbackError);
-          return [];
-        }
-      }
-    }
-  });
+  const { pedidos, asignaciones, isLoading } = useOptimizedPedidosWithAsignaciones();
 
   const { data: clientes = [] } = useQuery({
     queryKey: ['clientes'],
     queryFn: () => base44.entities.Cliente.list('nombre')
-  });
-
-  const { data: asignaciones = [] } = useQuery({
-    queryKey: ['asignaciones'],
-    queryFn: async () => {
-      try {
-        // Solo asignaciones de los últimos 3 meses y próximos 6 (alineado con el filtro de pedidos)
-        const hoy      = new Date();
-        const desde    = new Date(hoy.getFullYear(), hoy.getMonth() - 3, 1);
-        const hasta    = new Date(hoy.getFullYear(), hoy.getMonth() + 6, 0);
-        return await base44.entities.AsignacionCamarero.filter({
-          fecha_pedido: { $gte: format(desde, 'yyyy-MM-dd'), $lte: format(hasta, 'yyyy-MM-dd') }
-        }, '-created_date', 500);
-      } catch {
-        return await base44.entities.AsignacionCamarero.list('-created_date', 500);
-      }
-    }
   });
 
   const createMutation = useMutation({

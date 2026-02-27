@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOptimizedCamarerosWithDisponibilidad } from '@/hooks/useOptimizedQueries';
 import { CalendarDays, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -16,15 +17,7 @@ export default function Disponibilidad() {
 
   const queryClient = useQueryClient();
 
-  const { data: camareros = [], isLoading: loadingCamareros } = useQuery({
-    queryKey: ['camareros'],
-    queryFn: () => base44.entities.Camarero.list('nombre')
-  });
-
-  const { data: disponibilidades = [], isLoading: loadingDisp } = useQuery({
-    queryKey: ['disponibilidades'],
-    queryFn: () => base44.entities.Disponibilidad.list('-fecha', 500)
-  });
+  const { camareros, disponibilidades, isLoading: loadingCamarerosDisp } = useOptimizedCamarerosWithDisponibilidad();
 
   const { data: festivos = [], isLoading: loadingFestivos } = useQuery({
     queryKey: ['festivos'],
@@ -89,7 +82,7 @@ export default function Disponibilidad() {
     deleteMutation.mutate(id);
   };
 
-  const isLoading = loadingCamareros || loadingDisp || loadingFestivos;
+  const isLoading = loadingCamarerosDisp || loadingFestivos;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">

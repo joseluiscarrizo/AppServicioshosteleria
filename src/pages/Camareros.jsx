@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOptimizedCamarerosWithDisponibilidad } from '@/hooks/useOptimizedQueries';
 import { Card } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -178,17 +179,7 @@ export default function Camareros() {
     toast.success(`Importación: ${creados} creados, ${actualizados} actualizados${errores ? `, ${errores} errores` : ''}${advertenciasMsg}`);
   };
 
-  const { data: camareros = [] } = useQuery({
-    queryKey: ['camareros'],
-    queryFn: async () => {
-      try {
-        return await base44.entities.Camarero.list('-created_date');
-      } catch (error) {
-        Logger.error('Error cargando camareros', { error: error?.message });
-        return [];
-      }
-    }
-  });
+  const { camareros } = useOptimizedCamarerosWithDisponibilidad();
 
   const toggleDisponibilidadMutation = useMutation({
     mutationFn: ({ id, disponible }) => base44.entities.Camarero.update(id, { disponible }),
