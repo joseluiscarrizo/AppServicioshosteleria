@@ -1,13 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
+/**
+ * crearGrupoChat
+ * Crea un grupo de chat para un pedido con los camareros confirmados.
+ * Roles requeridos: admin, coordinador
+ */
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
-    if (!user || (user.role !== 'admin' && user.role !== 'coordinador')) {
-      return Response.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    validateUserAccess(user, ['admin', 'coordinador']);
 
     const { pedido_id } = await req.json();
 
@@ -115,6 +119,9 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
+    if (error instanceof RBACError) {
+      return Response.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('Error creando grupo:', error);
     return Response.json({ 
       error: error.message || 'Error al crear grupo' 
