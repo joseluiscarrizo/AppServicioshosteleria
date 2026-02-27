@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { MessageCircle, Loader2 } from 'lucide-react';
@@ -6,13 +7,9 @@ import GruposList from '../components/chat/GruposList';
 import ChatWindow from '../components/chat/ChatWindow.jsx';
 
 export default function Chat() {
-  const [user, setUser] = useState(null);
+  const { user, isLoadingAuth } = useAuth();
   const [grupoSeleccionado, setGrupoSeleccionado] = useState(null);
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState({});
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
-  }, []);
 
   const { data: grupos = [], isLoading } = useQuery({
     queryKey: ['grupos-chat', user?.id],
@@ -66,7 +63,7 @@ export default function Chat() {
     return () => clearInterval(interval);
   }, [grupos, user?.id]);
 
-  if (!user) {
+  if (isLoadingAuth || !user) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-slate-400" />

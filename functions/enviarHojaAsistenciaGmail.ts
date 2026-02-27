@@ -21,13 +21,13 @@ async function sendEmail(to: string, subject: string, html: string) {
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-            user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_PASS,
+            user: Deno.env.get('GMAIL_USER'),
+            pass: Deno.env.get('GMAIL_PASS'),
         },
     });
 
     await transporter.sendMail({
-        from: process.env.GMAIL_USER,
+        from: Deno.env.get('GMAIL_USER'),
         to,
         subject,
         html,
