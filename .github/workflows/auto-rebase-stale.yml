@@ -1,0 +1,110 @@
+name: Auto-Rebase Stale Branches
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # Daily at 3 AM
+  workflow_dispatch:
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "Copilot Repair Bot"
+          git config --global user.email "repair-bot@github.com"
+
+      - name: Find stale PRs
+        id: find_stale
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['stale', 'needs-rebase'],
+              per_page: 50
+            });
+
+            const stalePRs = prs.map(pr => ({
+              number: pr.number,
+              title: pr.title,
+              branch: pr.head.ref,
+              base: pr.base.ref,
+              daysSinceUpdate: Math.floor(
+                (Date.now() - new Date(pr.updated_at).getTime()) / (1000 * 60 * 60 * 24)
+              )
+            }));
+
+            core.setOutput('stale_prs', JSON.stringify(stalePRs));
+            return stalePRs;
+
+      - name: Create rebase repair PRs
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const stalePRs = JSON.parse('${{ steps.find_stale.outputs.stale_prs }}');
+
+            for (const pr of stalePRs) {
+              try {
+                const rebaseBranch = `repair/rebase-${pr.number}-${Date.now()}`;
+
+                // Create rebase branch
+                const { data: baseRef } = await github.rest.git.getRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `heads/${pr.base}`
+                });
+
+                await github.rest.git.createRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `refs/heads/${rebaseBranch}`,
+                  sha: baseRef.object.sha
+                });
+
+                // Create PR
+                const { data: rebasePR } = await github.rest.pulls.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: `🔧 REPAIR: Rebase stale branch in PR #${pr.number}`,
+                  head: rebaseBranch,
+                  base: pr.base,
+                  body: `## 🔧 Stale Branch Rebase
+
+**Stale PR:** #${pr.number} - ${pr.title}
+
+### Problem
+This PR branch hasn't been updated in ${pr.daysSinceUpdate} days and is out of sync with the base branch.
+
+### Solution
+This repair PR will:
+1. ✅ Rebase the branch onto the latest \`${pr.base}\`
+2. ✅ Incorporate all recent changes from the base branch
+3. ✅ Run tests to ensure everything still works
+4. ✅ Update PR #${pr.number} with fresh code
+
+### After Merge
+Once this PR is merged, PR #${pr.number} will be up-to-date and ready for consolidation.
+
+---
+**Auto-created by Copilot Repair Bot** 🤖
+*Timestamp: ${new Date().toISOString()}*
+`,
+                  labels: ['repair', 'automation', 'rebase']
+                });
+
+                console.log(`✅ Created rebase repair PR #${rebasePR.number} for PR #${pr.number}`);
+              } catch (error) {
+                console.log(`❌ Error creating rebase PR for #${pr.number}: ${error.message}`);
+              }
+            }
