@@ -17,6 +17,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { validateTemplateForm } from '@/utils/formValidators';
 import { sanitizeTemplateContent } from '@/utils/sanitizer';
 
+/** Allowed dynamic field names extracted from the {{...}} placeholders. */
+const ALLOWED_TEMPLATE_FIELDS = [
+  'cliente', 'dia', 'lugar_evento', 'hora_entrada',
+  'hora_salida', 'camisa', 'link_confirmar', 'link_rechazar',
+  'link_ubicacion', 'camarero_nombre'
+];
+
 export default function GestionPlantillas() {
   const [open, setOpen] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -95,7 +102,7 @@ export default function GestionPlantillas() {
     }
 
     // Warn about unknown template fields but still allow saving
-    const { unknownFields } = sanitizeTemplateContent(form.contenido, camposDinamicos.map(f => f.replace(/\{\{|\}\}/g, '')));
+    const { unknownFields } = sanitizeTemplateContent(form.contenido, ALLOWED_TEMPLATE_FIELDS);
     if (unknownFields.length > 0) {
       toast.warning(`Campos dinámicos no reconocidos: ${unknownFields.map(f => `{{${f}}}`).join(', ')}`);
     }

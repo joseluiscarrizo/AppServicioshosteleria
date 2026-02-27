@@ -64,7 +64,7 @@ export function sanitizeTemplateContent(
             return match; // Keep allowed fields as-is
         }
         unknownFields.push(trimmed);
-        return escapeHtml(match); // Escape unknown fields
+        return match; // Keep unknown fields unchanged; caller receives them in unknownFields
     });
 
     return { sanitized, unknownFields };

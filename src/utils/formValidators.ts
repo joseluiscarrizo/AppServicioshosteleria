@@ -44,9 +44,10 @@ export function validateDocumentFile(file: File): ValidationResult {
         errors.file = 'Tipo de archivo no permitido. Usa PDF, JPG, PNG, DOC o DOCX';
     }
 
-    // Check file extension as a secondary guard
-    const ext = '.' + (file.name.split('.').pop() ?? '').toLowerCase();
-    if (!ALLOWED_DOCUMENT_EXTENSIONS.includes(ext)) {
+    // Check file extension as a secondary guard (only when a dot exists in the filename)
+    const lastDotIndex = file.name.lastIndexOf('.');
+    const ext = lastDotIndex !== -1 ? ('.' + file.name.slice(lastDotIndex + 1).toLowerCase()) : '';
+    if (!ext || !ALLOWED_DOCUMENT_EXTENSIONS.includes(ext)) {
         errors.file = 'Extensión de archivo no permitida. Usa .pdf, .jpg, .jpeg, .png, .doc o .docx';
     }
 
