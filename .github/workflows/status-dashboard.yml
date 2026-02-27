@@ -1,0 +1,208 @@
+name: Status Dashboard
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      lookback_hours:
+        description: 'Hours of history to include in the report'
+        required: false
+        default: '24'
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  generate-dashboard:
+    name: Generate Automation Status Dashboard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate Report Correlation ID
+        id: correlation
+        run: |
+          CID="dashboard-$(date +%Y%m%d%H%M%S)-${{ github.run_id }}"
+          echo "id=${CID}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve Lookback Period
+        id: lookback
+        run: |
+          HOURS="${{ inputs.lookback_hours || '24' }}"
+          if ! [[ "$HOURS" =~ ^[0-9]+$ ]]; then
+            HOURS=24
+          fi
+          SINCE="$(date -u -d "${HOURS} hours ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || \
+                   date -u -v-${HOURS}H +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || \
+                   date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "hours=${HOURS}" >> "$GITHUB_OUTPUT"
+          echo "since=${SINCE}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Lookback::Reporting on last ${HOURS}h (since ${SINCE})"
+
+      - name: Collect Workflow Run Metrics
+        id: metrics
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          SINCE="${{ steps.lookback.outputs.since }}"
+
+          echo "::group::Collecting workflow run metrics"
+
+          RUNS=$(gh api "repos/${REPO}/actions/runs" \
+            --jq ".workflow_runs | map(select(.created_at >= \"${SINCE}\"))" \
+            2>/dev/null || echo "[]")
+
+          TOTAL=$(echo "$RUNS" | jq 'length')
+          SUCCESS=$(echo "$RUNS" | jq '[.[] | select(.conclusion=="success")] | length')
+          FAILURE=$(echo "$RUNS" | jq '[.[] | select(.conclusion=="failure" or .conclusion=="timed_out")] | length')
+          CANCELLED=$(echo "$RUNS" | jq '[.[] | select(.conclusion=="cancelled")] | length')
+          IN_PROGRESS=$(echo "$RUNS" | jq '[.[] | select(.status=="in_progress")] | length')
+          QUEUED=$(echo "$RUNS" | jq '[.[] | select(.status=="queued")] | length')
+
+          if [ "$TOTAL" -gt 0 ]; then
+            SUCCESS_RATE=$(echo "scale=1; ${SUCCESS} * 100 / ${TOTAL}" | bc 2>/dev/null || echo "n/a")
+          else
+            SUCCESS_RATE="n/a"
+          fi
+
+          echo "total=${TOTAL}" >> "$GITHUB_OUTPUT"
+          echo "success=${SUCCESS}" >> "$GITHUB_OUTPUT"
+          echo "failure=${FAILURE}" >> "$GITHUB_OUTPUT"
+          echo "cancelled=${CANCELLED}" >> "$GITHUB_OUTPUT"
+          echo "in_progress=${IN_PROGRESS}" >> "$GITHUB_OUTPUT"
+          echo "queued=${QUEUED}" >> "$GITHUB_OUTPUT"
+          echo "success_rate=${SUCCESS_RATE}" >> "$GITHUB_OUTPUT"
+
+          echo "Total runs    : ${TOTAL}"
+          echo "Success       : ${SUCCESS}"
+          echo "Failure       : ${FAILURE}"
+          echo "Cancelled     : ${CANCELLED}"
+          echo "In progress   : ${IN_PROGRESS}"
+          echo "Queued        : ${QUEUED}"
+          echo "Success rate  : ${SUCCESS_RATE}%"
+          echo "::endgroup::"
+
+      - name: Collect Automation-Specific Metrics
+        id: automation-metrics
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          SINCE="${{ steps.lookback.outputs.since }}"
+
+          echo "::group::Automation Workflow Metrics"
+
+          for WF in "workflow-auto-approval-handler" "workflow-executor" "workflow-completion-handler" \
+                    "audit-logger" "failure-recovery" "orchestrator-main" "security-validator"; do
+            COUNT=$(gh api "repos/${REPO}/actions/workflows/${WF}.yml/runs" \
+              --jq ".workflow_runs | map(select(.created_at >= \"${SINCE}\")) | length" \
+              2>/dev/null || echo "0")
+            LAST_CONCLUSION=$(gh api "repos/${REPO}/actions/workflows/${WF}.yml/runs" \
+              --jq ".workflow_runs[0].conclusion // \"n/a\"" \
+              2>/dev/null || echo "n/a")
+            echo "${WF}: runs=${COUNT} last_conclusion=${LAST_CONCLUSION}"
+          done
+
+          echo "::endgroup::"
+
+      - name: Assess System Health
+        id: health
+        run: |
+          FAILURE="${{ steps.metrics.outputs.failure }}"
+          IN_PROGRESS="${{ steps.metrics.outputs.in_progress }}"
+          SUCCESS_RATE="${{ steps.metrics.outputs.success_rate }}"
+
+          HEALTH="🟢 HEALTHY"
+          HEALTH_STATUS="healthy"
+
+          # Degrade if failure rate is high
+          if [ "$FAILURE" -gt 5 ] 2>/dev/null; then
+            HEALTH="🟡 DEGRADED"
+            HEALTH_STATUS="degraded"
+          fi
+
+          # Mark unhealthy if many in-flight runs are stalled
+          if [ "$IN_PROGRESS" -gt 10 ] 2>/dev/null; then
+            HEALTH="🔴 UNHEALTHY"
+            HEALTH_STATUS="unhealthy"
+          fi
+
+          echo "health=${HEALTH}" >> "$GITHUB_OUTPUT"
+          echo "health_status=${HEALTH_STATUS}" >> "$GITHUB_OUTPUT"
+          echo "System health: ${HEALTH}"
+
+      - name: Render Dashboard
+        run: |
+          CORRELATION="${{ steps.correlation.outputs.id }}"
+          HOURS="${{ steps.lookback.outputs.hours }}"
+          TOTAL="${{ steps.metrics.outputs.total }}"
+          SUCCESS="${{ steps.metrics.outputs.success }}"
+          FAILURE="${{ steps.metrics.outputs.failure }}"
+          CANCELLED="${{ steps.metrics.outputs.cancelled }}"
+          IN_PROGRESS="${{ steps.metrics.outputs.in_progress }}"
+          QUEUED="${{ steps.metrics.outputs.queued }}"
+          SUCCESS_RATE="${{ steps.metrics.outputs.success_rate }}"
+          HEALTH="${{ steps.health.outputs.health }}"
+          TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          echo "::group::📊 Automation Status Dashboard"
+          cat <<EOF
+          ══════════════════════════════════════════════════════════════
+          📊 AUTOMATION STATUS DASHBOARD
+          ══════════════════════════════════════════════════════════════
+          Report Generated : ${TIMESTAMP}
+          Correlation ID   : ${CORRELATION}
+          Lookback Period  : Last ${HOURS} hours
+          System Health    : ${HEALTH}
+
+          ── WORKFLOW RUN SUMMARY ──────────────────────────────────────
+          Total Runs       : ${TOTAL}
+          ✅ Success       : ${SUCCESS}
+          ❌ Failure       : ${FAILURE}
+          ⚠️  Cancelled    : ${CANCELLED}
+          🔄 In Progress   : ${IN_PROGRESS}
+          ⏳ Queued        : ${QUEUED}
+          📈 Success Rate  : ${SUCCESS_RATE}%
+          ══════════════════════════════════════════════════════════════
+          EOF
+          echo "::endgroup::"
+
+          # Write to GitHub Step Summary
+          echo "## 📊 Automation Status Dashboard" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Generated:** \`${TIMESTAMP}\` | **Period:** Last ${HOURS}h | **Health:** ${HEALTH}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Metric | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Total Runs | ${TOTAL} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ✅ Success | ${SUCCESS} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ❌ Failure | ${FAILURE} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ⚠️ Cancelled | ${CANCELLED} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 🔄 In Progress | ${IN_PROGRESS} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ⏳ Queued | ${QUEUED} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 📈 Success Rate | ${SUCCESS_RATE}% |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Emit Audit Event
+        if: always()
+        run: |
+          echo "::group::Audit Trail Entry"
+          cat <<EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "correlation_id": "${{ steps.correlation.outputs.id }}",
+            "event": "status_dashboard",
+            "lookback_hours": "${{ steps.lookback.outputs.hours }}",
+            "total_runs": "${{ steps.metrics.outputs.total }}",
+            "success_runs": "${{ steps.metrics.outputs.success }}",
+            "failure_runs": "${{ steps.metrics.outputs.failure }}",
+            "success_rate": "${{ steps.metrics.outputs.success_rate }}",
+            "health_status": "${{ steps.health.outputs.health_status }}",
+            "automator": "status-dashboard",
+            "result": "${{ job.status }}"
+          }
+          EOF
+          echo "::endgroup::"

@@ -1,0 +1,255 @@
+name: Failure Recovery
+
+on:
+  workflow_run:
+    workflows: ["*"]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      failed_run_id:
+        description: 'Run ID of the failed workflow to recover'
+        required: true
+        type: string
+      failed_workflow:
+        description: 'Name or filename of the failed workflow'
+        required: true
+        type: string
+      recovery_strategy:
+        description: 'Recovery strategy (retry | rollback | notify)'
+        required: false
+        default: 'retry'
+        type: choice
+        options:
+          - retry
+          - rollback
+          - notify
+      correlation_id:
+        description: 'Correlation ID (optional)'
+        required: false
+        type: string
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+jobs:
+  detect-failure:
+    name: Detect and Classify Failure
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       (github.event.workflow_run.conclusion == 'failure' ||
+        github.event.workflow_run.conclusion == 'timed_out'))
+    outputs:
+      should_recover: ${{ steps.classify.outputs.should_recover }}
+      strategy: ${{ steps.classify.outputs.strategy }}
+      failed_run_id: ${{ steps.classify.outputs.failed_run_id }}
+      failed_workflow: ${{ steps.classify.outputs.failed_workflow }}
+      correlation_id: ${{ steps.correlation.outputs.id }}
+
+    steps:
+      - name: Resolve Correlation ID
+        id: correlation
+        run: |
+          CID="${{ inputs.correlation_id }}"
+          if [ -z "$CID" ]; then
+            CID="recovery-$(date +%Y%m%d%H%M%S)-${{ github.run_id }}"
+          fi
+          echo "id=${CID}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Correlation ID::${CID}"
+
+      - name: Classify Failure
+        id: classify
+        run: |
+          TRIGGER="${{ github.event_name }}"
+
+          if [ "$TRIGGER" = "workflow_dispatch" ]; then
+            FAILED_RUN_ID="${{ inputs.failed_run_id }}"
+            FAILED_WORKFLOW="${{ inputs.failed_workflow }}"
+            STRATEGY="${{ inputs.recovery_strategy }}"
+          else
+            FAILED_RUN_ID="${{ github.event.workflow_run.id }}"
+            FAILED_WORKFLOW="${{ github.event.workflow_run.name }}"
+            CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+            # Auto-select strategy: timed_out → retry, failure → retry by default
+            STRATEGY="retry"
+          fi
+
+          echo "failed_run_id=${FAILED_RUN_ID}" >> "$GITHUB_OUTPUT"
+          echo "failed_workflow=${FAILED_WORKFLOW}" >> "$GITHUB_OUTPUT"
+          echo "strategy=${STRATEGY}" >> "$GITHUB_OUTPUT"
+          echo "should_recover=true" >> "$GITHUB_OUTPUT"
+
+          echo "::notice title=Failure Classified::workflow='${FAILED_WORKFLOW}' run=${FAILED_RUN_ID} strategy=${STRATEGY}"
+
+  retry-workflow:
+    name: Retry Failed Workflow
+    runs-on: ubuntu-latest
+    needs: detect-failure
+    if: |
+      needs.detect-failure.outputs.should_recover == 'true' &&
+      needs.detect-failure.outputs.strategy == 'retry'
+    timeout-minutes: 30
+
+    steps:
+      - name: Retry with Exponential Backoff
+        id: retry
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FAILED_RUN_ID="${{ needs.detect-failure.outputs.failed_run_id }}"
+          REPO="${{ github.repository }}"
+          CORRELATION="${{ needs.detect-failure.outputs.correlation_id }}"
+          MAX_ATTEMPTS=3
+
+          attempt=1
+          SUCCEEDED=false
+          while [ "$attempt" -le "$MAX_ATTEMPTS" ]; do
+            DELAY=$(( (attempt - 1) * (attempt - 1) * 10 ))
+            if [ "$DELAY" -gt 0 ]; then
+              echo "Exponential backoff: sleeping ${DELAY}s (attempt ${attempt})…"
+              sleep "$DELAY"
+            fi
+
+            echo "::group::Retry attempt ${attempt}/${MAX_ATTEMPTS} for run ${FAILED_RUN_ID}"
+            RESPONSE=$(gh api \
+              --method POST \
+              "repos/${REPO}/actions/runs/${FAILED_RUN_ID}/rerun-failed-jobs" \
+              2>&1)
+            EXIT_CODE=$?
+            echo "Response: ${RESPONSE}"
+            echo "::endgroup::"
+
+            if [ "$EXIT_CODE" -eq 0 ]; then
+              echo "::notice title=Retry Succeeded::Successfully re-triggered failed jobs on attempt ${attempt}."
+              SUCCEEDED=true
+              echo "succeeded=true" >> "$GITHUB_OUTPUT"
+              echo "attempts=${attempt}" >> "$GITHUB_OUTPUT"
+              break
+            fi
+
+            echo "::warning::Retry attempt ${attempt} failed. Exit code: ${EXIT_CODE}"
+            attempt=$(( attempt + 1 ))
+          done
+
+          if [ "$SUCCEEDED" = "false" ]; then
+            echo "::error title=All Retries Exhausted::Could not re-trigger run ${FAILED_RUN_ID} after ${MAX_ATTEMPTS} attempts."
+            echo "succeeded=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+  rollback-workflow:
+    name: Rollback to Previous State
+    runs-on: ubuntu-latest
+    needs: detect-failure
+    if: |
+      needs.detect-failure.outputs.should_recover == 'true' &&
+      needs.detect-failure.outputs.strategy == 'rollback'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Identify Rollback Target
+        id: rollback-target
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.event.workflow_run.head_branch || github.ref_name }}"
+
+          # Find the last successful run to determine a stable ref
+          LAST_SUCCESS=$(gh api \
+            "repos/${REPO}/actions/workflows/${{ needs.detect-failure.outputs.failed_workflow }}/runs" \
+            --jq '[.workflow_runs[] | select(.conclusion=="success")] | .[0] | {id: .id, sha: .head_sha, branch: .head_branch}' \
+            2>/dev/null || echo '{}')
+
+          ROLLBACK_SHA=$(echo "$LAST_SUCCESS" | jq -r '.sha // "unknown"')
+          echo "rollback_sha=${ROLLBACK_SHA}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Rollback Target::SHA ${ROLLBACK_SHA}"
+
+      - name: Log Rollback Action
+        run: |
+          echo "::warning title=Rollback::Rollback strategy selected. Target SHA: ${{ steps.rollback-target.outputs.rollback_sha }}"
+          echo "Manual intervention may be required to complete rollback."
+          echo "Rollback SHA: ${{ steps.rollback-target.outputs.rollback_sha }}"
+
+  create-failure-alert:
+    name: Create Failure Alert Issue
+    runs-on: ubuntu-latest
+    needs: detect-failure
+    if: |
+      needs.detect-failure.outputs.should_recover == 'true' &&
+      needs.detect-failure.outputs.strategy == 'notify'
+
+    steps:
+      - name: Create GitHub Issue Alert
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FAILED_WORKFLOW="${{ needs.detect-failure.outputs.failed_workflow }}"
+          FAILED_RUN_ID="${{ needs.detect-failure.outputs.failed_run_id }}"
+          REPO="${{ github.repository }}"
+          CORRELATION="${{ needs.detect-failure.outputs.correlation_id }}"
+          TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          ISSUE_BODY=$(printf '%s\n' \
+            "## Workflow Failure Alert" \
+            "" \
+            "Workflow: \`${FAILED_WORKFLOW}\`" \
+            "Run ID: \`${FAILED_RUN_ID}\`" \
+            "Correlation ID: \`${CORRELATION}\`" \
+            "Timestamp: \`${TIMESTAMP}\`" \
+            "Repository: \`${REPO}\`" \
+            "" \
+            "### Details" \
+            "A workflow has failed and requires manual investigation." \
+            "" \
+            "Run URL: https://github.com/${REPO}/actions/runs/${FAILED_RUN_ID}" \
+            "" \
+            "### Recommended Actions" \
+            "1. Review the failed run logs at the link above." \
+            "2. Identify the root cause of the failure." \
+            "3. Re-trigger the workflow manually or via the failure-recovery.yml workflow." \
+            "" \
+            "This issue was automatically created by the failure-recovery automation system."
+          )
+
+          gh issue create \
+            --repo "$REPO" \
+            --title "🚨 Workflow Failure: ${FAILED_WORKFLOW} (run ${FAILED_RUN_ID})" \
+            --body "$ISSUE_BODY" \
+            --label "bug" \
+            2>/dev/null || echo "::warning::Could not create issue (label may not exist). Continuing."
+
+  audit-recovery:
+    name: Emit Recovery Audit Event
+    runs-on: ubuntu-latest
+    needs:
+      - detect-failure
+      - retry-workflow
+      - rollback-workflow
+      - create-failure-alert
+    if: always() && needs.detect-failure.outputs.should_recover == 'true'
+
+    steps:
+      - name: Emit Audit Event
+        run: |
+          echo "::group::Audit Trail Entry"
+          cat <<EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "correlation_id": "${{ needs.detect-failure.outputs.correlation_id }}",
+            "event": "failure_recovery",
+            "failed_workflow": "${{ needs.detect-failure.outputs.failed_workflow }}",
+            "failed_run_id": "${{ needs.detect-failure.outputs.failed_run_id }}",
+            "strategy": "${{ needs.detect-failure.outputs.strategy }}",
+            "retry_succeeded": "${{ needs.retry-workflow.outputs.succeeded || 'n/a' }}",
+            "automator": "failure-recovery",
+            "result": "${{ job.status }}"
+          }
+          EOF
+          echo "::endgroup::"

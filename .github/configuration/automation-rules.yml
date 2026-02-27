@@ -1,0 +1,202 @@
+# Automation Rules Configuration
+# Version: 1.0.0
+# Last Updated: 2026-02-27
+#
+# This file controls the behavior of the enterprise workflow automation system.
+# Modify these values to customize the automation for your environment.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GENERAL SETTINGS
+# ─────────────────────────────────────────────────────────────────────────────
+general:
+  # Name of the automation system (used in logs and notifications)
+  system_name: "AppServicioshosteleria Automation"
+
+  # Version of this configuration schema
+  config_version: "1.0.0"
+
+  # Enable or disable the entire automation system (true/false)
+  enabled: true
+
+  # Log level: debug | info | warning | error
+  log_level: "info"
+
+  # Whether to emit structured JSON audit logs
+  structured_logging: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BRANCH RULES
+# ─────────────────────────────────────────────────────────────────────────────
+branches:
+  # Branches that are allowed to trigger auto-approval
+  allowed_for_auto_approval:
+    - main
+    - develop
+    - staging
+
+  # Branches that require manual approval regardless of other settings
+  require_manual_approval:
+    - production
+
+  # Default branch for workflow dispatches
+  default_branch: main
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AUTO-APPROVAL SETTINGS
+# ─────────────────────────────────────────────────────────────────────────────
+auto_approval:
+  # Enable automatic environment approval
+  enabled: true
+
+  # Environments that can be auto-approved
+  allowed_environments:
+    - staging
+    - development
+    - preview
+
+  # Environments that always require manual approval
+  require_manual_environments:
+    - production
+    - prod
+
+  # Comment added to auto-approval requests
+  approval_comment: "Auto-approved by the enterprise automation system"
+
+  # Maximum time (seconds) to wait for a pending approval before timing out
+  approval_timeout_seconds: 300
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RETRY & BACKOFF SETTINGS
+# ─────────────────────────────────────────────────────────────────────────────
+retry:
+  # Maximum number of retry attempts for failed operations
+  max_attempts: 3
+
+  # Base delay in seconds for exponential backoff (delay = base * attempt^2)
+  base_delay_seconds: 5
+
+  # Maximum delay cap in seconds
+  max_delay_seconds: 60
+
+  # Whether to retry on timeout
+  retry_on_timeout: true
+
+  # Whether to retry on failure
+  retry_on_failure: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TIMEOUT SETTINGS
+# ─────────────────────────────────────────────────────────────────────────────
+timeouts:
+  # Maximum time (minutes) for workflow execution monitoring
+  workflow_monitoring_minutes: 90
+
+  # Maximum time (minutes) for orchestrator pipeline
+  orchestrator_pipeline_minutes: 180
+
+  # Maximum time (minutes) before a workflow is considered stuck
+  stuck_workflow_threshold_minutes: 120
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RATE LIMITING
+# ─────────────────────────────────────────────────────────────────────────────
+rate_limiting:
+  # Enable rate limiting
+  enabled: true
+
+  # Delay in seconds by priority
+  priority_delays:
+    high: 0
+    normal: 5
+    low: 15
+
+  # Maximum concurrent pipeline executions
+  max_concurrent_pipelines: 5
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECURITY SETTINGS
+# ─────────────────────────────────────────────────────────────────────────────
+security:
+  # Block auto-approval if dangerous patterns are detected in changed files
+  block_on_dangerous_patterns: false  # Set to true for stricter security
+
+  # Block auto-approval if the source branch is not in allowed_for_auto_approval
+  enforce_branch_allowlist: true
+
+  # Validate workflow file integrity before execution
+  validate_workflow_integrity: true
+
+  # Risk levels that block auto-approval: HIGH | MEDIUM | LOW
+  block_on_risk_levels:
+    - HIGH
+
+  # Patterns considered dangerous (used by security-validator)
+  dangerous_patterns:
+    - "rm -rf /"
+    - "curl.*|.*bash"
+    - "wget.*|.*sh"
+    - "eval.*base64"
+    - "chmod 777"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FAILURE RECOVERY SETTINGS
+# ─────────────────────────────────────────────────────────────────────────────
+failure_recovery:
+  # Default recovery strategy: retry | rollback | notify
+  default_strategy: retry
+
+  # Workflows excluded from automatic failure recovery
+  excluded_workflows:
+    - audit-logger.yml
+    - status-dashboard.yml
+
+  # Whether to automatically create a GitHub issue on unrecoverable failures
+  create_issue_on_failure: true
+
+  # Labels to apply to auto-created failure issues
+  failure_issue_labels:
+    - bug
+    - automation
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STATUS DASHBOARD SETTINGS
+# ─────────────────────────────────────────────────────────────────────────────
+dashboard:
+  # Default lookback period in hours
+  default_lookback_hours: 24
+
+  # Schedule (cron) for automatic dashboard generation
+  schedule: "0 */6 * * *"  # Every 6 hours
+
+  # Health thresholds
+  health_thresholds:
+    # Number of failures in lookback period that triggers DEGRADED status
+    degraded_failure_count: 5
+    # Number of concurrent in-progress runs that triggers UNHEALTHY status
+    unhealthy_in_progress_count: 10
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AUDIT LOGGING SETTINGS
+# ─────────────────────────────────────────────────────────────────────────────
+audit:
+  # Schema version for log entries
+  log_schema_version: "1.0"
+
+  # Include payload in audit log entries
+  include_payload: true
+
+  # Automator identifier written to every log entry
+  automator_id: "enterprise-automation-system"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NOTIFICATION SETTINGS
+# ─────────────────────────────────────────────────────────────────────────────
+notifications:
+  # Enable GitHub Issue creation for critical failures
+  create_github_issues: true
+
+  # Enable GitHub Step Summary reports
+  write_step_summaries: true
+
+  # Log level for ::notice annotations (debug | info | warning | error)
+  annotation_level: "notice"

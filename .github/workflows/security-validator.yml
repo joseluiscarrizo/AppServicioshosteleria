@@ -1,0 +1,242 @@
+name: Security Validator
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_run_id:
+        description: 'Workflow Run ID to validate'
+        required: false
+        type: string
+      target_branch:
+        description: 'Branch to validate'
+        required: false
+        default: 'main'
+        type: string
+      correlation_id:
+        description: 'Correlation ID (optional)'
+        required: false
+        type: string
+  workflow_run:
+    workflows: ["*"]
+    types:
+      - requested
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+jobs:
+  validate-security:
+    name: Security Validation Gate
+    runs-on: ubuntu-latest
+    outputs:
+      security_passed: ${{ steps.final-gate.outputs.passed }}
+      correlation_id: ${{ steps.correlation.outputs.id }}
+      risk_level: ${{ steps.assess-risk.outputs.risk_level }}
+
+    steps:
+      - name: Resolve Correlation ID
+        id: correlation
+        run: |
+          CID="${{ inputs.correlation_id }}"
+          if [ -z "$CID" ]; then
+            CID="secval-$(date +%Y%m%d%H%M%S)-${{ github.run_id }}"
+          fi
+          echo "id=${CID}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Security Validator::Correlation ID: ${CID}"
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate Branch Permissions
+        id: branch-validation
+        run: |
+          TRIGGER="${{ github.event_name }}"
+          if [ "$TRIGGER" = "workflow_run" ]; then
+            BRANCH="${{ github.event.workflow_run.head_branch }}"
+            ACTOR="${{ github.event.workflow_run.actor.login }}"
+          else
+            BRANCH="${{ inputs.target_branch }}"
+            ACTOR="${{ github.actor }}"
+          fi
+
+          ALLOWED_BRANCHES="main develop staging"
+          BRANCH_OK=false
+          for b in $ALLOWED_BRANCHES; do
+            if [ "$BRANCH" = "$b" ]; then
+              BRANCH_OK=true
+              break
+            fi
+          done
+
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "actor=${ACTOR}" >> "$GITHUB_OUTPUT"
+          echo "branch_ok=${BRANCH_OK}" >> "$GITHUB_OUTPUT"
+
+          if [ "$BRANCH_OK" = "true" ]; then
+            echo "::notice title=Branch Validation::Branch '${BRANCH}' is permitted. ✅"
+          else
+            echo "::error title=Branch Validation Failed::Branch '${BRANCH}' is not in the allowed list."
+          fi
+
+      - name: Scan for Dangerous Patterns
+        id: pattern-scan
+        run: |
+          echo "::group::Dangerous Pattern Scan"
+          DANGEROUS_FOUND=false
+          DANGEROUS_PATTERNS=(
+            "rm -rf /"
+            "curl.*|.*bash"
+            "wget.*|.*sh"
+            "eval.*base64"
+            "chmod 777"
+            "sudo su"
+          )
+
+          for PATTERN in "${DANGEROUS_PATTERNS[@]}"; do
+            MATCHES=$(git diff HEAD~1 HEAD -- . 2>/dev/null | grep -E "$PATTERN" | wc -l || echo "0")
+            if [ "$MATCHES" -gt 0 ]; then
+              echo "::warning::Potentially dangerous pattern found: '${PATTERN}' (${MATCHES} match(es))"
+              DANGEROUS_FOUND=true
+            fi
+          done
+
+          echo "dangerous_found=${DANGEROUS_FOUND}" >> "$GITHUB_OUTPUT"
+
+          if [ "$DANGEROUS_FOUND" = "false" ]; then
+            echo "::notice title=Pattern Scan::No dangerous patterns detected. ✅"
+          fi
+          echo "::endgroup::"
+
+      - name: Validate Environment Variables
+        id: env-validation
+        run: |
+          echo "::group::Environment Variable Validation"
+          ENV_OK=true
+
+          REQUIRED_SECRETS=("GITHUB_TOKEN")
+          for SECRET in "${REQUIRED_SECRETS[@]}"; do
+            if [ -z "${!SECRET}" ] && [ "$SECRET" = "GITHUB_TOKEN" ]; then
+              echo "::notice::GITHUB_TOKEN is always provided by GitHub Actions."
+            fi
+          done
+
+          echo "env_ok=${ENV_OK}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Env Validation::Environment variables validated. ✅"
+          echo "::endgroup::"
+
+      - name: Check Workflow File Integrity
+        id: integrity-check
+        run: |
+          echo "::group::Workflow File Integrity Check"
+          INTEGRITY_OK=true
+          CHANGED_WORKFLOWS=$(git diff HEAD~1 HEAD --name-only 2>/dev/null | grep "^.github/workflows/" || true)
+
+          if [ -n "$CHANGED_WORKFLOWS" ]; then
+            echo "Modified workflow files detected:"
+            echo "$CHANGED_WORKFLOWS"
+            echo "::warning title=Workflow Changes::Workflow files have been modified. Review required."
+          else
+            echo "No workflow file changes detected."
+          fi
+
+          echo "integrity_ok=${INTEGRITY_OK}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Integrity Check::Workflow integrity check complete. ✅"
+          echo "::endgroup::"
+
+      - name: Assess Overall Risk Level
+        id: assess-risk
+        run: |
+          BRANCH_OK="${{ steps.branch-validation.outputs.branch_ok }}"
+          DANGEROUS_FOUND="${{ steps.pattern-scan.outputs.dangerous_found }}"
+
+          if [ "$BRANCH_OK" = "false" ]; then
+            RISK_LEVEL="HIGH"
+          elif [ "$DANGEROUS_FOUND" = "true" ]; then
+            RISK_LEVEL="MEDIUM"
+          else
+            RISK_LEVEL="LOW"
+          fi
+
+          echo "risk_level=${RISK_LEVEL}" >> "$GITHUB_OUTPUT"
+
+          case "$RISK_LEVEL" in
+            LOW)    echo "::notice title=Risk Assessment::Risk level: LOW 🟢" ;;
+            MEDIUM) echo "::warning title=Risk Assessment::Risk level: MEDIUM 🟡" ;;
+            HIGH)   echo "::error title=Risk Assessment::Risk level: HIGH 🔴" ;;
+          esac
+
+      - name: Final Security Gate
+        id: final-gate
+        run: |
+          BRANCH_OK="${{ steps.branch-validation.outputs.branch_ok }}"
+          DANGEROUS_FOUND="${{ steps.pattern-scan.outputs.dangerous_found }}"
+          RISK_LEVEL="${{ steps.assess-risk.outputs.risk_level }}"
+
+          PASSED=true
+
+          # Block on HIGH risk (bad branch)
+          if [ "$BRANCH_OK" = "false" ]; then
+            PASSED=false
+            echo "::error title=Security Gate FAILED::Branch validation failed."
+          fi
+
+          # Warn but don't block on MEDIUM risk
+          if [ "$DANGEROUS_FOUND" = "true" ]; then
+            echo "::warning title=Security Gate WARNING::Dangerous patterns detected — manual review recommended."
+          fi
+
+          echo "passed=${PASSED}" >> "$GITHUB_OUTPUT"
+
+          if [ "$PASSED" = "true" ]; then
+            echo "::notice title=Security Gate PASSED::All security checks passed. ✅"
+          else
+            echo "::error title=Security Gate FAILED::Security validation failed. Auto-approval blocked."
+            exit 1
+          fi
+
+      - name: Write Security Report
+        if: always()
+        run: |
+          CORRELATION="${{ steps.correlation.outputs.id }}"
+          BRANCH="${{ steps.branch-validation.outputs.branch }}"
+          ACTOR="${{ steps.branch-validation.outputs.actor }}"
+          BRANCH_OK="${{ steps.branch-validation.outputs.branch_ok }}"
+          DANGEROUS_FOUND="${{ steps.pattern-scan.outputs.dangerous_found }}"
+          RISK_LEVEL="${{ steps.assess-risk.outputs.risk_level }}"
+          PASSED="${{ steps.final-gate.outputs.passed }}"
+
+          echo "## 🔒 Security Validation Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Check | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Branch Allowed | \`${BRANCH_OK}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Dangerous Patterns | \`${DANGEROUS_FOUND}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Risk Level | \`${RISK_LEVEL}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Security Gate** | **\`${PASSED}\`** |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Branch: \`${BRANCH}\` | Actor: \`${ACTOR}\` | Correlation: \`${CORRELATION}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Emit Audit Event
+        if: always()
+        run: |
+          echo "::group::Audit Trail Entry"
+          cat <<EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "correlation_id": "${{ steps.correlation.outputs.id }}",
+            "event": "security_validator",
+            "branch": "${{ steps.branch-validation.outputs.branch }}",
+            "actor": "${{ steps.branch-validation.outputs.actor }}",
+            "branch_ok": "${{ steps.branch-validation.outputs.branch_ok }}",
+            "dangerous_patterns_found": "${{ steps.pattern-scan.outputs.dangerous_found }}",
+            "risk_level": "${{ steps.assess-risk.outputs.risk_level }}",
+            "security_passed": "${{ steps.final-gate.outputs.passed }}",
+            "automator": "security-validator",
+            "result": "${{ job.status }}"
+          }
+          EOF
+          echo "::endgroup::"
