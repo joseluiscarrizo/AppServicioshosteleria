@@ -1,0 +1,67 @@
+name: Auto Approve Workflow Runs
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve pending workflow runs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Only auto-approve runs triggered by trusted actors (collaborators or bots).
+            if (context.eventName === 'pull_request_target') {
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.pull_request.number,
+              });
+              const trustedAssociations = ['OWNER', 'MEMBER', 'COLLABORATOR'];
+              if (!trustedAssociations.includes(pr.author_association) && pr.user.type !== 'Bot') {
+                console.log(`Skipping auto-approval: PR author association is "${pr.author_association}".`);
+                return;
+              }
+            }
+
+            // Poll for pending runs with exponential backoff (up to ~45 s).
+            let runs = { data: { workflow_runs: [], total_count: 0 } };
+            const delays = [5000, 10000, 15000, 15000];
+            for (const delay of delays) {
+              runs = await github.rest.actions.listWorkflowRunsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                status: 'action_required',
+                per_page: 100,
+              });
+              if (runs.data.total_count > 0) break;
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
+
+            if (runs.data.total_count === 0) {
+              console.log('No workflow runs pending approval.');
+              return;
+            }
+
+            for (const run of runs.data.workflow_runs) {
+              try {
+                await github.rest.actions.approveWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: run.id,
+                });
+                console.log(`Approved workflow run #${run.id} (${run.name})`);
+              } catch (error) {
+                console.log(`Could not approve run #${run.id}: ${error.message}`);
+              }
+            }
