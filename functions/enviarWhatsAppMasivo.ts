@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import Logger from '../utils/logger.ts';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
 Deno.serve(async (req) => {
@@ -143,12 +144,12 @@ Deno.serve(async (req) => {
               mensajeIdProveedor = data.messages[0]?.id;
               proveedor = 'whatsapp_api';
               enviadoPorAPI = true;
-              console.log(`✅ Mensaje enviado vía API a ${camarero.nombre}: ${mensajeIdProveedor}`);
+              Logger.info(`✅ Mensaje enviado vía API a ${camarero.nombre}: ${mensajeIdProveedor}`);
             } else {
               throw new Error(data.error?.message || 'Error en WhatsApp API');
             }
           } catch (apiError) {
-            console.error('WhatsApp API error:', apiError.message);
+            Logger.error(`WhatsApp API error: ${apiError instanceof Error ? apiError.message : String(apiError)}`);
             proveedor = 'whatsapp_web'; // Fallback a WhatsApp Web
             estadoEnvio = 'pendiente';
           }
@@ -220,11 +221,16 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     if (error instanceof RBACError) {
-      return Response.json({ error: error.message }, { status: error.statusCode });
+      return Response.json(
+        { success: false, error: { code: 'RBAC_ERROR', message: error.message }, metadata: { timestamp: new Date().toISOString() } },
+        { status: error.statusCode }
+      );
     }
-    console.error('Error en envío masivo:', error);
-    return Response.json({ 
-      error: error.message || 'Error al enviar mensajes' 
-    }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    Logger.error(`Error en enviarWhatsAppMasivo: ${message}`);
+    return Response.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message }, metadata: { timestamp: new Date().toISOString() } },
+      { status: 500 }
+    );
   }
 });

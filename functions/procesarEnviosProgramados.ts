@@ -1,4 +1,5 @@
 import { createClientFromRequest } from '@base44/sdk';
+import Logger from '../utils/logger.ts';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
 Deno.serve(async (req) => {
@@ -63,7 +64,7 @@ Deno.serve(async (req) => {
                 camarero_nombre: destinatario.camarero_nombre
               });
             } catch (err) {
-              console.error(`Error enviando a ${destinatario.camarero_nombre}:`, err);
+              Logger.error(`Error enviando a ${destinatario.camarero_nombre}: ${err instanceof Error ? err.message : String(err)}`);
               errores++;
             }
           }
@@ -86,7 +87,7 @@ Deno.serve(async (req) => {
           procesados++;
         }
       } catch (error) {
-        console.error(`Error procesando envío ${envio.nombre}:`, error);
+        Logger.error(`Error procesando envío ${envio.nombre}: ${error instanceof Error ? error.message : String(error)}`);
         errores++;
       }
     }
@@ -100,10 +101,17 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     if (error instanceof RBACError) {
-      return Response.json({ error: error.message }, { status: error.statusCode });
+      return Response.json(
+        { success: false, error: { code: 'RBAC_ERROR', message: error.message }, metadata: { timestamp: new Date().toISOString() } },
+        { status: error.statusCode }
+      );
     }
-    console.error('Error en procesarEnviosProgramados:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    Logger.error(`Error en procesarEnviosProgramados: ${message}`);
+    return Response.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message }, metadata: { timestamp: new Date().toISOString() } },
+      { status: 500 }
+    );
   }
 });
 

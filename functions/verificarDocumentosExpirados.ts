@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import Logger from '../utils/logger.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -77,7 +78,7 @@ Deno.serve(async (req) => {
                   plantilla_usada: 'Expiración Documento'
                 });
               } catch (e) {
-                console.error('Error enviando WhatsApp:', e);
+                Logger.error(`Error enviando WhatsApp: ${e instanceof Error ? e.message : String(e)}`);
               }
             }
 
@@ -107,12 +108,12 @@ Sistema de Gestión de Camareros
                     `
                   });
                 } catch (e) {
-                  console.error('Error enviando email:', e);
+                  Logger.error(`Error enviando email: ${e instanceof Error ? e.message : String(e)}`);
                 }
               }
             }
           } catch (e) {
-            console.error('Error creando notificación:', e);
+            Logger.error(`Error creando notificación: ${e instanceof Error ? e.message : String(e)}`);
           }
         }
       }
@@ -126,10 +127,11 @@ Sistema de Gestión de Camareros
     });
 
   } catch (error) {
-    console.error('Error en verificarDocumentosExpirados:', error);
-    return Response.json({ 
-      error: error.message,
-      stack: error.stack 
-    }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    Logger.error(`Error en verificarDocumentosExpirados: ${message}`);
+    return Response.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message }, metadata: { timestamp: new Date().toISOString() } },
+      { status: 500 }
+    );
   }
 });

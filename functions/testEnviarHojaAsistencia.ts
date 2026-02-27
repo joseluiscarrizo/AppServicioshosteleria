@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import Logger from '../utils/logger.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -108,7 +109,7 @@ Deno.serve(async (req) => {
     }
     
     // Enviar email
-    console.log('📧 Enviando hoja de asistencia (TEST) a:', coordinador.email);
+    Logger.info(`📧 Enviando hoja de asistencia (TEST) a: ${coordinador.email}`);
     
     await base44.asServiceRole.integrations.Core.SendEmail({
       to: coordinador.email,
@@ -131,10 +132,11 @@ Deno.serve(async (req) => {
     });
     
   } catch (error) {
-    console.error('❌ Error enviando hoja:', error);
-    return Response.json({ 
-      error: error.message,
-      stack: error.stack
-    }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    Logger.error(`Error en testEnviarHojaAsistencia: ${message}`);
+    return Response.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message }, metadata: { timestamp: new Date().toISOString() } },
+      { status: 500 }
+    );
   }
 });

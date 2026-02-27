@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import Logger from '../utils/logger.ts';
 import { format, parseISO } from 'npm:date-fns@3.6.0';
 import { es } from 'npm:date-fns@3.6.0/locale';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
@@ -146,7 +147,7 @@ Sistema de Gestión de Camareros`;
           body: parteMensaje
         });
       } catch (e) {
-        console.error(`Error enviando email a ${emailCliente}:`, e);
+        Logger.error(`Error enviando email a ${emailCliente}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
@@ -159,7 +160,7 @@ Sistema de Gestión de Camareros`;
           body: `COPIA DEL PARTE ENVIADO AL CLIENTE\n\n${parteMensaje}`
         });
       } catch (e) {
-        console.error(`Error enviando copia a coordinador:`, e);
+        Logger.error(`Error enviando copia a coordinador: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
@@ -184,9 +185,16 @@ Sistema de Gestión de Camareros`;
 
   } catch (error) {
     if (error instanceof RBACError) {
-      return Response.json({ error: error.message }, { status: error.statusCode });
+      return Response.json(
+        { success: false, error: { code: 'RBAC_ERROR', message: error.message }, metadata: { timestamp: new Date().toISOString() } },
+        { status: error.statusCode }
+      );
     }
-    console.error('Error en enviarParteAutomatico:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    Logger.error(`Error en enviarParteAutomatico: ${message}`);
+    return Response.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message }, metadata: { timestamp: new Date().toISOString() } },
+      { status: 500 }
+    );
   }
 });

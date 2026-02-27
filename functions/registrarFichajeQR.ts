@@ -7,6 +7,7 @@
  * POST { token, tipo }      → tipo: "entrada" | "salida"  → registra fichaje
  */
 import { createClientFromRequest } from '@base44/sdk';
+import Logger from '../utils/logger.ts';
 
 function calcularHoras(entrada, salida) {
   if (!entrada || !salida) return null;
@@ -130,7 +131,11 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Método no permitido' }, { status: 405, headers: corsHeaders });
 
   } catch (error) {
-    console.error('Error en registrarFichajeQR:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    Logger.error(`Error en registrarFichajeQR: ${message}`);
+    return Response.json(
+      { success: false, error: { code: 'INTERNAL_ERROR', message }, metadata: { timestamp: new Date().toISOString() } },
+      { status: 500 }
+    );
   }
 });
