@@ -1,0 +1,77 @@
+name: Comprehensive Repair Dashboard
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      checks: read
+      contents: read
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            const now = new Date();
+            const stats = {
+              total: prs.length,
+              conflicted: 0,
+              stale: 0,
+              failingTests: 0,
+              readyToMerge: 0
+            };
+
+            for (const pr of prs) {
+              const { data: detail } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              if (detail.mergeable_state === 'dirty') {
+                stats.conflicted++;
+                continue;
+              }
+
+              const daysSince = Math.floor((now - new Date(pr.updated_at)) / (1000 * 60 * 60 * 24));
+              if (daysSince > 7) {
+                stats.stale++;
+                continue;
+              }
+
+              const { data: checkRuns } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.head.sha
+              });
+
+              const hasFailed = checkRuns.check_runs.some(c => c.conclusion === 'failure');
+              if (hasFailed) {
+                stats.failingTests++;
+                continue;
+              }
+
+              if (detail.mergeable === true) {
+                stats.readyToMerge++;
+              }
+            }
+
+            console.log('=== COMPREHENSIVE REPAIR DASHBOARD ===');
+            console.log(`Date:             ${now.toISOString().split('T')[0]}`);
+            console.log(`Total Open PRs:   ${stats.total}`);
+            console.log(`Ready to Merge:   ${stats.readyToMerge}`);
+            console.log(`Conflicted:       ${stats.conflicted}`);
+            console.log(`Stale (>7 days):  ${stats.stale}`);
+            console.log(`Failing Tests:    ${stats.failingTests}`);
+            console.log('======================================');

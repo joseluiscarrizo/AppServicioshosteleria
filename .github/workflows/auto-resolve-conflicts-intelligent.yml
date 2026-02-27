@@ -1,0 +1,53 @@
+name: Auto Resolve Conflicts Intelligent
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+jobs:
+  intelligent-conflict-resolution:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            for (const pr of prs) {
+              const { data: detail } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              if (detail.mergeable_state !== 'dirty') continue;
+
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number
+              });
+
+              const alreadyNotified = comments.some(
+                c => c.body.includes('Intelligent Conflict Resolution')
+              );
+
+              if (!alreadyNotified) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `🧠 **Intelligent Conflict Resolution**: PR #${pr.number} has merge conflicts with \`${pr.base.ref}\`. To resolve:\n\n1. \`git fetch origin\`\n2. \`git checkout ${pr.head.ref}\`\n3. \`git rebase origin/${pr.base.ref}\`\n4. Resolve conflicts, then \`git push --force-with-lease\``
+                });
+                console.log(`Sent intelligent resolution guide for PR #${pr.number}`);
+              }
+            }
