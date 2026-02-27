@@ -1,11 +1,19 @@
 // errorNotificationService.ts
+import Logger from './logger';
 
-export class ErrorNotificationService {
-    constructor(private phoneNumber: string) {}
+class ErrorNotificationService {
+    private phoneNumber: string;
+
+    constructor(phoneNumber: string) {
+        this.phoneNumber = phoneNumber;
+    }
 
     notifyUser(message: string): void {
+        if (!this.phoneNumber) {
+            return;
+        }
         // Logic to send WhatsApp message to the user
-        console.log(`Sending message to ${this.phoneNumber}: ${message}`);
+        Logger.info(`Sending message to ${this.phoneNumber}: ${message}`);
     }
 }
 
@@ -14,3 +22,5 @@ export const errorMessages = {
     NOT_FOUND: 'The requested resource was not found.',
     SERVER_ERROR: 'An error occurred on the server. Please try again later.',
 };
+
+export default ErrorNotificationService;
