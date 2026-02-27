@@ -22,9 +22,14 @@ export function ErrorProvider({ children }) {
       title,
       message,
       severity,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
       originalError: error,
-      onRetry
+      onRetry,
+      // Structured fields from AppError / handleWebhookError response
+      code: error?.code ?? null,
+      statusCode: error?.statusCode ?? null,
+      retryable: error?.retryable ?? null,
+      details: error?.details ?? null,
     };
 
     setErrors(prev => [...prev, errorObj]);

@@ -7,6 +7,7 @@
  * POST { token, tipo }      → tipo: "entrada" | "salida"  → registra fichaje
  */
 import { createClientFromRequest } from '@base44/sdk';
+import { handleWebhookError, ValidationError, NotFoundError } from '../utils/errorHandler.ts';
 
 function calcularHoras(entrada, salida) {
   if (!entrada || !salida) return null;
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
     const token = url.searchParams.get('token');
 
     if (!token) {
-      return Response.json({ error: 'Token requerido' }, { status: 400, headers: corsHeaders });
+      throw new ValidationError('Token requerido');
     }
 
     // Buscar asignación por token
@@ -42,7 +43,7 @@ Deno.serve(async (req) => {
     const asignacion = asignaciones[0];
 
     if (!asignacion) {
-      return Response.json({ error: 'Token no válido o asignación no encontrada' }, { status: 404, headers: corsHeaders });
+      throw new NotFoundError('Token no válido o asignación no encontrada');
     }
 
     // Obtener pedido para contexto
@@ -76,7 +77,7 @@ Deno.serve(async (req) => {
       const { tipo } = body; // "entrada" | "salida"
 
       if (!tipo || !['entrada', 'salida'].includes(tipo)) {
-        return Response.json({ error: 'tipo debe ser "entrada" o "salida"' }, { status: 400, headers: corsHeaders });
+        throw new ValidationError('tipo debe ser "entrada" o "salida"');
       }
 
       const ahora = new Date();
@@ -130,7 +131,9 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'Método no permitido' }, { status: 405, headers: corsHeaders });
 
   } catch (error) {
-    console.error('Error en registrarFichajeQR:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('Error en registrarFichajeQR:', (error as Error).message);
+    const errorResponse = handleWebhookError(error, 500);
+    // Preserve CORS headers on error responses
+    return new Response(errorResponse.body, { status: errorResponse.status, headers: corsHeaders });
   }
 });
