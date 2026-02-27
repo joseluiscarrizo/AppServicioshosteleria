@@ -15,9 +15,6 @@ import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { ManagerAdminDashboard } from '@/components/admin/ManagerAdminDashboard';
 import { UserDashboard } from '@/components/user/UserDashboard';
 import { useEffect } from 'react';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import { ErrorProvider } from '@/contexts/ErrorContext';
-import { LoadingProvider } from '@/contexts/LoadingContext';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -121,25 +118,19 @@ const AuthenticatedApp = () => {
 function App() {
 
   return (
-    <ErrorBoundary>
+    <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <AuthProvider>
-          <ErrorProvider>
-            <LoadingProvider>
-              <RoleProvider>
-                <Router>
-                  <AuthRoleSync />
-                  <NavigationTracker />
-                  <AuthenticatedApp />
-                </Router>
-                <Toaster />
-                <VisualEditAgent />
-              </RoleProvider>
-            </LoadingProvider>
-          </ErrorProvider>
-        </AuthProvider>
+        <RoleProvider>
+          <Router>
+            <AuthRoleSync />
+            <NavigationTracker />
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+          <VisualEditAgent />
+        </RoleProvider>
       </QueryClientProvider>
-    </ErrorBoundary>
+    </AuthProvider>
   )
 }
 
