@@ -33,3 +33,24 @@ The application follows a microservices architecture which promotes modularity a
 ## Conclusion
 
 By following the outlined patterns and strategies, the AppServicioshosteleria application can achieve robust security measures, resilience against failures, and the ability to scale efficiently to meet growth demands. Regular reviews of these implementations are recommended to adapt to changing technology and threat landscapes.
+
+---
+
+## Extended Documentation
+
+For detailed implementation guides, see the `docs/` directory:
+
+| Document | Description |
+|----------|-------------|
+| [docs/ARCHITECTURE_ROBUST.md](docs/ARCHITECTURE_ROBUST.md) | Full architecture overview with data flow diagrams |
+| [docs/ARCHITECTURE_DIAGRAM.md](docs/ARCHITECTURE_DIAGRAM.md) | ASCII architecture diagrams |
+| [docs/SECURITY_GUIDELINES.md](docs/SECURITY_GUIDELINES.md) | Security implementation: RBAC, OWASP, input validation |
+| [docs/DEPLOYMENT_SECURITY.md](docs/DEPLOYMENT_SECURITY.md) | Deployment checklist, secrets management, incident response |
+| [docs/DEVELOPMENT_STANDARDS.md](docs/DEVELOPMENT_STANDARDS.md) | Coding conventions, Git workflow, testing requirements |
+| [docs/CLOUD_FUNCTIONS_GUIDE.md](docs/CLOUD_FUNCTIONS_GUIDE.md) | Cloud Functions patterns, logging, monitoring |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues and debugging guide |
+| [docs/ADR/ADR-001-Saga-Pattern-for-Transactions.md](docs/ADR/ADR-001-Saga-Pattern-for-Transactions.md) | ADR: Saga pattern for distributed transactions |
+| [docs/ADR/ADR-002-Query-Normalization-Strategy.md](docs/ADR/ADR-002-Query-Normalization-Strategy.md) | ADR: TanStack Query key normalization |
+| [docs/ADR/ADR-003-Error-Handling-Hierarchy.md](docs/ADR/ADR-003-Error-Handling-Hierarchy.md) | ADR: Error handling hierarchy |
+| [docs/ADR/ADR-004-Audit-Logging-Requirements.md](docs/ADR/ADR-004-Audit-Logging-Requirements.md) | ADR: Audit logging requirements |
+| [docs/ADR/ADR-005-Cache-Strategy-5min-stale.md](docs/ADR/ADR-005-Cache-Strategy-5min-stale.md) | ADR: 5-minute stale time cache strategy |

@@ -187,6 +187,22 @@ Coordinados desde un único hook `useBackgroundServices` montado en `Layout.jsx`
 
 ---
 
+## Documentación
+
+| Documento | Descripción |
+|-----------|-------------|
+| [docs/ARCHITECTURE_ROBUST.md](docs/ARCHITECTURE_ROBUST.md) | Arquitectura enterprise, componentes, patrones |
+| [docs/ARCHITECTURE_DIAGRAM.md](docs/ARCHITECTURE_DIAGRAM.md) | Diagramas ASCII detallados del sistema |
+| [docs/SECURITY_GUIDELINES.md](docs/SECURITY_GUIDELINES.md) | Seguridad: RBAC, validación, OWASP |
+| [docs/DEPLOYMENT_SECURITY.md](docs/DEPLOYMENT_SECURITY.md) | Checklist de despliegue, secrets, SSL |
+| [docs/DEVELOPMENT_STANDARDS.md](docs/DEVELOPMENT_STANDARDS.md) | Convenciones de código, Git workflow |
+| [docs/CLOUD_FUNCTIONS_GUIDE.md](docs/CLOUD_FUNCTIONS_GUIDE.md) | Guía de Cloud Functions (Base44/Deno) |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Problemas comunes y soluciones |
+| [docs/ADR/](docs/ADR/) | Architecture Decision Records |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Guía para contributors |
+
+---
+
 ## Tests
 
 El proyecto cuenta con una suite de tests automatizados usando **Vitest + Testing Library** con cobertura de los flujos críticos.
