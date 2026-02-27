@@ -1,51 +1,123 @@
 name: Auto Merge Resolved PRs
 
+# NOTE: This workflow is superseded by auto-merge-prs.yml which provides
+# exponential backoff, branch deletion, security gates, and audit comments.
+# This file is kept for backwards compatibility and handles the
+# pull_request synchronize trigger that auto-merge-prs.yml does not.
+
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
   pull_request_review:
     types: [submitted]
 
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
+    # Skip draft PRs
+    if: github.event.pull_request.draft == false || github.event_name == 'pull_request_review'
     permissions:
       pull-requests: write
       contents: write
-    
+
     steps:
-      - uses: actions/github-script@v7
+      - name: Check and merge eligible PR
+        uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const pr = context.payload.pull_request;
-            if (!pr) return;
-            
+            const prNumber = context.payload.pull_request
+              ? context.payload.pull_request.number
+              : context.payload.review
+                ? Number(context.payload.review.pull_request_url.split('/').pop())
+                : null;
+
+            if (!prNumber) {
+              core.info('No PR number found in event payload. Skipping.');
+              return;
+            }
+
             const { data: pullRequest } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: pr.number
+              pull_number: prNumber,
             });
-            
+
+            if (pullRequest.state !== 'open') {
+              core.info(`PR #${prNumber} is not open. Skipping.`);
+              return;
+            }
+
+            if (pullRequest.draft) {
+              core.info(`PR #${prNumber} is a draft. Skipping.`);
+              return;
+            }
+
+            // Check approvals
             const { data: reviews } = await github.rest.pulls.listReviews({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: pr.number
+              pull_number: prNumber,
             });
-            
+
             const approvals = reviews.filter(r => r.state === 'APPROVED').length;
+            core.info(`PR #${prNumber}: ${approvals} approval(s)`);
+
+            if (approvals === 0) {
+              core.info(`PR #${prNumber} has no approvals. Skipping.`);
+              return;
+            }
+
+            // Check all CI check runs for the head SHA
             const { data: checkRuns } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: pullRequest.head.sha
+              ref: pullRequest.head.sha,
             });
-            
-            const allChecksPassed = checkRuns.every(c => c.conclusion === 'success' || c.status === 'completed');
-            
-            if (approvals > 0 && allChecksPassed && pullRequest.mergeable) {
-              await github.rest.pulls.merge({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                merge_method: 'squash'
-              });
+
+            const runs = checkRuns.check_runs || [];
+            const allCompleted = runs.length > 0 && runs.every(
+              c => c.status === 'completed' && (c.conclusion === 'success' || c.conclusion === 'neutral' || c.conclusion === 'skipped')
+            );
+
+            core.info(`PR #${prNumber}: ${runs.length} check run(s), allCompleted=${allCompleted}, mergeable=${pullRequest.mergeable}, mergeable_state=${pullRequest.mergeable_state}`);
+
+            if (approvals > 0 && allCompleted && pullRequest.mergeable && pullRequest.mergeable_state === 'clean') {
+              try {
+                await github.rest.pulls.merge({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                  merge_method: 'squash',
+                  commit_title: `${pullRequest.title} (#${prNumber})`,
+                  commit_message: `Auto-merged by GitHub Actions at ${new Date().toISOString()}`,
+                });
+
+                core.info(`✅ PR #${prNumber} merged successfully`);
+
+                // Delete head branch
+                try {
+                  await github.rest.git.deleteRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `heads/${pullRequest.head.ref}`,
+                  });
+                  core.info(`🗑️ Branch '${pullRequest.head.ref}' deleted`);
+                } catch (e) {
+                  core.warning(`Could not delete branch: ${e.message}`);
+                }
+              } catch (mergeError) {
+                core.error(`❌ Merge failed: ${mergeError.message}`);
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body:
+                    `❌ **Auto-Merge Failed**\n\n` +
+                    `\`\`\`\n${mergeError.message}\n\`\`\`\n\n` +
+                    `Please review and merge manually if appropriate.`,
+                });
+              }
+            } else {
+              core.info(`PR #${prNumber} is not ready to merge yet.`);
             }

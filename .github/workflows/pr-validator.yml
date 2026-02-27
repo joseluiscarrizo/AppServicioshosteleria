@@ -1,0 +1,130 @@
+name: PR Validator
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  validate-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Validate PR metadata
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const MIN_TITLE_LENGTH = 10;
+            const MIN_BODY_LENGTH = 20;
+
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const title = pr.title || '';
+            const body = pr.body || '';
+            const branch = pr.head.ref;
+
+            core.info(`🔍 Validating PR #${prNumber}: "${title}"`);
+
+            const errors = [];
+            const warnings = [];
+
+            // --- Title validation ---
+            if (title.trim().length < MIN_TITLE_LENGTH) {
+              errors.push(`❌ PR title is too short (minimum ${MIN_TITLE_LENGTH} characters). Please provide a meaningful title.`);
+            }
+
+            const genericTitles = [/^fix$/i, /^update$/i, /^changes$/i, /^wip$/i, /^test$/i];
+            if (genericTitles.some(pattern => pattern.test(title.trim()))) {
+              warnings.push('⚠️ PR title appears generic. Consider adding more context.');
+            }
+
+            // --- Body validation ---
+            const strippedBody = body.replace(/<!--[\s\S]*?-->/g, '').trim();
+            if (strippedBody.length < MIN_BODY_LENGTH) {
+              warnings.push('⚠️ PR description is empty or very short. Adding context helps reviewers.');
+            }
+
+            // --- Branch naming validation ---
+            const validBranchPatterns = [
+              /^copilot\//,
+              /^feature\//,
+              /^fix\//,
+              /^bugfix\//,
+              /^hotfix\//,
+              /^chore\//,
+              /^docs\//,
+              /^automated\//,
+              /^bot\//,
+              /^refactor\//,
+              /^test\//,
+            ];
+            const hasValidPrefix = validBranchPatterns.some(pattern => pattern.test(branch));
+            if (!hasValidPrefix) {
+              warnings.push(
+                `⚠️ Branch name \`${branch}\` does not follow the recommended naming convention ` +
+                `(e.g. \`feature/\`, \`fix/\`, \`copilot/\`, \`chore/\`, …).`
+              );
+            }
+
+            // --- Build report ---
+            const hasErrors = errors.length > 0;
+            const timestamp = new Date().toISOString();
+
+            let reportBody =
+              `## 🔎 PR Validation Report\n\n` +
+              `| Field | Value |\n|---|---|\n` +
+              `| PR | #${prNumber} |\n` +
+              `| Branch | \`${branch}\` |\n` +
+              `| Validated at | \`${timestamp}\` |\n\n`;
+
+            if (errors.length > 0) {
+              reportBody += `### Errors (must be fixed before merge)\n\n${errors.join('\n')}\n\n`;
+            }
+
+            if (warnings.length > 0) {
+              reportBody += `### Warnings\n\n${warnings.join('\n')}\n\n`;
+            }
+
+            if (!hasErrors && warnings.length === 0) {
+              reportBody += `✅ All validation checks passed!\n`;
+            } else if (!hasErrors) {
+              reportBody += `✅ No blocking errors found. The PR may proceed once CI checks pass.\n`;
+            }
+
+            // Post or update the validation comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('🔎 PR Validation Report')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: reportBody,
+              });
+              core.info(`📝 Updated existing validation comment on PR #${prNumber}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: reportBody,
+              });
+              core.info(`📝 Posted new validation comment on PR #${prNumber}`);
+            }
+
+            if (hasErrors) {
+              core.setFailed(`PR #${prNumber} failed validation: ${errors.join('; ')}`);
+            } else {
+              core.info(`✅ PR #${prNumber} passed validation`);
+            }
