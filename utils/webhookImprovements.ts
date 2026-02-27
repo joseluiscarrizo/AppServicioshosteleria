@@ -15,6 +15,17 @@ export class WhatsAppApiError extends Error {
 }
 
 /**
+ * Handles webhook errors and returns a JSON Response with the given status code.
+ * Does NOT expose stack traces in the response body.
+ */
+export function handleWebhookError(error: Error, statusCode = 500): Response {
+  return Response.json(
+    { error: error.message || 'Internal server error' },
+    { status: statusCode }
+  );
+}
+
+/**
  * Wraps a database operation and converts any error into a DatabaseError.
  */
 export async function executeDbOperation<T>(operation: () => Promise<T>): Promise<T> {
