@@ -13,9 +13,9 @@
  *   WHATSAPP_API_TOKEN              — token de acceso permanente de la app
  *   WHATSAPP_PHONE_NUMBER           — ID del número de WhatsApp Business
  */
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { format, parseISO } from 'npm:date-fns@3.6.0';
-import { es } from 'npm:date-fns@3.6.0/locale';
+import { createClientFromRequest } from '@base44/sdk';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import Logger from '../utils/logger.ts';
 import { validateEmail, validatePhoneNumber, validateDate } from '../utils/validators.ts';
 import {

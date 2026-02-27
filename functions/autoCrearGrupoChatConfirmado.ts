@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from '@base44/sdk';
 import Logger from '../utils/logger.ts';
 import { retryWithExponentialBackoff } from '../utils/retryHandler.ts';
 import {
