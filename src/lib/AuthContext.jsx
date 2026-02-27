@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -38,32 +38,39 @@ export const AuthProvider = ({ children }) => {
     if (!token) return;
 
     const checkToken = async () => {
-      const validation = validateAndCheckTokenStatus(token);
+      try {
+        const validation = validateAndCheckTokenStatus(token);
 
-      if (validation.isExpired) {
-        Logger.warn('Token expired during session – logging out');
-        const userMessage = ErrorNotificationService.getMessage('TOKEN_EXPIRED');
-        ErrorNotificationService.notifyUser(userMessage);
-        setIsTokenExpired(true);
-        setTimeUntilExpiration(0);
-        logout(false);
-        return;
-      }
-
-      if (validation.shouldRefresh) {
-        const result = await refreshTokenIfNeeded(token, base44);
-        if (result) {
-          Logger.info('Token refreshed successfully');
-          setToken(result.token);
-          setExpiresIn(result.expiresIn);
-        } else {
-          Logger.warn('Token refresh failed – user may need to re-authenticate');
+        if (validation.isExpired) {
+          Logger.warn('Token expired during session – logging out');
+          const userMessage = ErrorNotificationService.getMessage('TOKEN_EXPIRED');
+          ErrorNotificationService.notifyUser(userMessage);
+          setIsTokenExpired(true);
+          setTimeUntilExpiration(0);
+          logout(false);
+          return;
         }
-      }
 
-      setTimeUntilExpiration(getTimeUntilExpiration(token));
-      setIsTokenExpired(validation.isExpired);
-      setExpiresIn(validation.expiresIn);
+        if (validation.shouldRefresh) {
+          const result = await refreshTokenIfNeeded(token, base44);
+          if (result) {
+            Logger.info('Token refreshed successfully');
+            setToken(result.token);
+            setExpiresIn(result.expiresIn);
+            setIsTokenExpired(false);
+            setTimeUntilExpiration(getTimeUntilExpiration(result.token));
+            return;
+          } else {
+            Logger.warn('Token refresh failed – user may need to re-authenticate');
+          }
+        }
+
+        setTimeUntilExpiration(getTimeUntilExpiration(token));
+        setIsTokenExpired(validation.isExpired);
+        setExpiresIn(validation.expiresIn);
+      } catch (error) {
+        Logger.error('Unexpected error during token check', { message: error.message });
+      }
     };
 
     // Run immediately on mount to validate the current token without waiting for the first interval
@@ -196,6 +203,7 @@ export const AuthProvider = ({ children }) => {
       Logger.info('User authenticated successfully', { userId: currentUser.id ?? currentUser.email });
       setUser(currentUser);
       setIsAuthenticated(true);
+      setAuthError(null);
       setIsLoadingAuth(false);
     } catch (error) {
       const mapped = handleWebhookError(error);
@@ -232,15 +240,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (shouldRedirect = true) => {
+  const logout = useCallback((shouldRedirect = true) => {
     try {
       Logger.info('User logout initiated', { shouldRedirect });
       setUser(null);
       setIsAuthenticated(false);
+      setToken(null);
 
       if (shouldRedirect) {
         // Use the SDK's logout method which handles token cleanup and redirect
-        base44.auth.logout(globalThis.location.href);
+        base44.auth.logout(window.location.href);
       } else {
         // Just remove the token without redirect
         base44.auth.logout();
@@ -251,14 +260,15 @@ export const AuthProvider = ({ children }) => {
       // Ensure local state is cleared even if logout throws
       setUser(null);
       setIsAuthenticated(false);
+      setToken(null);
     }
-  };
+  }, []);
 
-  const navigateToLogin = () => {
+  const navigateToLogin = useCallback(() => {
     Logger.info('Redirecting user to login');
     // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(globalThis.location.href);
-  };
+    base44.auth.redirectToLogin(window.location.href);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ 
