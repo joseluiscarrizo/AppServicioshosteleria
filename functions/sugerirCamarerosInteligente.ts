@@ -1,18 +1,23 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
+import { validateNumericInput } from '../utils/inputValidator.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
-    if (!user || (user.role !== 'admin' && user.role !== 'coordinador')) {
-      return Response.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    validateUserAccess(user, ['admin', 'coordinador']);
 
     const { pedido_id, limite = 10 } = await req.json();
 
     if (!pedido_id) {
       return Response.json({ error: 'pedido_id es requerido' }, { status: 400 });
+    }
+
+    const limiteValidation = validateNumericInput(limite, 'limite', { min: 1, max: 50 });
+    if (!limiteValidation.valid) {
+      return Response.json({ error: limiteValidation.error }, { status: 400 });
     }
 
     // Obtener pedido
@@ -322,6 +327,9 @@ Genera un ranking de los mejores ${limite} camareros ordenados por idoneidad. Pa
     });
 
   } catch (error) {
+    if (error instanceof RBACError) {
+      return Response.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('Error en sugerirCamarerosInteligente:', error);
     return Response.json({ 
       error: error.message,

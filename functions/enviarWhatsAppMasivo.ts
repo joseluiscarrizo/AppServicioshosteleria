@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
+import { validateArrayInput, validateMessageInput } from '../utils/inputValidator.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -20,8 +21,20 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Debe seleccionar al menos un camarero' }, { status: 400 });
     }
 
+    const arrValidation = validateArrayInput(camareros_ids, 'camareros_ids');
+    if (!arrValidation.valid) {
+      return Response.json({ error: arrValidation.error }, { status: 400 });
+    }
+
     if (!mensaje && !plantilla_id) {
       return Response.json({ error: 'Debe proporcionar un mensaje o plantilla' }, { status: 400 });
+    }
+
+    if (mensaje) {
+      const msgValidation = validateMessageInput(mensaje);
+      if (!msgValidation.valid) {
+        return Response.json({ error: msgValidation.error }, { status: 400 });
+      }
     }
 
     // Obtener camareros
