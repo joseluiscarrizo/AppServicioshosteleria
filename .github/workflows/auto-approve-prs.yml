@@ -1,0 +1,117 @@
+name: Auto-Approve Ready PRs
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15 minutes
+  workflow_dispatch:
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      checks: read
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get all open PRs
+        id: get_prs
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            const readyPRs = [];
+
+            for (const pr of prs.data) {
+              // Check PR age (must be 2+ hours old)
+              const createdAt = new Date(pr.created_at);
+              const ageMinutes = (Date.now() - createdAt.getTime()) / (1000 * 60);
+              if (ageMinutes < 120) continue;
+
+              // Check if blocked
+              const blockedLabels = pr.labels.map(l => l.name).filter(name =>
+                ['blocked', 'wip', 'hold', '[WIP]'].includes(name)
+              );
+              if (blockedLabels.length > 0) continue;
+
+              // Get check runs status
+              const checks = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.head.sha
+              });
+
+              const failedChecks = checks.data.check_runs.filter(
+                check => check.conclusion === 'failure'
+              );
+
+              if (failedChecks.length > 0) {
+                console.log(`❌ PR #${pr.number}: Failed checks`);
+                continue;
+              }
+
+              // Check for merge conflicts
+              if (pr.mergeable === false) {
+                console.log(`❌ PR #${pr.number}: Has merge conflicts`);
+                continue;
+              }
+
+              // Check for pending reviews
+              const reviews = await github.rest.pulls.listReviews({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              const pendingReviews = reviews.data.filter(r => r.state === 'PENDING');
+              if (pendingReviews.length > 0) {
+                console.log(`❌ PR #${pr.number}: Pending reviews`);
+                continue;
+              }
+
+              readyPRs.push({
+                number: pr.number,
+                title: pr.title,
+                author: pr.user.login,
+                checks: checks.data.check_runs.length
+              });
+            }
+
+            core.setOutput('ready_prs', JSON.stringify(readyPRs));
+            console.log(`✅ Found ${readyPRs.length} ready PRs`);
+
+            return readyPRs;
+
+      - name: Approve ready PRs
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const readyPRs = JSON.parse('${{ steps.get_prs.outputs.ready_prs }}');
+
+            for (const pr of readyPRs) {
+              try {
+                // Create approval review
+                await github.rest.pulls.createReview({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  event: 'APPROVE',
+                  body: `✅ Auto-approved by Copilot Bot
+- All checks passed
+- No conflicts
+- No pending reviews
+- Ready for merge`
+                });
+
+                console.log(`✅ Approved PR #${pr.number}: ${pr.title}`);
+              } catch (error) {
+                console.log(`❌ Failed to approve PR #${pr.number}: ${error.message}`);
+              }
+            }
