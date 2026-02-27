@@ -1,0 +1,53 @@
+name: Repair Status Report
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  repair-report:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            let conflicted = 0;
+            let stale = 0;
+            let healthy = 0;
+            const now = new Date();
+
+            for (const pr of prs) {
+              const { data: detail } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              const daysSince = Math.floor((now - new Date(pr.updated_at)) / (1000 * 60 * 60 * 24));
+
+              if (detail.mergeable_state === 'dirty') {
+                conflicted++;
+              } else if (daysSince > 7) {
+                stale++;
+              } else {
+                healthy++;
+              }
+            }
+
+            console.log('=== Repair Status Report ===');
+            console.log(`Total open PRs:  ${prs.length}`);
+            console.log(`Conflicted:      ${conflicted}`);
+            console.log(`Stale (>7 days): ${stale}`);
+            console.log(`Healthy:         ${healthy}`);
+            console.log('============================');

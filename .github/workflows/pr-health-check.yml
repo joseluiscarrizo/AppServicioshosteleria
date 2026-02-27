@@ -1,0 +1,58 @@
+name: PR Health Check
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+      contents: read
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            const now = new Date();
+            let report = `## PR Health Check Report - ${now.toISOString().split('T')[0]}\n\n`;
+            report += `**Total open PRs:** ${prs.length}\n\n`;
+
+            let conflicted = 0;
+            let stale = 0;
+            let healthy = 0;
+            const now = new Date();
+
+            for (const pr of prs) {
+              const updatedAt = new Date(pr.updated_at);
+              const daysSinceUpdate = Math.floor((now - updatedAt) / (1000 * 60 * 60 * 24));
+
+              const { data: detail } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              if (detail.mergeable_state === 'dirty') {
+                conflicted++;
+              } else if (daysSinceUpdate > 7) {
+                stale++;
+              } else {
+                healthy++;
+              }
+            }
+
+            report += `- **Stale PRs (>7 days):** ${stale}\n`;
+            report += `- **Conflicted PRs:** ${conflicted}\n`;
+            report += `- **Healthy PRs:** ${healthy}\n`;
+
+            console.log(report);
