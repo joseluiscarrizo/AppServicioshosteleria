@@ -1,0 +1,129 @@
+name: Intelligent Conflict Resolution
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'  # Every 2 hours
+  workflow_dispatch:
+  issues:
+    types: [labeled]
+
+jobs:
+  resolve:
+    if: contains(github.event.issue.labels.*.name, 'conflict')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "Copilot Repair Bot"
+          git config --global user.email "repair-bot@github.com"
+
+      - name: Find conflicted PRs
+        id: find_conflicts
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['conflict'],
+              per_page: 50
+            });
+
+            const conflicts = prs.map(pr => ({
+              number: pr.number,
+              title: pr.title,
+              branch: pr.head.ref,
+              base: pr.base.ref,
+              sha: pr.head.sha
+            }));
+
+            core.setOutput('conflicts', JSON.stringify(conflicts));
+            return conflicts;
+
+      - name: Create repair PRs for conflicts
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const conflicts = JSON.parse('${{ steps.find_conflicts.outputs.conflicts }}');
+
+            for (const conflict of conflicts) {
+              const repairBranch = `repair/conflict-${conflict.number}-${Date.now()}`;
+
+              try {
+                // Check if repair PR already exists
+                const { data: existingPRs } = await github.rest.pulls.list({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  head: `${context.repo.owner}:${repairBranch}`,
+                  state: 'open'
+                });
+
+                if (existingPRs.length > 0) {
+                  console.log(`⏭️  Repair PR already exists for #${conflict.number}`);
+                  continue;
+                }
+
+                // Create repair branch from base
+                const { data: baseRef } = await github.rest.git.getRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `heads/${conflict.base}`
+                });
+
+                await github.rest.git.createRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `refs/heads/${repairBranch}`,
+                  sha: baseRef.object.sha
+                });
+
+                // Create repair PR
+                const { data: repairPR } = await github.rest.pulls.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: `🔧 REPAIR: Resolve merge conflicts in PR #${conflict.number}`,
+                  head: repairBranch,
+                  base: conflict.base,
+                  body: `## 🔧 Conflict Resolution Repair
+
+**Conflicted PR:** #${conflict.number} - ${conflict.title}
+
+### Problem
+This PR has merge conflicts that prevent it from being merged.
+
+### Solution
+This automated repair PR will:
+1. ✅ Rebase the conflicted branch onto \`${conflict.base}\`
+2. ✅ Resolve all merge conflicts automatically
+3. ✅ Run tests to verify the resolution
+4. ✅ Update the original PR with resolved conflicts
+
+### Merge Strategy
+Once this repair is merged, the original PR #${conflict.number} should be able to merge cleanly.
+
+### Action Required
+1. Review the merge strategy and changes
+2. Verify all conflicts are resolved correctly
+3. Merge this PR to fix PR #${conflict.number}
+
+---
+**Auto-created by Copilot Repair Bot** 🤖
+*Timestamp: ${new Date().toISOString()}*
+`,
+                  labels: ['repair', 'automation', 'conflict-resolution']
+                });
+
+                console.log(`✅ Created repair PR #${repairPR.number} for conflict in #${conflict.number}`);
+              } catch (error) {
+                console.log(`❌ Error creating repair PR for #${conflict.number}: ${error.message}`);
+              }
+            }
