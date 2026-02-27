@@ -1,0 +1,194 @@
+name: Notification Scheduler
+
+on:
+  schedule:
+    # Weekly summary every Monday at 09:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      report_type:
+        description: 'Report type: weekly | daily'
+        required: false
+        default: 'weekly'
+
+jobs:
+  weekly-summary:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download latest metrics artifacts
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: workflow-metrics-*
+          merge-multiple: true
+          path: /tmp/artifacts
+
+      - name: Build summary
+        id: summary
+        run: |
+          python3 - <<'PYEOF'
+          import json, glob, os
+          from datetime import datetime, timezone
+
+          artifact_files = glob.glob('/tmp/artifacts/*.json') + glob.glob('/tmp/artifacts/**/*.json', recursive=True)
+
+          docs_data = 'docs/data.json'
+          if os.path.exists(docs_data):
+              artifact_files.append(docs_data)
+
+          all_runs = []
+          for fp in artifact_files:
+              try:
+                  with open(fp) as f:
+                      data = json.load(f)
+                  if 'recent_runs' in data:
+                      all_runs.extend(data['recent_runs'])
+                  elif 'history' in data:
+                      for h in data['history']:
+                          all_runs.extend(h.get('recent_runs', []))
+              except Exception:
+                  pass
+
+          # Deduplicate
+          seen = set()
+          unique = []
+          for r in all_runs:
+              rid = r.get('id')
+              if rid and rid not in seen:
+                  seen.add(rid)
+                  unique.append(r)
+
+          total = len(unique)
+          successes = sum(1 for r in unique if r.get('conclusion') == 'success')
+          failures = total - successes
+          rate = round(successes / total * 100, 2) if total else 0.0
+
+          durations = []
+          for r in unique:
+              try:
+                  s = datetime.fromisoformat(r['created_at'].replace('Z', '+00:00'))
+                  e = datetime.fromisoformat(r['updated_at'].replace('Z', '+00:00'))
+                  durations.append((e - s).total_seconds() * 1000)
+              except Exception:
+                  pass
+
+          avg_ms = round(sum(durations) / len(durations)) if durations else 0
+          sla_ok = sum(1 for d in durations if d <= 300000)
+          sla = round(sla_ok / len(durations) * 100, 2) if durations else 100.0
+
+          summary = {
+              "period": "last_collection",
+              "total_runs": total,
+              "successes": successes,
+              "failures": failures,
+              "success_rate_pct": rate,
+              "avg_execution_ms": avg_ms,
+              "sla_compliance_pct": sla,
+              "generated_at": datetime.now(timezone.utc).isoformat()
+          }
+
+          with open('/tmp/weekly_summary.json', 'w') as f:
+              json.dump(summary, f)
+
+          # Write env vars for subsequent steps
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write(f"total_runs={total}\n")
+              out.write(f"success_rate={rate}\n")
+              out.write(f"sla={sla}\n")
+              out.write(f"failures={failures}\n")
+              out.write(f"avg_ms={avg_ms}\n")
+
+          print(json.dumps(summary, indent=2))
+          PYEOF
+
+      - name: Send Slack weekly summary
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          TOTAL_RUNS: ${{ steps.summary.outputs.total_runs }}
+          SUCCESS_RATE: ${{ steps.summary.outputs.success_rate }}
+          SLA: ${{ steps.summary.outputs.sla }}
+          FAILURES: ${{ steps.summary.outputs.failures }}
+          AVG_MS: ${{ steps.summary.outputs.avg_ms }}
+          REPO: ${{ github.repository }}
+          DASHBOARD_URL: https://joseluiscarrizo.github.io/AppServicioshosteleria
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL not set – skipping"
+            exit 0
+          fi
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "attachments": [
+              {
+                "color": "#2196f3",
+                "title": "📊 Weekly Automation Summary – ${REPO}",
+                "text": "Here is your weekly CI/CD automation report.",
+                "fields": [
+                  {"title": "Total Runs",    "value": "${TOTAL_RUNS}",    "short": true},
+                  {"title": "Success Rate",  "value": "${SUCCESS_RATE}%", "short": true},
+                  {"title": "SLA Compliance","value": "${SLA}%",          "short": true},
+                  {"title": "Failures",      "value": "${FAILURES}",      "short": true},
+                  {"title": "Avg Duration",  "value": "${AVG_MS}ms",      "short": true},
+                  {"title": "Dashboard",     "value": "<${DASHBOARD_URL}|Open Dashboard>", "short": true}
+                ],
+                "footer": "AppServicioshosteleria Automation",
+                "ts": $(date +%s)
+              }
+            ]
+          }
+          EOF
+          )
+
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data "$PAYLOAD"
+
+      - name: Send Discord weekly summary
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TOTAL_RUNS: ${{ steps.summary.outputs.total_runs }}
+          SUCCESS_RATE: ${{ steps.summary.outputs.success_rate }}
+          SLA: ${{ steps.summary.outputs.sla }}
+          FAILURES: ${{ steps.summary.outputs.failures }}
+          AVG_MS: ${{ steps.summary.outputs.avg_ms }}
+          REPO: ${{ github.repository }}
+          DASHBOARD_URL: https://joseluiscarrizo.github.io/AppServicioshosteleria
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL not set – skipping"
+            exit 0
+          fi
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "embeds": [
+              {
+                "title": "📊 Weekly Automation Summary",
+                "description": "Here is your weekly CI/CD automation report for **${REPO}**.",
+                "color": 2201331,
+                "fields": [
+                  {"name": "Total Runs",    "value": "${TOTAL_RUNS}",    "inline": true},
+                  {"name": "Success Rate",  "value": "${SUCCESS_RATE}%", "inline": true},
+                  {"name": "SLA Compliance","value": "${SLA}%",          "inline": true},
+                  {"name": "Failures",      "value": "${FAILURES}",      "inline": true},
+                  {"name": "Avg Duration",  "value": "${AVG_MS}ms",      "inline": true},
+                  {"name": "Dashboard",     "value": "[Open Dashboard](${DASHBOARD_URL})", "inline": true}
+                ],
+                "footer": {"text": "AppServicioshosteleria Automation"},
+                "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+              }
+            ]
+          }
+          EOF
+          )
+
+          curl -s -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data "$PAYLOAD"

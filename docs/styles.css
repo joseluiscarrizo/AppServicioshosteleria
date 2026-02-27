@@ -1,0 +1,119 @@
+/* ═══════════════════════ CSS CUSTOM PROPERTIES ═══════════════════════ */
+:root {
+  --bg-body:    #f4f6fb;
+  --bg-card:    #ffffff;
+  --text-main:  #212529;
+  --text-muted: #6c757d;
+  --border:     #dee2e6;
+  --shadow:     0 2px 8px rgba(0,0,0,.07);
+}
+
+[data-theme="dark"] {
+  --bg-body:    #121212;
+  --bg-card:    #1e1e2e;
+  --text-main:  #e0e0e0;
+  --text-muted: #9e9e9e;
+  --border:     #333350;
+  --shadow:     0 2px 12px rgba(0,0,0,.4);
+}
+
+/* ═══════════════════════ BASE ═══════════════════════ */
+body {
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  transition: background-color .3s, color .3s;
+}
+
+/* ═══════════════════════ CARDS ═══════════════════════ */
+.card {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow) !important;
+  transition: background-color .3s, box-shadow .3s;
+}
+
+.card-header {
+  border-bottom: 1px solid var(--border);
+  background-color: var(--bg-card) !important;
+  color: var(--text-main);
+}
+
+/* ═══════════════════════ KPI CARDS ═══════════════════════ */
+.kpi-card {
+  border-radius: .75rem;
+  transition: transform .2s, box-shadow .2s;
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.12) !important;
+}
+
+.kpi-value {
+  color: var(--text-main);
+  line-height: 1.1;
+}
+
+.kpi-label {
+  color: var(--text-muted);
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+/* ═══════════════════════ TABLE ═══════════════════════ */
+.table {
+  color: var(--text-main);
+}
+
+.table-light {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .table-hover tbody tr:hover {
+  background-color: rgba(255,255,255,.05);
+}
+
+[data-theme="dark"] .table-light {
+  background-color: #2a2a3e;
+  color: #e0e0e0;
+}
+
+/* ═══════════════════════ NAVBAR ═══════════════════════ */
+.navbar {
+  z-index: 1030;
+}
+
+/* ═══════════════════════ FORM CONTROL ═══════════════════════ */
+.form-control {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  border-color: var(--border);
+}
+
+.form-control:focus {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+}
+
+[data-theme="dark"] .form-control::placeholder {
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════ ALERTS ═══════════════════════ */
+.alert {
+  border-radius: .5rem;
+}
+
+/* ═══════════════════════ SCROLLBAR ═══════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-body); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ═══════════════════════ RESPONSIVE ═══════════════════════ */
+@media (max-width: 576px) {
+  .kpi-value { font-size: 2rem !important; }
+  .fs-1 { font-size: 1.75rem !important; }
+}

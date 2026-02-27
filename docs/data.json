@@ -1,0 +1,20 @@
+{
+  "updated_at": "2026-02-27T00:00:00Z",
+  "latest": {
+    "collected_at": "2026-02-27T00:00:00Z",
+    "window": "last_50_runs",
+    "totals": {
+      "total_runs": 0,
+      "successes": 0,
+      "failures": 0,
+      "success_rate_pct": 0
+    },
+    "performance": {
+      "avg_execution_ms": 0,
+      "avg_execution_min": 0,
+      "sla_compliance_pct": 100
+    },
+    "recent_runs": []
+  },
+  "history": []
+}

@@ -1,0 +1,130 @@
+name: Discord Notifier
+
+on:
+  workflow_call:
+    inputs:
+      status:
+        description: 'Status of the event (success, failure, warning, info)'
+        required: true
+        type: string
+      title:
+        description: 'Notification title'
+        required: true
+        type: string
+      message:
+        description: 'Notification message body'
+        required: true
+        type: string
+      pr_number:
+        description: 'Pull request number (optional)'
+        required: false
+        type: string
+        default: ''
+      workflow_name:
+        description: 'Name of the triggering workflow'
+        required: false
+        type: string
+        default: ''
+      duration:
+        description: 'Execution duration (e.g. 1.2s)'
+        required: false
+        type: string
+        default: ''
+      is_critical:
+        description: 'Whether to mention the configured role'
+        required: false
+        type: boolean
+        default: false
+      discord_role_id:
+        description: 'Discord role ID to mention on critical events'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      DISCORD_WEBHOOK_URL:
+        required: false
+
+jobs:
+  notify-discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build and send Discord embed
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          STATUS: ${{ inputs.status }}
+          TITLE: ${{ inputs.title }}
+          MESSAGE: ${{ inputs.message }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          WORKFLOW_NAME: ${{ inputs.workflow_name }}
+          DURATION: ${{ inputs.duration }}
+          IS_CRITICAL: ${{ inputs.is_critical }}
+          DISCORD_ROLE_ID: ${{ inputs.discord_role_id }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL not set – skipping notification"
+            exit 0
+          fi
+
+          # Discord colour codes (decimal)
+          case "$STATUS" in
+            success) COLOR=3580392  ;;   # #36a828
+            failure) COLOR=14495300 ;;   # #dd2244
+            warning) COLOR=15844367 ;;   # #f1a20f
+            *)        COLOR=2201331  ;;   # #219CF3
+          esac
+
+          case "$STATUS" in
+            success) EMOJI="✅" ;;
+            failure) EMOJI="❌" ;;
+            warning) EMOJI="⚠️" ;;
+            *)        EMOJI="🔄" ;;
+          esac
+
+          MENTION_TEXT=""
+          if [ "$IS_CRITICAL" = "true" ] && [ -n "$DISCORD_ROLE_ID" ]; then
+            MENTION_TEXT="<@&${DISCORD_ROLE_ID}> "
+          fi
+
+          FIELDS="[]"
+          PR_FIELD=""
+          if [ -n "$PR_NUMBER" ]; then
+            PR_FIELD="{\"name\": \"PR\", \"value\": \"#${PR_NUMBER}\", \"inline\": true},"
+          fi
+          DURATION_FIELD=""
+          if [ -n "$DURATION" ]; then
+            DURATION_FIELD="{\"name\": \"Duration\", \"value\": \"${DURATION}\", \"inline\": true},"
+          fi
+          WORKFLOW_FIELD=""
+          if [ -n "$WORKFLOW_NAME" ]; then
+            WORKFLOW_FIELD="{\"name\": \"Workflow\", \"value\": \"${WORKFLOW_NAME}\", \"inline\": true},"
+          fi
+
+          PAYLOAD=$(cat <<EOF
+          {
+            "content": "${MENTION_TEXT}",
+            "embeds": [
+              {
+                "title": "${EMOJI} ${TITLE}",
+                "description": "${MESSAGE}",
+                "color": ${COLOR},
+                "fields": [
+                  ${PR_FIELD}
+                  ${DURATION_FIELD}
+                  ${WORKFLOW_FIELD}
+                  {"name": "Repository", "value": "${REPO}", "inline": true},
+                  {"name": "Status", "value": "${STATUS}", "inline": true},
+                  {"name": "Run", "value": "[View Run](${RUN_URL})", "inline": true}
+                ],
+                "footer": {"text": "AppServicioshosteleria Automation"},
+                "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+              }
+            ]
+          }
+          EOF
+          )
+
+          curl -s -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data "$PAYLOAD"

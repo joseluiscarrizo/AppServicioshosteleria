@@ -1,0 +1,115 @@
+name: Dashboard Generator
+
+on:
+  schedule:
+    # Regenerate dashboard every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_run:
+    workflows:
+      - Metrics Collector
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download latest metrics artifacts
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: workflow-metrics-*
+          merge-multiple: true
+          path: /tmp/artifacts
+
+      - name: Merge metrics into docs/data.json
+        run: |
+          python3 - <<'PYEOF'
+          import json, glob, os
+          from datetime import datetime, timezone
+
+          artifact_files = glob.glob('/tmp/artifacts/*.json') + glob.glob('/tmp/artifacts/**/*.json', recursive=True)
+          all_runs = []
+          for fp in artifact_files:
+              try:
+                  with open(fp) as f:
+                      data = json.load(f)
+                  if 'recent_runs' in data:
+                      all_runs.extend(data.get('recent_runs', []))
+              except Exception as e:
+                  print(f"Skipping {fp}: {e}")
+
+          docs_data = 'docs/data.json'
+          try:
+              with open(docs_data) as f:
+                  existing = json.load(f)
+          except Exception:
+              existing = {"history": [], "latest": {}, "updated_at": ""}
+
+          # Deduplicate
+          seen = set()
+          for r in existing.get('history', []):
+              seen.add(r.get('collected_at', ''))
+
+          # Compute snapshot
+          total = len(all_runs)
+          successes = sum(1 for r in all_runs if r.get('conclusion') == 'success')
+          durations = []
+          for r in all_runs:
+              try:
+                  from datetime import datetime as dt
+                  s = dt.fromisoformat(r['created_at'].replace('Z', '+00:00'))
+                  e = dt.fromisoformat(r['updated_at'].replace('Z', '+00:00'))
+                  durations.append((e - s).total_seconds() * 1000)
+              except Exception:
+                  pass
+
+          avg_exec = round(sum(durations) / len(durations)) if durations else 0
+          sla_ok = sum(1 for d in durations if d <= 300000)
+          sla = round(sla_ok / len(durations) * 100, 2) if durations else 100.0
+          success_rate = round(successes / total * 100, 2) if total else 0.0
+
+          snapshot = {
+              "collected_at": datetime.now(timezone.utc).isoformat(),
+              "window": "last_50_runs",
+              "totals": {
+                  "total_runs": total,
+                  "successes": successes,
+                  "failures": total - successes,
+                  "success_rate_pct": success_rate
+              },
+              "performance": {
+                  "avg_execution_ms": avg_exec,
+                  "avg_execution_min": round(avg_exec / 60000, 2),
+                  "sla_compliance_pct": sla
+              },
+              "recent_runs": all_runs[-50:]
+          }
+
+          existing['history'].append(snapshot)
+          existing['history'] = existing['history'][-168:]
+          existing['latest'] = snapshot
+          existing['updated_at'] = datetime.now(timezone.utc).isoformat()
+
+          os.makedirs('docs', exist_ok=True)
+          with open(docs_data, 'w') as f:
+              json.dump(existing, f, indent=2)
+          print("docs/data.json updated")
+          PYEOF
+
+      - name: Commit updated data.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data.json
+          git diff --cached --quiet || git commit -m "chore(dashboard): update metrics data [skip ci]"
+          git push
