@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
+import { handleWebhookError, ValidationError } from '../utils/errorHandler.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -17,11 +18,11 @@ Deno.serve(async (req) => {
     } = await req.json();
 
     if (!camareros_ids || camareros_ids.length === 0) {
-      return Response.json({ error: 'Debe seleccionar al menos un camarero' }, { status: 400 });
+      throw new ValidationError('Debe seleccionar al menos un camarero');
     }
 
     if (!mensaje && !plantilla_id) {
-      return Response.json({ error: 'Debe proporcionar un mensaje o plantilla' }, { status: 400 });
+      throw new ValidationError('Debe proporcionar un mensaje o plantilla');
     }
 
     // Obtener camareros
@@ -222,9 +223,7 @@ Deno.serve(async (req) => {
     if (error instanceof RBACError) {
       return Response.json({ error: error.message }, { status: error.statusCode });
     }
-    console.error('Error en envío masivo:', error);
-    return Response.json({ 
-      error: error.message || 'Error al enviar mensajes' 
-    }, { status: 500 });
+    console.error('Error en envío masivo:', (error as Error).message);
+    return handleWebhookError(error, 500);
   }
 });

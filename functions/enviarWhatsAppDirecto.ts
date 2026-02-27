@@ -1,9 +1,7 @@
 import { createClientFromRequest } from '@base44/sdk';
 import Logger from '../utils/logger.ts';
 import { validatePhoneNumber } from '../utils/validators.ts';
-import {
-  handleWebhookError
-} from '../utils/webhookImprovements.ts';
+import { handleWebhookError, ValidationError, ExternalServiceError, DatabaseError } from '../utils/errorHandler.ts';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
 Deno.serve(async (req) => {
@@ -16,11 +14,11 @@ Deno.serve(async (req) => {
     const { telefono, mensaje, camarero_id, camarero_nombre, pedido_id, asignacion_id, plantilla_usada, link_confirmar, link_rechazar } = await req.json();
     
     if (!telefono || !mensaje) {
-      return Response.json({ error: 'Teléfono y mensaje son requeridos' }, { status: 400 });
+      throw new ValidationError('Teléfono y mensaje son requeridos');
     }
 
     if (!validatePhoneNumber(telefono)) {
-      return Response.json({ error: 'Número de teléfono con formato inválido' }, { status: 400 });
+      throw new ValidationError('Número de teléfono con formato inválido');
     }
     
     // Limpiar el número de teléfono (solo dígitos)
@@ -28,7 +26,7 @@ Deno.serve(async (req) => {
     
     // Validar formato del teléfono
     if (telefonoLimpio.length < 9) {
-      return Response.json({ error: 'Número de teléfono inválido' }, { status: 400 });
+      throw new ValidationError('Número de teléfono inválido');
     }
     
     // Formatear número para WhatsApp (añadir código de país si falta)
@@ -134,8 +132,8 @@ Deno.serve(async (req) => {
           }
         }
       } catch (e) {
-        errorAPI = e.message;
-        Logger.error('Error llamando a la API de WhatsApp:', e);
+        errorAPI = (e as Error).message;
+        Logger.error('Error llamando a la API de WhatsApp:', new ExternalServiceError('WhatsApp API').message);
       }
     }
     
@@ -160,7 +158,7 @@ Deno.serve(async (req) => {
         coordinador_id: user.id
       });
     } catch (e) {
-      Logger.error('Error registrando en historial:', e);
+      Logger.error('Error registrando en historial:', new DatabaseError((e as Error).message).message);
     }
     
     return Response.json({
@@ -178,6 +176,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: error.message }, { status: error.statusCode });
     }
     Logger.error(`Error en enviarWhatsAppDirecto: ${(error as Error).message}`);
-    return handleWebhookError(error as Error, 500);
+    return handleWebhookError(error, 500);
   }
 });
