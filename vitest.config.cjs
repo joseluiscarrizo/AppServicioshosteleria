@@ -1,4 +1,12 @@
+const path = require('path');
+
 module.exports = {
-  testEnvironment: 'node',
-  // other configuration settings...
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  test: {
+    environment: 'node',
+  },
 };
