@@ -1,0 +1,82 @@
+name: Auto Close Conflicting PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  close-conflicting-prs:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            async function closePRWithConflict(prNumber) {
+              let { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+
+              if (pr.state !== 'open') return;
+
+              // If mergeability hasn't been computed yet, wait and retry once
+              if (pr.mergeable === null) {
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                ({ data: pr } = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber
+                }));
+              }
+
+              if (pr.mergeable === false || pr.mergeable_state === 'dirty') {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: '🔴 Este pull request se cierra automáticamente porque tiene **conflictos de fusión** que deben resolverse. Por favor, resuelve los conflictos y abre un nuevo pull request.'
+                });
+
+                await github.rest.pulls.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                  state: 'closed'
+                });
+
+                console.log(`Closed PR #${prNumber} due to merge conflicts.`);
+              }
+            }
+
+            if (context.eventName === 'pull_request') {
+              const prNumber = context.payload.pull_request.number;
+              await closePRWithConflict(prNumber);
+            } else {
+              // Scheduled run: check all open PRs with pagination
+              let page = 1;
+              while (true) {
+                const { data: openPRs } = await github.rest.pulls.list({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: 'open',
+                  per_page: 100,
+                  page
+                });
+
+                if (openPRs.length === 0) break;
+
+                for (const pr of openPRs) {
+                  await closePRWithConflict(pr.number);
+                }
+
+                if (openPRs.length < 100) break;
+                page++;
+              }
+            }
