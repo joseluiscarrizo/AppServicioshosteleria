@@ -1,0 +1,104 @@
+name: Conflict Resolver
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  resolve-conflicts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Detect and resolve conflicts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            let conflictedPRs = [];
+
+            for (const pr of pullRequests) {
+              if (pr.draft) continue;
+
+              const { data: prDetail } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              if (prDetail.mergeable_state === 'dirty') {
+                conflictedPRs.push({ number: pr.number, branch: pr.head.ref, base: pr.base.ref });
+              }
+            }
+
+            console.log(`Found ${conflictedPRs.length} PR(s) with conflicts`);
+
+            for (const pr of conflictedPRs) {
+              console.log(`PR #${pr.number} (${pr.branch} -> ${pr.base}) has conflicts`);
+              try {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: `⚠️ **Conflict Resolver**: This PR has merge conflicts with \`${pr.base}\`. Please rebase or merge the base branch to resolve conflicts.\n\n\`\`\`\ngit fetch origin\ngit checkout ${pr.branch}\ngit merge origin/${pr.base}\n# Resolve conflicts, then:\ngit push\n\`\`\``
+                });
+              } catch (err) {
+                console.log(`Could not comment on PR #${pr.number}: ${err.message}`);
+              }
+            }
+
+            console.log(`=== CONFLICT RESOLVER COMPLETE: ${conflictedPRs.length} PR(s) flagged ===`);
+
+      - name: Try updating PRs with base branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            let updatedCount = 0;
+
+            for (const pr of pullRequests) {
+              if (pr.draft) continue;
+
+              const { data: prDetail } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              if (prDetail.mergeable_state === 'behind') {
+                try {
+                  await github.rest.pulls.updateBranch({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: pr.number
+                  });
+                  console.log(`Updated PR #${pr.number} with base branch`);
+                  updatedCount++;
+                } catch (err) {
+                  console.log(`Could not update PR #${pr.number}: ${err.message}`);
+                }
+              }
+            }
+
+            console.log(`=== BRANCH UPDATE COMPLETE: ${updatedCount} PR(s) updated ===`);

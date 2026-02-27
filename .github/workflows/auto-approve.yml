@@ -1,0 +1,86 @@
+name: Auto Approve PRs
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto approve ready pull requests
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            let approvedCount = 0;
+
+            for (const pr of pullRequests) {
+              if (pr.draft) continue;
+
+              const { data: prDetail } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              if (prDetail.mergeable_state !== 'clean' && prDetail.mergeable_state !== 'unstable') {
+                continue;
+              }
+
+              const { data: checkRuns } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: prDetail.head.sha
+              });
+
+              const allPassed = checkRuns.check_runs.length === 0 ||
+                checkRuns.check_runs.every(
+                  c => c.conclusion === 'success' || c.conclusion === 'skipped' || c.conclusion === 'neutral'
+                );
+
+              if (!allPassed) {
+                console.log(`PR #${pr.number}: checks not all passing - skipping`);
+                continue;
+              }
+
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              const alreadyApproved = reviews.some(r => r.state === 'APPROVED');
+              if (alreadyApproved) {
+                console.log(`PR #${pr.number}: already approved`);
+                continue;
+              }
+
+              try {
+                await github.rest.pulls.createReview({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  event: 'APPROVE',
+                  body: '✅ Auto-approved by tiered acceleration system. All checks passed.'
+                });
+                console.log(`PR #${pr.number}: approved`);
+                approvedCount++;
+              } catch (err) {
+                console.log(`PR #${pr.number}: could not approve - ${err.message}`);
+              }
+            }
+
+            console.log(`=== AUTO APPROVE COMPLETE: ${approvedCount} PR(s) approved ===`);

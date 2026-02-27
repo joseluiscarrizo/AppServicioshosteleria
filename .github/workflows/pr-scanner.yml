@@ -1,0 +1,59 @@
+name: PR Scanner
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  pull-requests: read
+  contents: read
+
+jobs:
+  scan-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scan open pull requests
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            const results = { ready: [], needsRepair: [], conflicted: [], draft: [] };
+
+            for (const pr of pullRequests) {
+              if (pr.draft) {
+                results.draft.push(pr.number);
+                continue;
+              }
+
+              const { data: prDetail } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              if (prDetail.mergeable_state === 'dirty') {
+                results.conflicted.push(pr.number);
+              } else if (prDetail.mergeable_state === 'blocked') {
+                results.needsRepair.push(pr.number);
+              } else if (prDetail.mergeable_state === 'clean') {
+                results.ready.push(pr.number);
+              }
+            }
+
+            console.log('=== PR SCANNER REPORT ===');
+            console.log(`Ready to merge: ${results.ready.join(', ') || 'none'}`);
+            console.log(`Needs repair:   ${results.needsRepair.join(', ') || 'none'}`);
+            console.log(`Has conflicts:  ${results.conflicted.join(', ') || 'none'}`);
+            console.log(`Draft:          ${results.draft.join(', ') || 'none'}`);
+            console.log(`Total open PRs: ${pullRequests.length}`);
+
+            core.setOutput('ready_prs', results.ready.join(','));
+            core.setOutput('conflicted_prs', results.conflicted.join(','));
+            core.setOutput('needs_repair_prs', results.needsRepair.join(','));
