@@ -1,0 +1,257 @@
+name: Auto Merge PRs
+
+on:
+  check_suite:
+    types: [completed]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+
+    steps:
+      - name: Evaluate and merge eligible PRs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const MAX_RETRIES = 4;
+            const INITIAL_DELAY_MS = 2000;
+
+            /**
+             * Sleep for a given number of milliseconds.
+             */
+            function sleep(ms) {
+              return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            /**
+             * Attempt to merge a PR with exponential backoff.
+             * Returns true if merged, false otherwise.
+             */
+            async function attemptMergeWithBackoff(prNumber) {
+              for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                if (attempt > 1) {
+                  const delay = INITIAL_DELAY_MS * Math.pow(2, attempt - 1);
+                  core.info(`⏳ Retry ${attempt}/${MAX_RETRIES} — waiting ${delay}ms before re-checking PR #${prNumber}…`);
+                  await sleep(delay);
+                }
+
+                // Fetch latest PR state
+                const { data: pr } = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                });
+
+                if (pr.state !== 'open') {
+                  core.info(`ℹ️ PR #${prNumber} is no longer open (state=${pr.state}). Skipping.`);
+                  return false;
+                }
+
+                if (pr.draft) {
+                  core.info(`ℹ️ PR #${prNumber} is a draft. Skipping.`);
+                  return false;
+                }
+
+                // Check mergeable state
+                core.info(`🔍 PR #${prNumber}: mergeable=${pr.mergeable}, mergeable_state=${pr.mergeable_state}`);
+
+                if (pr.mergeable === null) {
+                  // GitHub is still computing mergeability — retry
+                  core.info(`⏳ Mergeability not yet computed for PR #${prNumber}. Will retry.`);
+                  continue;
+                }
+
+                if (!pr.mergeable) {
+                  core.warning(`⚠️ PR #${prNumber} has conflicts (mergeable=false). Cannot merge.`);
+                  return false;
+                }
+
+                if (pr.mergeable_state === 'behind') {
+                  core.warning(`⚠️ PR #${prNumber} branch is behind base. Cannot merge.`);
+                  return false;
+                }
+
+                if (pr.mergeable_state !== 'clean') {
+                  // unstable, blocked, or other transient state — retry
+                  core.info(`⏳ PR #${prNumber} mergeable_state is '${pr.mergeable_state}'. Will retry if attempts remain.`);
+                  if (attempt < MAX_RETRIES) continue;
+                  return false;
+                }
+
+                // Verify at least one approval
+                const { data: reviews } = await github.rest.pulls.listReviews({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                });
+
+                const approvals = reviews.filter(r => r.state === 'APPROVED').length;
+                core.info(`🔍 PR #${prNumber}: ${approvals} approval(s) found`);
+
+                if (approvals === 0) {
+                  core.info(`ℹ️ PR #${prNumber} has no approvals yet. Skipping.`);
+                  return false;
+                }
+
+                // All conditions met — merge!
+                core.info(`🚀 Merging PR #${prNumber} via squash…`);
+                try {
+                  await github.rest.pulls.merge({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: prNumber,
+                    merge_method: 'squash',
+                    commit_title: `${pr.title} (#${prNumber})`,
+                    commit_message:
+                      `Auto-merged by GitHub Actions\n\n` +
+                      `Branch: ${pr.head.ref}\n` +
+                      `Merged at: ${new Date().toISOString()}`,
+                  });
+
+                  core.info(`✅ PR #${prNumber} merged successfully`);
+
+                  // Leave an audit comment
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: prNumber,
+                    body:
+                      `🎉 **Auto-Merged Successfully**\n\n` +
+                      `| Field | Value |\n|---|---|\n` +
+                      `| Method | squash |\n` +
+                      `| Approvals | ${approvals} |\n` +
+                      `| Merged at | \`${new Date().toISOString()}\` |\n` +
+                      `| Workflow | Auto Merge PRs |`,
+                  });
+
+                  // Delete the head branch
+                  try {
+                    await github.rest.git.deleteRef({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      ref: `heads/${pr.head.ref}`,
+                    });
+                    core.info(`🗑️ Branch '${pr.head.ref}' deleted`);
+                  } catch (deleteError) {
+                    core.warning(`⚠️ Could not delete branch '${pr.head.ref}': ${deleteError.message}`);
+                  }
+
+                  return true;
+                } catch (mergeError) {
+                  core.warning(`⚠️ Merge attempt ${attempt}/${MAX_RETRIES} failed: ${mergeError.message}`);
+                  if (attempt === MAX_RETRIES) {
+                    throw mergeError;
+                  }
+                }
+              }
+
+              return false;
+            }
+
+            // ----------------------------------------------------------------
+            // Determine which PRs to evaluate based on the triggering event
+            // ----------------------------------------------------------------
+            let prNumbers = [];
+
+            if (context.eventName === 'check_suite') {
+              const checkSuite = context.payload.check_suite;
+              core.info(`🔍 check_suite completed with conclusion: ${checkSuite.conclusion}`);
+
+              // Only proceed when the suite actually succeeded
+              if (checkSuite.conclusion !== 'success') {
+                core.info(`ℹ️ check_suite conclusion is '${checkSuite.conclusion}'. Skipping auto-merge.`);
+                return;
+              }
+
+              prNumbers = (checkSuite.pull_requests || []).map(pr => pr.number);
+              core.info(`🔍 Associated PRs from check_suite: ${prNumbers.join(', ') || 'none'}`);
+
+            } else if (context.eventName === 'pull_request_review') {
+              const review = context.payload.review;
+              if (review.state !== 'approved') {
+                core.info(`ℹ️ Review state is '${review.state}' (not approved). Skipping.`);
+                return;
+              }
+              prNumbers = [context.payload.pull_request.number];
+              core.info(`🔍 PR #${prNumbers[0]} received an approval review`);
+            }
+
+            if (prNumbers.length === 0) {
+              core.info('ℹ️ No PRs to evaluate. Skipping.');
+              return;
+            }
+
+            // ----------------------------------------------------------------
+            // Security gate: only merge PRs from authorized sources
+            // ----------------------------------------------------------------
+            const AUTHORIZED_ACTORS = [
+              'copilot-swe-agent[bot]',
+              'github-actions[bot]',
+            ];
+            const AUTHORIZED_BRANCH_PREFIXES = ['copilot/', 'automated/', 'bot/'];
+
+            for (const prNumber of prNumbers) {
+              core.info(`\n--- Evaluating PR #${prNumber} ---`);
+
+              try {
+                const { data: pr } = await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                });
+
+                const isAuthorizedActor = AUTHORIZED_ACTORS.includes(pr.user.login);
+                const isAuthorizedBranch = AUTHORIZED_BRANCH_PREFIXES.some(prefix =>
+                  pr.head.ref.startsWith(prefix)
+                );
+
+                if (!isAuthorizedActor && !isAuthorizedBranch) {
+                  core.info(
+                    `ℹ️ PR #${prNumber} by '${pr.user.login}' on branch '${pr.head.ref}' ` +
+                    `is not from an authorized source. Skipping auto-merge.`
+                  );
+                  continue;
+                }
+
+                core.info(`✅ PR #${prNumber} passes security gate (actor='${pr.user.login}', branch='${pr.head.ref}')`);
+
+                const merged = await attemptMergeWithBackoff(prNumber);
+
+                if (!merged) {
+                  const { data: currentPR } = await github.rest.pulls.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: prNumber,
+                  });
+
+                  if (currentPR.state === 'open') {
+                    core.info(`ℹ️ PR #${prNumber} was not merged this run (mergeable_state=${currentPR.mergeable_state}).`);
+                  }
+                }
+
+              } catch (error) {
+                core.error(`❌ Error processing PR #${prNumber}: ${error.message}`);
+
+                // Notify on the PR about the failure
+                try {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: prNumber,
+                    body:
+                      `❌ **Auto-Merge Failed**\n\n` +
+                      `The automatic merge process encountered an error after ${MAX_RETRIES} attempt(s):\n` +
+                      `\`\`\`\n${error.message}\n\`\`\`\n\n` +
+                      `Please review and merge manually if appropriate.`,
+                  });
+                } catch (commentError) {
+                  core.warning(`Could not post failure comment: ${commentError.message}`);
+                }
+              }
+            }
