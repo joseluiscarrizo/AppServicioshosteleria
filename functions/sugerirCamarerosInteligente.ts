@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { IdempotencyManager } from './utils/idempotencyManager.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -13,6 +14,14 @@ Deno.serve(async (req) => {
 
     if (!pedido_id) {
       return Response.json({ error: 'pedido_id es requerido' }, { status: 400 });
+    }
+
+    // Idempotency: return cached result if same request was recently processed
+    const idempotency = new IdempotencyManager(base44.asServiceRole.entities);
+    const idempotencyKey = `sugerirCamareros:${pedido_id}:${limite}`;
+    const cached = await idempotency.checkKey(idempotencyKey);
+    if (cached !== null) {
+      return Response.json(cached);
     }
 
     // Obtener pedido
@@ -306,7 +315,7 @@ Genera un ranking de los mejores ${limite} camareros ordenados por idoneidad. Pa
       };
     });
 
-    return Response.json({
+    const resultado = {
       success: true,
       pedido_id: pedido_id,
       evento: {
@@ -319,7 +328,12 @@ Genera un ranking de los mejores ${limite} camareros ordenados por idoneidad. Pa
       resumen: analisisIA.resumen_analisis,
       alertas: analisisIA.alertas || [],
       timestamp: new Date().toISOString()
-    });
+    };
+
+    // Cache the result to prevent redundant AI calls for the same pedido
+    await idempotency.saveKey(idempotencyKey, resultado);
+
+    return Response.json(resultado);
 
   } catch (error) {
     console.error('Error en sugerirCamarerosInteligente:', error);

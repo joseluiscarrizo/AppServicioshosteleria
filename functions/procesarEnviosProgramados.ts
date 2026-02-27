@@ -1,5 +1,6 @@
 import { createClientFromRequest } from '@base44/sdk';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
+import { AuditLogger } from './utils/auditLogger.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -16,6 +17,7 @@ Deno.serve(async (req) => {
     const ahora = new Date();
     let procesados = 0;
     let errores = 0;
+    const audit = new AuditLogger(base44.asServiceRole.entities);
 
     for (const envio of envios) {
       try {
@@ -62,8 +64,33 @@ Deno.serve(async (req) => {
                 camarero_id: destinatario.camarero_id,
                 camarero_nombre: destinatario.camarero_nombre
               });
+              await audit.logSend({
+                entidad: 'EnvioProgramado',
+                entidad_id: envio.id,
+                usuario_id: user.id,
+                usuario_nombre: user.full_name,
+                metadata: {
+                  envio_nombre: envio.nombre,
+                  destinatario_nombre: destinatario.camarero_nombre,
+                  destinatario_telefono: destinatario.telefono
+                },
+                exito: true
+              });
             } catch (err) {
               console.error(`Error enviando a ${destinatario.camarero_nombre}:`, err);
+              await audit.logSend({
+                entidad: 'EnvioProgramado',
+                entidad_id: envio.id,
+                usuario_id: user.id,
+                usuario_nombre: user.full_name,
+                metadata: {
+                  envio_nombre: envio.nombre,
+                  destinatario_nombre: destinatario.camarero_nombre,
+                  destinatario_telefono: destinatario.telefono
+                },
+                exito: false,
+                error_mensaje: err instanceof Error ? err.message : String(err)
+              });
               errores++;
             }
           }
@@ -83,6 +110,14 @@ Deno.serve(async (req) => {
           }
 
           await base44.asServiceRole.entities.EnvioProgramado.update(envio.id, actualizacion);
+          await audit.logUpdate({
+            entidad: 'EnvioProgramado',
+            entidad_id: envio.id,
+            usuario_id: user.id,
+            usuario_nombre: user.full_name,
+            datos_antes: { estado: envio.estado, ultimo_envio: envio.ultimo_envio },
+            datos_despues: actualizacion
+          });
           procesados++;
         }
       } catch (error) {
