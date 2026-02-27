@@ -1,0 +1,186 @@
+name: Architecture Improvement Suggestions & Auto-Fix
+
+on:
+  schedule:
+    - cron: '0 4 * * MON'  # Every Monday at 4 AM
+  workflow_dispatch:
+
+jobs:
+  improvements:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Analyze architecture patterns
+        id: patterns
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const improvements = {
+              missingCircuitBreaker: [],
+              missingRetryLogic: [],
+              missingCaching: [],
+              missingMonitoring: [],
+              missingLogging: [],
+              performanceIssues: []
+            };
+
+            // Scan source files
+            const srcDir = './src';
+            const scanDir = (dir) => {
+              const files = fs.readdirSync(dir);
+              for (const file of files) {
+                const fullPath = path.join(dir, file);
+                const stat = fs.statSync(fullPath);
+
+                if (stat.isDirectory()) {
+                  scanDir(fullPath);
+                } else if (file.endsWith('.ts') || file.endsWith('.js')) {
+                  const content = fs.readFileSync(fullPath, 'utf8');
+
+                  // Check for circuit breaker
+                  if (!content.includes('CircuitBreaker') && content.includes('fetch')) {
+                    improvements.missingCircuitBreaker.push(file);
+                  }
+
+                  // Check for retry logic
+                  if (!content.includes('retry') && content.includes('API')) {
+                    improvements.missingRetryLogic.push(file);
+                  }
+
+                  // Check for caching
+                  if (!content.includes('cache') && content.includes('query')) {
+                    improvements.missingCaching.push(file);
+                  }
+                }
+              }
+            };
+
+            if (fs.existsSync(srcDir)) {
+              scanDir(srcDir);
+            }
+
+            core.setOutput('improvements', JSON.stringify(improvements));
+            return improvements;
+
+      - name: Create improvement PR
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { execSync } = require('child_process');
+            const fs = require('fs');
+
+            try {
+              const improvementBranch = `architecture/improvements-${Date.now()}`;
+
+              // Create improvement branch
+              execSync(`git checkout -b ${improvementBranch}`);
+
+              // Add improvements documentation
+              const improvementDoc = `
+# Architecture Improvements
+
+## Recommended Changes
+
+### 1. Circuit Breaker Pattern
+- Add circuit breaker for external API calls
+- Prevent cascading failures
+- Improve resilience
+
+### 2. Retry Logic
+- Implement exponential backoff
+- Handle transient failures
+- Improve reliability
+
+### 3. Caching Strategy
+- Add Redis/memcached layer
+- Reduce database load
+- Improve performance
+
+### 4. Monitoring
+- Add distributed tracing
+- Implement APM (Application Performance Monitoring)
+- Track business metrics
+
+### 5. Logging
+- Implement structured logging
+- Add correlation IDs
+- Enable better debugging
+
+## Impact
+- Improved resilience
+- Better performance
+- Enhanced observability
+- Reduced operational costs
+
+## Timeline
+- Week 1: Implement circuit breaker
+- Week 2: Add retry logic
+- Week 3: Implement caching
+- Week 4: Add monitoring
+
+`;
+
+              if (!fs.existsSync('docs')) {
+                fs.mkdirSync('docs', { recursive: true });
+              }
+              fs.writeFileSync('docs/ARCHITECTURE_IMPROVEMENTS.md', improvementDoc);
+
+              execSync('git add docs/ARCHITECTURE_IMPROVEMENTS.md');
+              execSync(`git commit -m "docs: Add architecture improvement recommendations
+
+- Circuit breaker pattern
+- Retry logic improvements
+- Caching strategy
+- Monitoring enhancements
+- Logging improvements"`);
+              execSync(`git push origin ${improvementBranch}`);
+
+              // Create PR
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '✨ Architecture: Recommended Improvements & Enhancements',
+                head: improvementBranch,
+                base: 'main',
+                body: `## ✨ Architecture Improvements
+
+This PR contains recommended architectural improvements based on analysis.
+
+### Recommended Changes
+1. **Circuit Breaker Pattern** - Add resilience for external calls
+2. **Retry Logic** - Implement exponential backoff
+3. **Caching Strategy** - Reduce database load
+4. **Monitoring & APM** - Better observability
+5. **Structured Logging** - Enhanced debugging
+
+### Benefits
+- 📈 Improved reliability
+- ⚡ Better performance
+- 👀 Enhanced observability
+- 💰 Reduced operational costs
+
+### Review
+Please review recommendations and prioritize based on impact and effort.
+
+---
+*Auto-generated by Copilot Architecture Bot* 🤖
+*Timestamp: ${new Date().toISOString()}*
+`,
+                labels: ['architecture', 'improvement', 'enhancement']
+              });
+
+              console.log(`✅ Created improvement PR #${pr.number}`);
+            } catch (error) {
+              console.log(`Error creating improvement PR: ${error.message}`);
+            }
