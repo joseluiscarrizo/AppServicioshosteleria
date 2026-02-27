@@ -1,5 +1,29 @@
+/**
+ * confirmarServicioAutomatico
+ *
+ * Marks an `AsignacionCamarero` record as confirmed and sends a WhatsApp
+ * confirmation message to the waiter.
+ *
+ * @method POST
+ * @auth Bearer token required
+ * @rbac admin, coordinador
+ *
+ * @param {string} asignacion_id - ID of the assignment to confirm
+ *
+ * @returns {{ success: boolean, asignacion_id: string, estado: string, mensaje_enviado: boolean }}
+ *
+ * @throws {400} asignacion_id requerido
+ * @throws {401} No autorizado - Token inválido o expirado
+ * @throws {403} No autorizado - Rol insuficiente
+ * @throws {404} Asignación no encontrada
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/confirmarServicioAutomatico
+ * Authorization: Bearer <token>
+ * { "asignacion_id": "asig789" }
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { format } from 'npm:date-fns@3.6.0';
 import { es } from 'npm:date-fns@3.6.0/locale';
 import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 

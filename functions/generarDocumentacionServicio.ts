@@ -1,3 +1,28 @@
+/**
+ * generarDocumentacionServicio
+ *
+ * Generates service documentation for a `Pedido` (order), including client
+ * details, assigned waiters, schedule, and special instructions.
+ *
+ * @method POST
+ * @auth Bearer token required
+ * @rbac admin, coordinador
+ *
+ * @param {string} pedido_id - Order ID for which to generate documentation
+ *
+ * @returns {{ success: boolean, documento_url: string|null,
+ *             documento_base64: string|null, nombre_archivo: string }}
+ *
+ * @throws {400} pedido_id es requerido
+ * @throws {403} No autorizado
+ * @throws {404} Pedido no encontrado
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/generarDocumentacionServicio
+ * Authorization: Bearer <token>
+ * { "pedido_id": "ped456" }
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {

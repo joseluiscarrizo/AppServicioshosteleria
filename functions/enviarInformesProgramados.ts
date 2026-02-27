@@ -1,3 +1,25 @@
+/**
+ * enviarInformesProgramados
+ *
+ * Scheduled job that sends all periodic reports due today based on their
+ * configured frequency (daily / weekly / monthly). Can also be triggered
+ * manually from the admin panel.
+ *
+ * @method POST
+ * @auth Bearer token required (or service role for scheduler)
+ * @rbac admin, coordinador
+ * @schedule 0 7 * * * (daily at 07:00)
+ *
+ * @returns {{ procesados: number, enviados: number, omitidos: number }}
+ *
+ * @throws {403} Forbidden
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/enviarInformesProgramados
+ * Authorization: Bearer <token>
+ * {}
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 function calcularPeriodo(frecuencia) {

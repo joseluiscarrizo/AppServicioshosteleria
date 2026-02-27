@@ -1,3 +1,27 @@
+/**
+ * exportarAsistenciaSheets
+ *
+ * Exports attendance data for a single order, including confirmed waiter
+ * assignments with actual check-in and check-out times. Designed for
+ * Google Sheets import via Apps Script.
+ *
+ * @method POST
+ * @auth Bearer token required
+ * @rbac admin, coordinador, camarero
+ *
+ * @param {string} pedido_id - Order ID
+ *
+ * @returns {{ success: boolean, filas: Array<Array<any>>, total: number }}
+ *
+ * @throws {401} No autenticado
+ * @throws {404} Pedido no encontrado
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/exportarAsistenciaSheets
+ * Authorization: Bearer <token>
+ * { "pedido_id": "ped456" }
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {

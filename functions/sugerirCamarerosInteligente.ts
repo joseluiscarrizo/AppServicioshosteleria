@@ -1,3 +1,32 @@
+/**
+ * sugerirCamarerosInteligente
+ *
+ * Returns an AI-ranked list of available waiters for a given event (`Pedido`).
+ * Scoring factors: historical ratings, declared availability, experience with
+ * the same client, day conflicts, and active assignment rules.
+ *
+ * @method POST
+ * @auth Bearer token required
+ * @rbac admin, coordinador
+ *
+ * @param {string}  pedido_id        - Event/order ID
+ * @param {number}  [limite=10]      - Maximum number of suggestions to return
+ *
+ * @returns {{ sugerencias: Array<{ camarero_id: string, nombre: string,
+ *             puntuacion: number, disponible: boolean, motivo: string }>,
+ *             total: number, pedido_id: string }}
+ *
+ * @throws {400} pedido_id es requerido
+ * @throws {401} No autorizado - Token inválido o expirado
+ * @throws {403} No autorizado - Rol insuficiente
+ * @throws {404} Pedido no encontrado
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/sugerirCamarerosInteligente
+ * Authorization: Bearer <token>
+ * { "pedido_id": "ped456", "limite": 5 }
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {

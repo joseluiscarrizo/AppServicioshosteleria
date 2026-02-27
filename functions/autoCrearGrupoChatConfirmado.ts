@@ -1,5 +1,32 @@
+/**
+ * autoCrearGrupoChatConfirmado
+ *
+ * Base44 database webhook triggered when an `AsignacionCamarero` record
+ * transitions to `estado = "confirmado"`. Creates (or reuses) a WhatsApp
+ * group for the associated `Pedido` and adds the newly confirmed waiter.
+ *
+ * @method POST (database webhook — not called directly by clients)
+ * @auth None (internal Base44 webhook)
+ * @webhook Base44 entity trigger: AsignacionCamarero → update
+ *
+ * @param {object} event      - Webhook event metadata (`{ type: "update" }`)
+ * @param {object} data       - Current state of the `AsignacionCamarero` record
+ * @param {object} [old_data] - Previous state of the record
+ *
+ * @returns {{ skipped?: boolean, reason?: string, grupo_id?: string }}
+ *
+ * @throws {400} Asignación sin pedido_id
+ * @throws {500} Internal server error
+ *
+ * @example
+ * // Payload sent by Base44 when assignment is confirmed
+ * {
+ *   "event": { "type": "update" },
+ *   "data":  { "id": "asig789", "estado": "confirmado", "pedido_id": "ped456", "camarero_id": "cam1" },
+ *   "old_data": { "estado": "pendiente" }
+ * }
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import Logger from '../utils/logger.ts';
 import { retryWithExponentialBackoff } from '../utils/retryHandler.ts';
 import {
   executeDbOperation,

@@ -1,5 +1,46 @@
+/**
+ * enviarWhatsAppMasivo
+ *
+ * Sends a WhatsApp message to multiple waiters in bulk. Optionally uses a stored
+ * message template and personalises the body with order (`Pedido`) data.
+ * Returns a per-recipient delivery report.
+ *
+ * Template variables supported in `mensaje`:
+ * {{camarero}}, {{cliente}}, {{dia}}, {{lugar_evento}},
+ * {{hora_entrada}}, {{hora_salida}}, {{camisa}}
+ *
+ * @method POST
+ * @auth Bearer token required
+ * @rbac admin, coordinador
+ * @rateLimit 20 requests / 60 s
+ *
+ * @param {string[]} camareros_ids - List of waiter IDs to message (min 1)
+ * @param {string}   [pedido_id]   - Order ID for template variable substitution
+ * @param {string}   [mensaje]     - Message body (one of mensaje or plantilla_id is required)
+ * @param {string}   [plantilla_id] - Stored PlantillaWhatsApp ID (overrides mensaje)
+ * @param {string}   [coordinador_id] - Coordinator ID for history logging
+ *
+ * @returns {{ success: boolean, total: number, exitosos: number, fallidos: number,
+ *             detalles: Array<{ camarero: string, telefono?: string, estado: string,
+ *             proveedor?: string, mensaje_id?: string, enviado_por_api?: boolean, error?: string }>,
+ *             mensaje: string }}
+ *
+ * @throws {400} Debe seleccionar al menos un camarero
+ * @throws {400} Debe proporcionar un mensaje o plantilla
+ * @throws {401} No autorizado - Token inválido o expirado
+ * @throws {403} No autorizado - Rol insuficiente
+ * @throws {500} Error al enviar mensajes
+ *
+ * @example
+ * POST /functions/v1/enviarWhatsAppMasivo
+ * Authorization: Bearer <token>
+ * {
+ *   "camareros_ids": ["cam1", "cam2"],
+ *   "pedido_id": "ped456",
+ *   "mensaje": "Hola {{camarero}}, tienes servicio el {{dia}} en {{cliente}}."
+ * }
+ */
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
 Deno.serve(async (req) => {
   try {

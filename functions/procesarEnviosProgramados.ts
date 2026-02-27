@@ -1,5 +1,24 @@
+/**
+ * procesarEnviosProgramados
+ *
+ * Scheduled job that dispatches queued `EnvioProgramado` records whose
+ * `fecha_envio` has arrived. Handles WhatsApp, email, and push channels.
+ *
+ * @method POST
+ * @auth Bearer token required (or service role for scheduler)
+ * @rbac admin, coordinador
+ * @schedule */15 * * * * (every 15 minutes)
+ *
+ * @returns {{ procesados: number, exitosos: number, fallidos: number }}
+ *
+ * @throws {500} Internal server error
+ *
+ * @example
+ * POST /functions/v1/procesarEnviosProgramados
+ * Authorization: Bearer <token>
+ * {}
+ */
 import { createClientFromRequest } from '@base44/sdk';
-import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
 Deno.serve(async (req) => {
   try {
