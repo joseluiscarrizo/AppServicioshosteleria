@@ -1,5 +1,29 @@
 {
   "imports": {
     "@base44/sdk": "npm:@base44/sdk@0.8.6"
+  },
+  "lint": {
+    "exclude": [
+      "src/",
+      "tests/",
+      "functions/",
+      "utils/",
+      "docs/",
+      "presentation/",
+      "pulls/",
+      "node_modules/"
+    ]
+  },
+  "test": {
+    "exclude": [
+      "src/",
+      "tests/",
+      "functions/",
+      "utils/",
+      "docs/",
+      "presentation/",
+      "pulls/",
+      "node_modules/"
+    ]
   }
 }
