@@ -12,7 +12,7 @@ import { Loader2, CheckCircle2, Clock, LogIn, LogOut, AlertCircle, Calendar, Map
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Logger from '../utils/logger';
-import { validateToken } from '../utils/validators';
+import { isQRTokenValid, validateQRToken } from '../utils/tokenValidator';
 import ErrorNotificationService from '../utils/errorNotificationService';
 import { ValidationError, handleWebhookError } from '../utils/webhookImprovements';
 
@@ -27,10 +27,14 @@ export default function FichajeQR() {
   const [procesando, setProcesando] = useState(false);
 
   useEffect(() => {
-    if (!validateToken(token)) {
-      Logger.error('Token de fichaje inválido o ausente', { token });
+    const tokenValidation = validateQRToken(token);
+    if (!tokenValidation.valid) {
+      const reason = tokenValidation.isExpired
+        ? 'El código QR ha caducado. Solicita uno nuevo.'
+        : 'Token no válido. Escanea el código QR correcto.';
+      Logger.error('Token de fichaje inválido o ausente', { token, reason: tokenValidation.reason });
       setEstado('error');
-      setMensaje('Token no válido. Escanea el código QR correcto.');
+      setMensaje(reason);
       return;
     }
     cargarDatos();
@@ -64,7 +68,12 @@ export default function FichajeQR() {
   };
 
   const validarFichaje = (tipo, asig) => {
-    if (!validateToken(token)) return 'Token no válido. No se puede registrar el fichaje.';
+    const tokenValidation = validateQRToken(token);
+    if (!tokenValidation.valid) {
+      return tokenValidation.isExpired
+        ? 'El código QR ha caducado. No se puede registrar el fichaje.'
+        : 'Token no válido. No se puede registrar el fichaje.';
+    }
     if (tipo !== 'entrada' && tipo !== 'salida') return 'Tipo de fichaje no reconocido.';
     if (tipo === 'salida' && !asig?.hora_entrada_real) return 'Debes registrar la entrada antes de registrar la salida.';
     if (tipo === 'entrada' && asig?.hora_entrada_real) return 'La entrada ya ha sido registrada.';
@@ -122,7 +131,7 @@ export default function FichajeQR() {
   const pedido = datos?.pedido ?? null;
   const tieneEntrada = !!asig?.hora_entrada_real;
   const tieneSalida = !!asig?.hora_salida_real;
-  const tokenValido = validateToken(token);
+  const tokenValido = isQRTokenValid(token);
   const horaActual = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
   return (

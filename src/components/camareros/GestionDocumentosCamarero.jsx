@@ -12,6 +12,8 @@ import { FileText, Upload, CheckCircle, XCircle, Clock, AlertTriangle, Trash2, E
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { validateDocumentFile, validateDocumentForm } from '@/utils/formValidators';
+import { sanitizeFileName } from '@/utils/sanitizer';
 
 export default function GestionDocumentosCamarero({ camarero, soloLectura = false }) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -43,6 +45,21 @@ export default function GestionDocumentosCamarero({ camarero, soloLectura = fals
       return;
     }
 
+    // Validate file type and size
+    const fileValidation = validateDocumentFile(archivo);
+    if (!fileValidation.valid) {
+      toast.error(fileValidation.errors.file || 'Archivo no válido');
+      return;
+    }
+
+    // Validate form fields
+    const formValidation = validateDocumentForm(nombreDoc, tipoDoc, fechaExpiracion);
+    if (!formValidation.valid) {
+      const firstError = Object.values(formValidation.errors)[0];
+      toast.error(firstError);
+      return;
+    }
+
     setSubiendo(true);
     try {
       // Subir archivo
@@ -52,7 +69,7 @@ export default function GestionDocumentosCamarero({ camarero, soloLectura = fals
       const documentosActuales = camarero.documentos || [];
       const nuevoDocumento = {
         tipo: tipoDoc,
-        nombre: nombreDoc,
+        nombre: sanitizeFileName(nombreDoc.trim()),
         url: file_url,
         fecha_subida: new Date().toISOString(),
         fecha_expiracion: fechaExpiracion || null,
