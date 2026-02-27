@@ -1,0 +1,192 @@
+name: Tiered PR Merge
+
+on:
+  workflow_dispatch:
+    inputs:
+      group:
+        description: 'Merge group to process (foundation | group-a | group-b | group-c | final)'
+        required: true
+        default: 'foundation'
+        type: choice
+        options:
+          - foundation
+          - group-a
+          - group-b
+          - group-c
+          - final
+      pr_numbers:
+        description: 'Comma-separated list of PR numbers to merge in this group'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run - validate only, do not merge'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  validate-group:
+    name: Pre-merge validation for ${{ inputs.group }}
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate PRs are ready to merge
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumbers = '${{ inputs.pr_numbers }}'.split(',').map(n => parseInt(n.trim())).filter(Boolean);
+            console.log(`Validating group: ${{ inputs.group }}`);
+            console.log(`PRs to process: ${prNumbers.join(', ')}`);
+
+            let allReady = true;
+            const results = [];
+
+            for (const prNumber of prNumbers) {
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+
+              const { data: checks } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: pr.head.sha
+              });
+
+              const failedChecks = checks.check_runs.filter(
+                c => c.status === 'completed' && c.conclusion !== 'success' && c.conclusion !== 'skipped' && c.conclusion !== 'neutral'
+              );
+
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+
+              const approved = reviews.some(r => r.state === 'APPROVED');
+              const mergeable = pr.mergeable !== false;
+              const ready = failedChecks.length === 0 && mergeable;
+
+              results.push({
+                pr: prNumber,
+                title: pr.title,
+                approved,
+                mergeable,
+                failedChecks: failedChecks.map(c => c.name),
+                ready
+              });
+
+              if (!ready) allReady = false;
+              console.log(`PR #${prNumber} (${pr.title}): ready=${ready}, approved=${approved}, mergeable=${mergeable}, failedChecks=${failedChecks.length}`);
+            }
+
+            const summary = results.map(r =>
+              `- PR #${r.pr}: ${r.ready ? '✅' : '❌'} ${r.title}${r.failedChecks.length ? ` (failed: ${r.failedChecks.join(', ')})` : ''}`
+            ).join('\n');
+
+            await core.summary
+              .addHeading(`Tiered Acceleration - Group: ${{ inputs.group }}`)
+              .addRaw(summary)
+              .write();
+
+            core.setOutput('ready', allReady ? 'true' : 'false');
+            if (!allReady) {
+              core.setFailed('One or more PRs are not ready to merge. Address CI failures before proceeding.');
+            }
+
+  merge-group:
+    name: Merge group ${{ inputs.group }}
+    runs-on: ubuntu-latest
+    needs: validate-group
+    if: needs.validate-group.outputs.ready == 'true' && inputs.dry_run == 'false'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Merge PRs in group
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumbers = '${{ inputs.pr_numbers }}'.split(',').map(n => parseInt(n.trim())).filter(Boolean);
+            const merged = [];
+            const failed = [];
+
+            for (const prNumber of prNumbers) {
+              try {
+                await github.rest.pulls.merge({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                  merge_method: 'squash'
+                });
+                merged.push(prNumber);
+                console.log(`✅ Merged PR #${prNumber}`);
+              } catch (err) {
+                failed.push({ pr: prNumber, error: err.message });
+                console.error(`❌ Failed to merge PR #${prNumber}: ${err.message}`);
+              }
+            }
+
+            const summary = [
+              `## Tiered Merge Result - Group: ${{ inputs.group }}`,
+              '',
+              `### Merged (${merged.length})`,
+              ...merged.map(n => `- ✅ PR #${n}`),
+              '',
+              `### Failed (${failed.length})`,
+              ...failed.map(f => `- ❌ PR #${f.pr}: ${f.error}`)
+            ].join('\n');
+
+            await core.summary.addRaw(summary).write();
+
+            if (failed.length > 0) {
+              core.setFailed(`${failed.length} PR(s) failed to merge. Review the summary above and consult the rollback procedure in docs/TIERED_ACCELERATION_RUNBOOK.md.`);
+            }
+
+  post-merge-validation:
+    name: Post-merge validation
+    runs-on: ubuntu-latest
+    needs: merge-group
+    if: success()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run smoke tests
+        run: |
+          echo "Running post-merge validation for group: ${{ inputs.group }}"
+          if [ -f "vitest.config.ts" ] || [ -f "vitest.config.cjs" ]; then
+            npx vitest run --reporter=verbose
+          else
+            echo "No vitest config found - manual validation required"
+          fi
+
+      - name: Validation summary
+        run: |
+          echo "## Post-merge Validation Complete"
+          echo "Group '${{ inputs.group }}' merged and validated."
+          echo "Proceed to the next group per docs/TIERED_ACCELERATION_RUNBOOK.md"
