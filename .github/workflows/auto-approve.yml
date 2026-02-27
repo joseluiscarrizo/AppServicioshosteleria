@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Auto approve ready pull requests
+        # Note: GitHub prevents GITHUB_TOKEN from approving PRs authored by the same workflow.
+        # This works for PRs authored by external contributors or other accounts.
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -51,6 +51,19 @@ jobs:
             for (const pr of conflictedPRs) {
               console.log(`PR #${pr.number} (${pr.branch} -> ${pr.base}) has conflicts`);
               try {
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  per_page: 50
+                });
+                const alreadyCommented = comments.some(
+                  c => c.body && c.body.includes('⚠️ **Conflict Resolver**')
+                );
+                if (alreadyCommented) {
+                  console.log(`PR #${pr.number}: conflict comment already exists - skipping`);
+                  continue;
+                }
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,

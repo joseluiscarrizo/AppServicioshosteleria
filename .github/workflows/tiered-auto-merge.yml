@@ -9,6 +9,15 @@ on:
         description: 'Specific PR number to merge (optional)'
         required: false
         type: string
+      merge_method:
+        description: 'Merge method: squash, merge, or rebase'
+        required: false
+        type: choice
+        options:
+          - squash
+          - merge
+          - rebase
+        default: squash
 
 permissions:
   pull-requests: write
@@ -104,7 +113,7 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   pull_number: pr.number,
-                  merge_method: 'squash',
+                  merge_method: '${{ inputs.merge_method }}' || 'squash',
                   commit_title: `${pr.title} (#${pr.number})`,
                   commit_message: `Auto-merged by tiered acceleration system\n\nPR: #${pr.number}\nBranch: ${pr.head.ref}`
                 });
