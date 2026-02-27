@@ -1,35 +1,89 @@
-# Enterprise Architecture Document
+# Architecture Document — AppServicioshosteleria
 
-This document outlines the architectural patterns and implementation strategies for achieving enterprise-grade security, resilience, and scalability in the AppServicioshosteleria application. It serves as a guideline for developers and architects to ensure the application meets industry standards and can effectively handle growth and security challenges.
+This document describes the actual architecture of the AppServicioshosteleria application, a staffing management platform for hospitality events.
 
 ## Architecture Overview
 
-The application follows a microservices architecture which promotes modularity and independent scalability. Key components include:
+The application uses a **Backend-as-a-Service (BaaS)** model via Base44, paired with a React SPA frontend hosted on Firebase Hosting. There are no self-managed servers or microservices; infrastructure is fully managed by Base44 and Firebase.
 
-- **API Gateway**: Central entry point for all client requests.
-- **Service Layer**: Individual microservices handling specific business functionalities.
-- **Database**: Relational and NoSQL databases for structured and unstructured data.
-- **Caching Layer**: Redis or Memcached to enhance performance.
-- **Load Balancer**: Distributes incoming traffic across multiple instances of services.
+### Key Components
 
-## Implementation Patterns
+| Layer | Technology | Responsibility |
+|-------|-----------|---------------|
+| **Frontend** | React 18 + Vite | UI rendering, routing, state management |
+| **Routing** | React Router v6 | Client-side navigation |
+| **Server State** | TanStack Query v5 | API data fetching, caching, synchronisation |
+| **UI Components** | Tailwind CSS + shadcn/ui + Framer Motion | Styling and animation |
+| **Drag & Drop** | @hello-pangea/dnd | Kanban board interactions |
+| **BaaS** | Base44 SDK v0.8.x | Data persistence, authentication, real-time updates |
+| **Cloud Functions** | TypeScript (serverless on Base44) | Server-side business logic |
+| **Hosting** | Firebase Hosting | Static asset delivery via CDN |
 
-### 3.1 Security Patterns
-- **Authentication and Authorization**: Implement OAuth2.0 and JWT for securing services.
-- **Data Encryption**: Use TLS for data in transit and AES for data at rest.
-- **Input Validation**: Sanitize and validate all inputs to prevent injection attacks.
-- **Security Audits**: Regularly conduct security assessments and penetration testing.
+## Application Layers
 
-### 3.2 Resilience Patterns
-- **Circuit Breaker Pattern**: Prevents cascading failures by stopping requests to failing services.
-- **Bulkhead Pattern**: Isolates failures in different components to maintain overall system integrity.
-- **Retries and Timeouts**: Implement exponential backoff for retries and set reasonable timeouts for service calls.
+### Frontend (`src/`)
 
-### 3.3 Scalability Patterns
-- **Horizontal Scaling**: Add more instances of services to handle increased load.
-- **Auto-scaling**: Use cloud services to automatically scale based on metrics (CPU, memory usage).
-- **Queue-Based Load Leveling**: Implement message queues to decouple services and handle bursts in traffic.
+```
+src/
+├── api/base44Client.js          # Base44 BaaS client (authentication, entities)
+├── components/
+│   ├── asignacion/              # Kanban board, drag-drop, AI waiter suggestions
+│   ├── camareros/               # Waiter management and ratings
+│   ├── informes/                # Analytics and performance reports
+│   ├── notificaciones/          # Push and in-app notifications
+│   ├── pedidos/                 # Service order forms and AI extractor
+│   ├── recordatorios/           # Configurable reminders
+│   ├── tiemporeal/              # Real-time attendance tracking
+│   └── whatsapp/                # WhatsApp messaging integration
+├── hooks/useBackgroundServices.js  # Unified background service polling
+└── pages/                       # Top-level page components (Pedidos, Asignacion, etc.)
+```
+
+### Cloud Functions (`functions/`)
+
+Serverless TypeScript functions deployed on Base44:
+
+- `sugerirCamarerosInteligente` — AI-powered waiter suggestions
+- `enviarWhatsAppDirecto` / `enviarWhatsAppMasivo` — WhatsApp messaging
+- `exportarAsignacionesExcel` — Excel export
+- `exportarAsistenciaSheets` — Google Sheets synchronisation
+- `verificarDocumentosExpirados` — Document expiration alerts
+- `autoCrearGrupoChatConfirmado` — Auto-create confirmation groups
+- `eliminarGruposExpirados` — Cleanup of inactive groups
+
+## Data Flow
+
+```
+Browser → React SPA → Base44 SDK → Base44 BaaS (data + auth)
+                    ↳ Cloud Functions (server-side logic via Base44 triggers)
+```
+
+Authentication and all data operations go through the Base44 SDK. Cloud functions handle complex business logic (messaging, exports, AI suggestions) triggered by Base44 events or HTTP calls.
+
+## CI/CD Pipeline
+
+| Stage | Tool | Trigger |
+|-------|------|---------|
+| Lint | ESLint | Push / PR to `main` |
+| Test | Vitest | Push / PR to `main` |
+| Build | Vite | Push to `main` |
+| Deploy | Firebase Hosting | Push to `main` (via GitHub Actions) |
+
+## Security
+
+- Authentication is enforced through Base44 (`requiresAuth: true` in `base44Client.js`).
+- Entity-level access rules are configured in the Base44 Dashboard.
+- Environment variables (`VITE_BASE44_APP_ID`, `VITE_BASE44_BACKEND_URL`) are stored as GitHub Secrets; never committed to source.
+- The public confirmation page (`/confirmar-servicio`) is the only unauthenticated route.
+
+## Scalability
+
+Scaling is handled transparently by Base44 and Firebase:
+
+- **Base44**: Serverless compute scales automatically with request volume.
+- **Firebase Hosting**: Global CDN serves the static frontend with no manual scaling required.
+- **TanStack Query**: Client-side caching reduces redundant API calls.
 
 ## Conclusion
 
-By following the outlined patterns and strategies, the AppServicioshosteleria application can achieve robust security measures, resilience against failures, and the ability to scale efficiently to meet growth demands. Regular reviews of these implementations are recommended to adapt to changing technology and threat landscapes.
+The application is designed to minimise operational overhead by delegating infrastructure concerns (auth, data, compute, hosting) to managed platforms. Development effort is focused on product features in the React frontend and TypeScript cloud functions.
