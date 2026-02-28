@@ -73,6 +73,14 @@ export const AuthProvider = ({ children }) => {
   }, [token]);
 
   const checkAppState = async () => {
+    // Safety timeout: prevent infinite loading if something hangs
+    const loadingTimeout = setTimeout(() => {
+      setIsLoadingPublicSettings(false);
+      setIsLoadingAuth(false);
+      setAuthError({ type: 'timeout', message: 'La carga tardó demasiado. Intente recargar.', retryable: true });
+      Logger.error('App state check timed out after 15 seconds');
+    }, 15000);
+
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
@@ -97,6 +105,7 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
+        clearTimeout(loadingTimeout);
         setAppPublicSettings(publicSettings);
         Logger.info('App public settings loaded successfully');
 
@@ -120,6 +129,7 @@ export const AuthProvider = ({ children }) => {
         }
         setIsLoadingPublicSettings(false);
       } catch (appError) {
+        clearTimeout(loadingTimeout);
         const mapped = handleWebhookError(appError);
         Logger.error('App state check failed', { type: mapped.type, message: mapped.message });
 
@@ -160,6 +170,7 @@ export const AuthProvider = ({ children }) => {
         setIsLoadingAuth(false);
       }
     } catch (error) {
+      clearTimeout(loadingTimeout);
       const mapped = handleWebhookError(error);
       Logger.error('Unexpected error during app state check', { type: mapped.type, message: mapped.message });
       ErrorNotificationService.notifyUser(ErrorNotificationService.getMessage('UNKNOWN'));
