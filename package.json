@@ -1,1 +1,1 @@
-{"devDependencies": {"@vitest/coverage-v8": "latest"}}
+{"devDependencies":{"@hello-pangea/dnd":"^18.0.1","@tanstack/react-query":"^5.90.21","@testing-library/jest-dom":"^6.9.1","@testing-library/react":"^16.3.2","@testing-library/user-event":"^14.6.1","@vitejs/plugin-react":"^5.1.4","@vitest/coverage-v8":"latest","date-fns":"^4.1.0","framer-motion":"^12.34.3","jsdom":"^28.1.0","lucide-react":"^0.575.0","react":"^19.2.4","react-dom":"^19.2.4","react-router-dom":"^7.13.1","sonner":"^2.0.7","vitest":"^4.0.18"},"dependencies":{"zod":"^3.25.76"}}
