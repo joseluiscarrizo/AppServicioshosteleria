@@ -1,12 +1,16 @@
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react'; // Updated import
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 const config = defineConfig({
-  plugins: [react()], // Updated usage
+  plugins: [react()],
   test: {
-    environment: 'jsdom', // Configured jsdom environment
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./tests/setup.js'],
     alias: {
-      '@': '/src', // Set up path aliases
+      '@': path.resolve(__dirname, './src'),
+      '@base44/sdk': path.resolve(__dirname, './tests/__mocks__/@base44/sdk.js'),
     }
   }
 });

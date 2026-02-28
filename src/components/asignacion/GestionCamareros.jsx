@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Star } from 'lucide-react';
 import { toast } from 'sonner';
 import HabilidadesEditor from '../camareros/HabilidadesEditor';
+import { camareroSchema, validate } from '@/lib/validations/schemas';
 
 const tiposPerfil = [
   { value: 'camarero', label: 'Camarero', prefix: 'CAM' },
@@ -55,6 +56,7 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
     notas: '',
     coordinador_id: ''
   });
+  const [validationErrors, setValidationErrors] = useState({});
 
   const queryClient = useQueryClient();
 
@@ -124,7 +126,31 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
+    // Validate form data with Zod schema
+    const validation = validate(camareroSchema, {
+      nombre: formData.nombre,
+      email: formData.email,
+      telefono: formData.telefono,
+      especialidad: formData.especialidad,
+      nivel_experiencia: formData.nivel_experiencia,
+      experiencia_anios: formData.experiencia_anios,
+      disponible: formData.disponible,
+      en_reserva: formData.en_reserva,
+      notas: formData.notas,
+      habilidades: formData.habilidades,
+      idiomas: formData.idiomas,
+      certificaciones: formData.certificaciones,
+    });
+
+    if (!validation.success) {
+      setValidationErrors(validation.errors);
+      const firstError = Object.values(validation.errors)[0];
+      toast.error(firstError || 'Por favor, revisa los campos del formulario');
+      return;
+    }
+
+    setValidationErrors({});
     let dataToSubmit = { ...formData };
     
     // Generar código automático si es nuevo perfil
@@ -224,6 +250,9 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
                   placeholder="Nombre completo"
                   required
                 />
+                {validationErrors.nombre && (
+                  <p className="text-xs text-red-500">{validationErrors.nombre}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -235,6 +264,9 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
                     onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
                     placeholder="+34 600 000 000"
                   />
+                  {validationErrors.telefono && (
+                    <p className="text-xs text-red-500">{validationErrors.telefono}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -245,6 +277,9 @@ export default function GestionCamareros({ open, onOpenChange, editingCamarero }
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="email@ejemplo.com"
                   />
+                  {validationErrors.email && (
+                    <p className="text-xs text-red-500">{validationErrors.email}</p>
+                  )}
                 </div>
               </div>
 
