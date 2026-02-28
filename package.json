@@ -1,1 +1,1 @@
-{"devDependencies": {"@vitest/coverage-v8": "latest"}}
+{"scripts":{"audit":"npm audit","audit:fix":"npm audit fix","security-check":"npm audit --production"},"dependencies":{"jspdf":"^4.2.0"},"devDependencies":{"@vitest/coverage-v8":"latest"}}
