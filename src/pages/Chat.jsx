@@ -1,18 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { MessageCircle, Loader2 } from 'lucide-react';
+import { MessageCircle, Loader2, AlertCircle } from 'lucide-react';
 import GruposList from '../components/chat/GruposList';
 import ChatWindow from '../components/chat/ChatWindow.jsx';
+import { useAPI } from '../hooks/useAPI';
 
 export default function Chat() {
-  const [user, setUser] = useState(null);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState(null);
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState({});
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
-  }, []);
+  const fetchUser = useCallback((signal) => base44.auth.me({ signal }).catch(() => null), []);
+  const { data: user, loading: loadingUser, error: userError } = useAPI(fetchUser);
 
   const { data: grupos = [], isLoading } = useQuery({
     queryKey: ['grupos-chat', user?.id],
@@ -65,6 +64,23 @@ export default function Chat() {
     const interval = setInterval(cargarNoLeidos, 10000);
     return () => clearInterval(interval);
   }, [grupos, user?.id]);
+
+  if (loadingUser) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (userError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
+        <AlertCircle className="w-8 h-8 text-red-400" />
+        <p className="text-slate-500">Error al cargar el usuario. Por favor, recarga la página.</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
