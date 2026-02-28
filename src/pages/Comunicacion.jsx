@@ -11,10 +11,25 @@ import PartesTrabajos from '../components/comunicacion/PartesTrabajos';
 
 export default function Comunicacion() {
   const [user, setUser] = useState(null);
+  const [userLoaded, setUserLoaded] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    base44.auth.me()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => {
+        clearTimeout(timeout);
+        setUserLoaded(true);
+      });
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, []);
 
   const handleRefresh = async () => {
@@ -23,7 +38,7 @@ export default function Comunicacion() {
     await queryClient.invalidateQueries({ queryKey: ['pedidos-partes'] });
   };
 
-  if (!user) {
+  if (!userLoaded) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-slate-400" />

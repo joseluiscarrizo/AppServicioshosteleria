@@ -7,11 +7,26 @@ import ChatWindow from '../components/chat/ChatWindow.jsx';
 
 export default function Chat() {
   const [user, setUser] = useState(null);
+  const [userLoaded, setUserLoaded] = useState(false);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState(null);
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState({});
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    base44.auth.me()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => {
+        clearTimeout(timeout);
+        setUserLoaded(true);
+      });
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, []);
 
   const { data: grupos = [], isLoading } = useQuery({
@@ -66,7 +81,7 @@ export default function Chat() {
     return () => clearInterval(interval);
   }, [grupos, user?.id]);
 
-  if (!user) {
+  if (!userLoaded) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
