@@ -1,1 +1,1 @@
-{"devDependencies": {"@vitest/coverage-v8": "latest"}}
+{"devDependencies": {"@vitest/coverage-v8": "latest"}, "dependencies": {"jspdf": "^4.2.0"}}
