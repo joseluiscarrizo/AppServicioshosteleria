@@ -7,11 +7,20 @@ import ChatWindow from '../components/chat/ChatWindow.jsx';
 
 export default function Chat() {
   const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState(null);
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState({});
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
+    const timeoutId = setTimeout(() => setLoadingUser(false), 10000);
+    base44.auth.me()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => {
+        clearTimeout(timeoutId);
+        setLoadingUser(false);
+      });
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const { data: grupos = [], isLoading } = useQuery({
@@ -66,10 +75,18 @@ export default function Chat() {
     return () => clearInterval(interval);
   }, [grupos, user?.id]);
 
-  if (!user) {
+  if (loadingUser) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-slate-500">No se pudo cargar el usuario. Por favor, recargue la página.</p>
       </div>
     );
   }
