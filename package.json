@@ -1,1 +1,30 @@
-{"devDependencies": {"@vitest/coverage-v8": "latest"}}
+{
+  "name": "AppServicioshosteleria",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "security:audit": "npm audit"
+  },
+  "dependencies": {
+    "@base44/sdk": "^0.8.19",
+    "@tanstack/react-query": "^5.90.21",
+    "jspdf": "^4.2.0",
+    "lucide-react": "^0.575.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.1",
+    "sonner": "^2.0.7"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^5.1.4",
+    "@vitest/coverage-v8": "latest",
+    "jsdom": "^28.1.0",
+    "vitest": "^4.0.18"
+  }
+}
