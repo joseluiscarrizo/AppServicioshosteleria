@@ -27,7 +27,8 @@ export default function ChatWindow({ grupo, user }) {
     queryKey: ['mensajes-chat', grupo?.id],
     queryFn: () => base44.entities.MensajeChat.filter({ grupo_id: grupo.id }, 'created_date'),
     enabled: !!grupo?.id,
-    refetchInterval: 3000
+    staleTime: 30000,
+    refetchInterval: 30000
   });
 
   useEffect(() => {

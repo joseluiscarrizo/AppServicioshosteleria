@@ -41,7 +41,8 @@ export default function ChatCoordinadores({ user }) {
     queryKey: ['mensajes-coordinadores', grupoCoord?.id],
     queryFn: () => base44.entities.MensajeChat.filter({ grupo_id: grupoCoord.id }, 'created_date'),
     enabled: !!grupoCoord?.id,
-    refetchInterval: 3000
+    staleTime: 30000,
+    refetchInterval: 30000
   });
 
   // Suscripción en tiempo real
