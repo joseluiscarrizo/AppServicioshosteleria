@@ -64,6 +64,7 @@ import HistorialMensajes from './pages/HistorialMensajes';
 import Home from './pages/Home';
 import Informes from './pages/Informes';
 import Pedidos from './pages/Pedidos';
+import ProgressReport from './pages/ProgressReport';
 import PerfilCamarero from './pages/PerfilCamarero';
 import PreferenciasNotificaciones from './pages/PreferenciasNotificaciones';
 import TableroEventos from './pages/TableroEventos';
@@ -90,6 +91,7 @@ export const PAGES = {
     "Home": Home,
     "Informes": Informes,
     "Pedidos": Pedidos,
+    "ProgressReport": ProgressReport,
     "PerfilCamarero": PerfilCamarero,
     "PreferenciasNotificaciones": PreferenciasNotificaciones,
     "TableroEventos": TableroEventos,
