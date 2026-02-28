@@ -1,1 +1,1 @@
-{"devDependencies": {"@vitest/coverage-v8": "latest"}}
+{"devDependencies": {"@vitest/coverage-v8": "latest"}, "scripts": {"audit": "npm audit", "audit:fix": "npm audit fix"}}

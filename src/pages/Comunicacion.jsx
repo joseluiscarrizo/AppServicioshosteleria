@@ -1,27 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import PullToRefresh from '../components/ui/PullToRefresh';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Users, Building2, FileText, Loader2 } from 'lucide-react';
+import { MessageCircle, Users, Building2, FileText, Loader2, AlertCircle } from 'lucide-react';
 import ChatEventos from '../components/comunicacion/ChatEventos';
 import ChatCoordinadores from '../components/comunicacion/ChatCoordinadores';
 import ChatClientes from '../components/comunicacion/ChatClientes';
 import PartesTrabajos from '../components/comunicacion/PartesTrabajos';
+import { useAPI } from '../hooks/useAPI';
 
 export default function Comunicacion() {
-  const [user, setUser] = useState(null);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
-  }, []);
+  const fetchUser = useCallback((signal) => base44.auth.me({ signal }).catch(() => null), []);
+  const { data: user, loading, error, refetch } = useAPI(fetchUser);
 
   const handleRefresh = async () => {
+    refetch();
     await queryClient.invalidateQueries({ queryKey: ['grupos-chat'] });
     await queryClient.invalidateQueries({ queryKey: ['mensajes'] });
     await queryClient.invalidateQueries({ queryKey: ['pedidos-partes'] });
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
+        <AlertCircle className="w-8 h-8 text-red-400" />
+        <p className="text-slate-500">Error al cargar el usuario. Por favor, recarga la página.</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
