@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Calendar, Users, TrendingUp, Building2, UserCheck, BarChart3, Activity, Clock } from 'lucide-react';
+import { FileText, Calendar, Users, TrendingUp, Building2, UserCheck, BarChart3, Activity, Clock, Timer } from 'lucide-react';
 import ResumenPeriodo from '../components/informes/ResumenPeriodo';
 import RendimientoCamareros from '../components/informes/RendimientoCamareros';
 import ReporteDisponibilidad from '../components/informes/ReporteDisponibilidad';
@@ -9,6 +9,7 @@ import InformeCamarero from '../components/informes/InformeCamarero';
 import AnalisisTendencias from '../components/informes/AnalisisTendencias';
 import AnalisisDemanda from '../components/informes/AnalisisDemanda';
 import InformesProgramados from '../components/informes/InformesProgramados';
+import MetricasProgreso from '../components/informes/MetricasProgreso';
 
 export default function Informes() {
   const [activeTab, setActiveTab] = useState('resumen');
@@ -26,7 +27,7 @@ export default function Informes() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 mb-6">
+          <TabsList className="grid w-full grid-cols-5 md:grid-cols-9 mb-6">
             <TabsTrigger value="resumen" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">Resumen</span>
@@ -59,6 +60,10 @@ export default function Informes() {
               <Clock className="w-4 h-4" />
               <span className="hidden sm:inline">Programados</span>
             </TabsTrigger>
+            <TabsTrigger value="metricas" className="flex items-center gap-2">
+              <Timer className="w-4 h-4" />
+              <span className="hidden sm:inline">Métricas</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="resumen">
@@ -84,6 +89,9 @@ export default function Informes() {
           </TabsContent>
           <TabsContent value="programados">
             <InformesProgramados />
+          </TabsContent>
+          <TabsContent value="metricas">
+            <MetricasProgreso />
           </TabsContent>
         </Tabs>
       </div>
