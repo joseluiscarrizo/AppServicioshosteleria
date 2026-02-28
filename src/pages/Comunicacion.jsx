@@ -11,10 +11,19 @@ import PartesTrabajos from '../components/comunicacion/PartesTrabajos';
 
 export default function Comunicacion() {
   const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
+    const timeoutId = setTimeout(() => setLoadingUser(false), 10000);
+    base44.auth.me()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => {
+        clearTimeout(timeoutId);
+        setLoadingUser(false);
+      });
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const handleRefresh = async () => {
@@ -23,10 +32,18 @@ export default function Comunicacion() {
     await queryClient.invalidateQueries({ queryKey: ['pedidos-partes'] });
   };
 
-  if (!user) {
+  if (loadingUser) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-slate-500">No se pudo cargar el usuario. Por favor, recargue la página.</p>
       </div>
     );
   }
