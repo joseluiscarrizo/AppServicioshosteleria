@@ -1,14 +1,17 @@
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react'; // Updated import
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
-const config = defineConfig({
-  plugins: [react()], // Updated usage
-  test: {
-    environment: 'jsdom', // Configured jsdom environment
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
     alias: {
-      '@': '/src', // Set up path aliases
-    }
-  }
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./tests/setup.js'],
+  },
 });
-
-export default config;
