@@ -14,6 +14,11 @@ export const useAPI = (url, options = {}, timeout = 30000) => {
 
   const abortControllerRef = useRef(null);
   const timeoutIdRef = useRef(null);
+  // Store options in a ref so fetchData always reads the latest value
+  // without needing options in useCallback deps (avoids infinite re-renders
+  // when the caller passes an inline object).
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -27,7 +32,7 @@ export const useAPI = (url, options = {}, timeout = 30000) => {
       }, timeout);
 
       const response = await fetch(url, {
-        ...options,
+        ...optionsRef.current,
         signal: abortControllerRef.current.signal,
       });
 
@@ -48,7 +53,7 @@ export const useAPI = (url, options = {}, timeout = 30000) => {
     } finally {
       setLoading(false);
     }
-  }, [url, timeout]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [url, timeout]);
 
   useEffect(() => {
     if (!url) {
