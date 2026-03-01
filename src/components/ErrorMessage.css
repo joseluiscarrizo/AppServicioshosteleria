@@ -1,0 +1,53 @@
+.error-message-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 20px;
+}
+
+.error-content {
+  text-align: center;
+  background: #fff;
+  border: 1px solid #fee;
+  border-radius: 8px;
+  padding: 40px;
+  max-width: 500px;
+}
+
+.error-icon {
+  width: 60px;
+  height: 60px;
+  color: #ef4444;
+  margin: 0 auto 20px;
+}
+
+.error-content h2 {
+  color: #dc2626;
+  margin: 0 0 10px 0;
+  font-size: 24px;
+}
+
+.error-text {
+  color: #7f1d1d;
+  margin: 0 0 30px 0;
+  line-height: 1.6;
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-retry {
+  background-color: #667eea;
+  color: white;
+  padding: 10px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-retry:hover {
+  background-color: #5568d3;
+}

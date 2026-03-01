@@ -4,14 +4,30 @@ import { useQuery } from '@tanstack/react-query';
 import { MessageCircle, Loader2 } from 'lucide-react';
 import GruposList from '../components/chat/GruposList';
 import ChatWindow from '../components/chat/ChatWindow.jsx';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
 
 export default function Chat() {
   const [user, setUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(true);
+  const [userError, setUserError] = useState(null);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState(null);
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState({});
 
+  const loadUser = () => {
+    setUserLoading(true);
+    setUserError(null);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Tiempo de espera agotado')), 30000)
+    );
+    Promise.race([base44.auth.me(), timeoutPromise])
+      .then((u) => setUser(u))
+      .catch((err) => setUserError(err?.message || 'Error al cargar usuario'))
+      .finally(() => setUserLoading(false));
+  };
+
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
+    loadUser();
   }, []);
 
   const { data: grupos = [], isLoading } = useQuery({
@@ -66,11 +82,27 @@ export default function Chat() {
     return () => clearInterval(interval);
   }, [grupos, user?.id]);
 
+  if (userLoading) {
+    return <LoadingSpinner message="Cargando chat..." />;
+  }
+
+  if (userError) {
+    return (
+      <ErrorMessage
+        error={userError}
+        onRetry={loadUser}
+        title="Error al cargar chat"
+      />
+    );
+  }
+
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-      </div>
+      <ErrorMessage
+        error="No se pudo autenticar. Por favor, inicia sesión nuevamente."
+        onRetry={loadUser}
+        title="Error de autenticación"
+      />
     );
   }
 

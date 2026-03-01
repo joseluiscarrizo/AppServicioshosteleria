@@ -3,18 +3,34 @@ import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import PullToRefresh from '../components/ui/PullToRefresh';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Users, Building2, FileText, Loader2 } from 'lucide-react';
+import { MessageCircle, Users, Building2, FileText } from 'lucide-react';
 import ChatEventos from '../components/comunicacion/ChatEventos';
 import ChatCoordinadores from '../components/comunicacion/ChatCoordinadores';
 import ChatClientes from '../components/comunicacion/ChatClientes';
 import PartesTrabajos from '../components/comunicacion/PartesTrabajos';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
 
 export default function Comunicacion() {
   const [user, setUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(true);
+  const [userError, setUserError] = useState(null);
   const queryClient = useQueryClient();
 
+  const loadUser = () => {
+    setUserLoading(true);
+    setUserError(null);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Tiempo de espera agotado')), 30000)
+    );
+    Promise.race([base44.auth.me(), timeoutPromise])
+      .then((u) => setUser(u))
+      .catch((err) => setUserError(err?.message || 'Error al cargar usuario'))
+      .finally(() => setUserLoading(false));
+  };
+
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
+    loadUser();
   }, []);
 
   const handleRefresh = async () => {
@@ -23,11 +39,27 @@ export default function Comunicacion() {
     await queryClient.invalidateQueries({ queryKey: ['pedidos-partes'] });
   };
 
+  if (userLoading) {
+    return <LoadingSpinner message="Cargando mensajes..." />;
+  }
+
+  if (userError) {
+    return (
+      <ErrorMessage
+        error={userError}
+        onRetry={loadUser}
+        title="Error al cargar mensajes"
+      />
+    );
+  }
+
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-      </div>
+      <ErrorMessage
+        error="No se pudo autenticar. Por favor, inicia sesión nuevamente."
+        onRetry={loadUser}
+        title="Error de autenticación"
+      />
     );
   }
 
