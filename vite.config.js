@@ -8,6 +8,13 @@ import path from 'path'
 export default defineConfig({
   base: '/',
   logLevel: 'error',
+  server: {
+    headers: {
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block'
+    }
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
