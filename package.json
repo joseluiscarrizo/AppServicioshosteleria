@@ -1,1 +1,1 @@
-{"devDependencies": {"@vitest/coverage-v8": "latest"}}
+{"devDependencies":{"@testing-library/jest-dom":"^6.9.1","@testing-library/react":"^16.3.2","@testing-library/user-event":"^14.6.1","@vitejs/plugin-react":"^5.1.4","@vitest/coverage-v8":"latest","jsdom":"^28.1.0","react":"^19.2.4","react-dom":"^19.2.4","vitest":"^4.0.18"}}
