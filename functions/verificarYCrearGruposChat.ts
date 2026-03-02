@@ -20,10 +20,11 @@ Deno.serve(async (req) => {
 
     // Obtener asignaciones solo de esos pedidos
     const pedidoIds = pedidos.map(p => p.id);
-    const todasAsignaciones = pedidoIds.length > 0
-      ? await base44.asServiceRole.entities.AsignacionCamarero.list()
+    const asignaciones = pedidoIds.length > 0
+      ? await base44.asServiceRole.entities.AsignacionCamarero.filter({
+          pedido_id: { $in: pedidoIds }
+        })
       : [];
-    const asignaciones = todasAsignaciones.filter(a => pedidoIds.includes(a.pedido_id));
     
     // Obtener grupos existentes
     const gruposExistentes = await base44.asServiceRole.entities.GrupoChat.filter({ activo: true });
