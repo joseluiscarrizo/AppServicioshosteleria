@@ -34,29 +34,29 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     validateUserAccess(user, ['admin']);
 
-    Logger.info('Iniciando seed de datos demo', { user: user.email });
+    Logger.info('Iniciando seed de datos demo ' + JSON.stringify({ user: user.email }));
     const resultados = { camareros: 0, clientes: 0, pedidos: 0, errores: 0 };
 
     for (const c of CAMAREROS_DEMO) {
       try { await base44.asServiceRole.entities.Camarero.create({ ...c, es_demo: true }); resultados.camareros++; }
-      catch (e) { Logger.warn(`Error camarero ${c.nombre}`, { error: e.message }); resultados.errores++; }
+      catch (e) { Logger.warn(`Error camarero ${c.nombre} ` + JSON.stringify({ error: (e as any).message })); resultados.errores++; }
     }
     for (const c of CLIENTES_DEMO) {
       try { await base44.asServiceRole.entities.Cliente.create({ ...c, es_demo: true }); resultados.clientes++; }
-      catch (e) { Logger.warn(`Error cliente ${c.nombre}`, { error: e.message }); resultados.errores++; }
+      catch (e) { Logger.warn(`Error cliente ${c.nombre} ` + JSON.stringify({ error: (e as any).message })); resultados.errores++; }
     }
     for (const p of PEDIDOS_DEMO) {
       try { await base44.asServiceRole.entities.Pedido.create({ ...p, es_demo: true }); resultados.pedidos++; }
-      catch (e) { Logger.warn(`Error pedido ${p.lugar_evento}`, { error: e.message }); resultados.errores++; }
+      catch (e) { Logger.warn(`Error pedido ${p.lugar_evento} ` + JSON.stringify({ error: (e as any).message })); resultados.errores++; }
     }
 
-    Logger.info('Seed completado', resultados);
+    Logger.info('Seed completado ' + JSON.stringify(resultados));
     return Response.json({ ok: true, mensaje: 'Datos de demo creados correctamente', resultados });
   } catch (error) {
     if (error instanceof RBACError) {
       return Response.json({ error: error.message }, { status: (error as any).statusCode || 403 });
     }
-    Logger.error('Error en seedDemoData', { error: error.message });
+    Logger.error('Error en seedDemoData ' + JSON.stringify({ error: (error as any).message }));
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
