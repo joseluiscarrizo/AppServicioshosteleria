@@ -43,7 +43,7 @@ function calcularHoras(entrada, salida) {
   return Math.round((minutos / 60) * 100) / 100;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req, connInfo) => {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -56,7 +56,9 @@ Deno.serve(async (req) => {
 
   if (req.method === 'POST') {
     cleanRateLimitMap();
-    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || req.headers.get('x-real-ip')
+      || (connInfo.remoteAddr as Deno.NetAddr).hostname;
     const rateCheck = checkRateLimit(clientIp);
     if (!rateCheck.allowed) {
       return Response.json(
