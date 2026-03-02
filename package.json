@@ -68,7 +68,7 @@
     "@testing-library/react": "latest",
     "@testing-library/user-event": "latest",
     "@types/node": "^20.0.0",
-    "@vitejs/plugin-react": "latest",
+    "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "latest",
     "autoprefixer": "latest",
     "eslint": "^9.39.3",
@@ -82,7 +82,7 @@
     "tailwindcss-animate": "^1.0.7",
     "terser": "^5.46.0",
     "typescript": "^5.0.0",
-    "vite": "latest",
-    "vitest": "latest"
+    "vite": "^6.3.6",
+    "vitest": "^4.0.18"
   }
 }
