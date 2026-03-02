@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 import * as validator from 'validator';
 import * as sanitizeHtml from 'sanitize-html';
-import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
+import { validateUserAccess } from '../utils/rbacValidator.ts';
 
 const MAX_RETRIES = 3;
 
