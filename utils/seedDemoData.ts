@@ -23,9 +23,9 @@ function offsetDays(n: number): string {
 }
 
 const PEDIDOS_DEMO = [
-  { lugar_evento: 'Hotel Arts Barcelona — Sala Gran (DEMO)', direccion_completa: 'Carrer de la Marina, 19-21, 08005 Barcelona', dia: offsetDays(1), entrada: '19:00', salida: '01:00', cantidad_camareros: 3, estado: 'confirmado', notas: '[DEMO] Gala corporativa. 120 comensales.' },
-  { lugar_evento: 'Palau de Congressos — Sala Llotja (DEMO)', direccion_completa: 'Av. Reina Maria Cristina, s/n, 08004 Barcelona', dia: offsetDays(7), entrada: '12:00', salida: '17:00', cantidad_camareros: 2, estado: 'pendiente', notas: '[DEMO] Congreso médico. Catering en pausa.' },
-  { lugar_evento: 'Casa Batlló — Terraza (DEMO)', direccion_completa: 'Passeig de Gràcia, 43, 08007 Barcelona', dia: offsetDays(14), entrada: '20:00', salida: '23:00', cantidad_camareros: 2, estado: 'confirmado', notas: '[DEMO] Evento privado. Cócteles y finger food.' },
+  { lugar_evento: 'Hotel Arts Barcelona — Sala Gran (DEMO)', direccion_completa: 'Carrer de la Marina, 19-21, 08005 Barcelona', dia: offsetDays(1), entrada: '19:00', salida: '01:00', cantidad_camareros: 3, cliente: 'Hotel Arts Barcelona (DEMO)', estado_evento: 'confirmado', notas: '[DEMO] Gala corporativa. 120 comensales.' },
+  { lugar_evento: 'Palau de Congressos — Sala Llotja (DEMO)', direccion_completa: 'Av. Reina Maria Cristina, s/n, 08004 Barcelona', dia: offsetDays(7), entrada: '12:00', salida: '17:00', cantidad_camareros: 2, cliente: 'Palau de Congressos (DEMO)', estado_evento: 'pendiente', notas: '[DEMO] Congreso médico. Catering en pausa.' },
+  { lugar_evento: 'Casa Batlló — Terraza (DEMO)', direccion_completa: 'Passeig de Gràcia, 43, 08007 Barcelona', dia: offsetDays(14), entrada: '20:00', salida: '23:00', cantidad_camareros: 2, cliente: 'Casa Batlló Eventos (DEMO)', estado_evento: 'confirmado', notas: '[DEMO] Evento privado. Cócteles y finger food.' },
 ];
 
 Deno.serve(async (req) => {
