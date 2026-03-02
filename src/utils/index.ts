@@ -7,7 +7,6 @@ export function createPageUrl(pageName: string) {
 
 export { default as Logger } from './logger';
 export { validateEmail, validateToken, validatePhoneNumber, validateDate, validateRequiredFields } from './validators';
-export { default as ErrorNotificationService } from './errorNotificationService';
 export { DatabaseError, ValidationError, handleWebhookError } from './webhookImprovements';
 export { generatePassword } from './passwordGenerator';
 export { validatePassword } from './passwordValidator';
