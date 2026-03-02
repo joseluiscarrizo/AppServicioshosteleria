@@ -56,6 +56,45 @@ describe('executeResilientAPICall', () => {
         expect(onFailure).toHaveBeenCalledWith(expect.any(Error));
     });
 
+    test('throws when same name is used with different circuit breaker options', async () => {
+        const op = vi.fn().mockResolvedValue('ok');
+        const optionsA = { circuitBreaker: { failureThreshold: 3, timeout: 10000 } };
+        const optionsB = { circuitBreaker: { failureThreshold: 5, timeout: 10000 } };
+
+        expect(await executeResilientAPICall('cfg-conflict-api', op, optionsA)).toBe('ok');
+
+        await expect(
+            executeResilientAPICall('cfg-conflict-api', op, optionsB)
+        ).rejects.toThrow(
+            'Circuit breaker "cfg-conflict-api" already exists with different options'
+        );
+    });
+
+    test('reuses the same circuit breaker when options are equivalent', async () => {
+        const op = vi.fn().mockResolvedValue('ok');
+        const optionsA = { circuitBreaker: { failureThreshold: 3 } };
+        const optionsB = { circuitBreaker: { failureThreshold: 3 } };
+
+        await executeResilientAPICall('cfg-same-api', op, optionsA);
+        // Should not throw — same effective options
+        await expect(
+            executeResilientAPICall('cfg-same-api', op, optionsB)
+        ).resolves.toBe('ok');
+    });
+
+    test('treats missing options and explicit defaults as equivalent', async () => {
+        const op = vi.fn().mockResolvedValue('ok');
+
+        // First call with no circuit breaker options (uses defaults)
+        await executeResilientAPICall('cfg-default-api', op, {});
+        // Second call with explicit defaults — should not throw
+        await expect(
+            executeResilientAPICall('cfg-default-api', op, {
+                circuitBreaker: { failureThreshold: 5, successThreshold: 2, timeout: 30000 },
+            })
+        ).resolves.toBe('ok');
+    });
+
     test('uses separate circuit breakers per API name', async () => {
         // Open circuit for 'api-a' by triggering failures (threshold default = 5)
         const failOp = vi.fn().mockRejectedValue(new Error('fail'));
