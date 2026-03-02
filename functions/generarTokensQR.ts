@@ -43,9 +43,20 @@ Deno.serve(async (req) => {
     const resultados = [];
     for (const asig of confirmadas) {
       let token = asig.qr_token;
+      const ahora = new Date();
+      const expiracion = new Date(ahora.getTime() + 24 * 60 * 60 * 1000);
       if (!token) {
         token = generarToken();
-        await base44.asServiceRole.entities.AsignacionCamarero.update(asig.id, { qr_token: token });
+        await base44.asServiceRole.entities.AsignacionCamarero.update(asig.id, {
+          qr_token: token,
+          qr_token_generated_at: ahora.toISOString(),
+          qr_token_expires_at: expiracion.toISOString()
+        });
+      } else {
+        await base44.asServiceRole.entities.AsignacionCamarero.update(asig.id, {
+          qr_token_generated_at: ahora.toISOString(),
+          qr_token_expires_at: expiracion.toISOString()
+        });
       }
       resultados.push({
         asignacion_id: asig.id,

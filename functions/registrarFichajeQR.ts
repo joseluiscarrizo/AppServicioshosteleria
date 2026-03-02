@@ -8,6 +8,32 @@
  */
 import { createClientFromRequest } from '@base44/sdk';
 
+// Rate Limiter
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
+function checkRateLimit(ip: string): { allowed: boolean; resetIn: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, resetIn: RATE_LIMIT_WINDOW_MS };
+  }
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX) {
+    return { allowed: false, resetIn: entry.resetAt - now };
+  }
+  return { allowed: true, resetIn: entry.resetAt - now };
+}
+
+function cleanRateLimitMap(): void {
+  const now = Date.now();
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (now > value.resetAt) rateLimitMap.delete(key);
+  }
+}
+
 function calcularHoras(entrada, salida) {
   if (!entrada || !salida) return null;
   const [hE, mE] = entrada.split(':').map(Number);
@@ -28,6 +54,18 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  if (req.method === 'POST') {
+    cleanRateLimitMap();
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
+    const rateCheck = checkRateLimit(clientIp);
+    if (!rateCheck.allowed) {
+      return Response.json(
+        { ok: false, error: 'Demasiadas peticiones. Espera antes de intentarlo de nuevo.' },
+        { status: 429, headers: { ...corsHeaders, 'Retry-After': Math.ceil(rateCheck.resetIn / 1000).toString(), 'X-RateLimit-Limit': String(RATE_LIMIT_MAX), 'X-RateLimit-Remaining': '0' } }
+      );
+    }
+  }
+
   try {
     const base44 = createClientFromRequest(req);
     const url = new URL(req.url);
@@ -43,6 +81,17 @@ Deno.serve(async (req) => {
 
     if (!asignacion) {
       return Response.json({ error: 'Token no válido o asignación no encontrada' }, { status: 404, headers: corsHeaders });
+    }
+
+    if (req.method === 'POST' && asignacion.qr_token_expires_at) {
+      const ahora = new Date();
+      const expiracion = new Date(asignacion.qr_token_expires_at);
+      if (ahora > expiracion) {
+        return Response.json(
+          { ok: false, error: 'El código QR ha expirado. Solicita un nuevo código al coordinador.' },
+          { status: 410, headers: corsHeaders }
+        );
+      }
     }
 
     // Obtener pedido para contexto

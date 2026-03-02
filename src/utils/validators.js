@@ -5,4 +5,14 @@ export function validateToken(token) {
   return tokenRegex.test(trimmed);
 }
 
-// ... (rest of the functions remain unchanged)
+export function validateEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(email);
+}
+
+export function validatePhoneNumber(phone) {
+  if (!phone || typeof phone !== 'string') return false;
+  const phoneRegex = /^[0-9]{9,15}$/;
+  return phoneRegex.test(phone.trim());
+}
