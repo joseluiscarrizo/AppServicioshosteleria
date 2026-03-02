@@ -4,7 +4,7 @@
  * Limpia también los mensajes asociados para evitar acumulación de datos.
  * Diseñado para ejecutarse como cron job periódico.
  */
-import { createClientFromRequest } from '@base44/sdk';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import Logger from '../utils/logger.ts';
 
 Deno.serve(async (req) => {

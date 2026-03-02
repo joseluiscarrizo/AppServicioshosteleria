@@ -4,7 +4,7 @@
  * Runs AI suggestions and notifies coordinators with the top candidates.
  */
 
-import { createClientFromRequest } from '@base44/sdk';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
   try {

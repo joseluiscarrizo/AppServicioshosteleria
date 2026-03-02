@@ -3,14 +3,18 @@
  */
 
 /**
- * Valida si el token QR de fichaje es válido (no vacío y formato básico).
+ * Valida si el token QR de fichaje es válido.
+ * Requiere mínimo 32 caracteres alfanuméricos (sin espacios).
+ * Coincide con el formato generado por generarTokensQR.ts.
  * @param {string} token - Token a validar.
- * @returns {boolean} - True si el token es válido, false en caso contrario.
+ * @returns {boolean} - True si el token es válido.
  */
 export function validateToken(token) {
   if (!token || typeof token !== 'string') return false;
   const trimmed = token.trim();
-  return trimmed.length > 0;
+  // Mínimo 32 chars, solo alfanuméricos
+  const tokenRegex = /^[A-Za-z0-9]{32,}$/;
+  return tokenRegex.test(trimmed);
 }
 
 /**

@@ -1,14 +1,29 @@
-import { createClientFromRequest } from '@base44/sdk';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Obtener todos los pedidos activos
-    const pedidos = await base44.asServiceRole.entities.Pedido.list();
-    
-    // Obtener todas las asignaciones
-    const asignaciones = await base44.asServiceRole.entities.AsignacionCamarero.list();
+    // Calcular rango de fechas relevante (pedidos pasados 7 días y próximos 30 días)
+    const hoy = new Date();
+    const hace7Dias = new Date(hoy);
+    hace7Dias.setDate(hoy.getDate() - 7);
+    const en30Dias = new Date(hoy);
+    en30Dias.setDate(hoy.getDate() + 30);
+
+    const fechaDesde = hace7Dias.toISOString().split('T')[0];
+    const fechaHasta = en30Dias.toISOString().split('T')[0];
+
+    // Obtener solo pedidos en el rango relevante
+    const todosPedidos = await base44.asServiceRole.entities.Pedido.list('-dia', 200);
+    const pedidos = todosPedidos.filter(p => p.dia >= fechaDesde && p.dia <= fechaHasta);
+
+    // Obtener asignaciones solo de esos pedidos
+    const pedidoIds = pedidos.map(p => p.id);
+    const todasAsignaciones = pedidoIds.length > 0
+      ? await base44.asServiceRole.entities.AsignacionCamarero.list()
+      : [];
+    const asignaciones = todasAsignaciones.filter(a => pedidoIds.includes(a.pedido_id));
     
     // Obtener grupos existentes
     const gruposExistentes = await base44.asServiceRole.entities.GrupoChat.filter({ activo: true });

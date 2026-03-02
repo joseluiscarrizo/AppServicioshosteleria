@@ -6,7 +6,7 @@
  * GET  /?token=XXX          → devuelve info de la asignación
  * POST { token, tipo }      → tipo: "entrada" | "salida"  → registra fichaje
  */
-import { createClientFromRequest } from '@base44/sdk';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 function calcularHoras(entrada, salida) {
   if (!entrada || !salida) return null;
@@ -17,11 +17,28 @@ function calcularHoras(entrada, salida) {
   return Math.round((minutos / 60) * 100) / 100;
 }
 
+function getAllowedOrigin(req: Request): string {
+  const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN') || '*';
+  const requestOrigin = req.headers.get('Origin') || '';
+
+  if (allowedOrigin === '*') return '*';
+
+  // Si hay origen configurado, verificar que coincida
+  const allowedOrigins = allowedOrigin.split(',').map(o => o.trim());
+  if (allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+
+  // Fallback al primer origen permitido
+  return allowedOrigins[0] || '*';
+}
+
 Deno.serve(async (req) => {
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': getAllowedOrigin(req),
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Vary': 'Origin'
   };
 
   if (req.method === 'OPTIONS') {

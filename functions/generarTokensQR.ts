@@ -4,7 +4,8 @@
  * y devuelve la URL de la página de fichaje del evento.
  * Solo accesible por admin/coordinador.
  */
-import { createClientFromRequest } from '@base44/sdk';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
 function generarToken() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -20,9 +21,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
-    if (!user || (user.role !== 'admin' && user.role !== 'coordinador')) {
-      return Response.json({ error: 'No autorizado' }, { status: 403 });
-    }
+    validateUserAccess(user, ['admin', 'coordinador']);
 
     const { pedido_id } = await req.json();
 
@@ -67,6 +66,9 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error en generarTokensQR:', error);
+    if (error instanceof RBACError) {
+      return Response.json({ error: error.message }, { status: error.statusCode });
+    }
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

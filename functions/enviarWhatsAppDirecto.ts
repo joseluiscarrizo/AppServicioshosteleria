@@ -1,4 +1,4 @@
-import { createClientFromRequest } from '@base44/sdk';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import Logger from '../utils/logger.ts';
 import { validatePhoneNumber } from '../utils/validators.ts';
 import {

@@ -1,20 +1,18 @@
 import nodemailer from 'nodemailer';
 import * as validator from 'validator';
 import * as sanitizeHtml from 'sanitize-html';
+import { validateUserAccess, RBACError } from '../utils/rbacValidator.ts';
 
 const MAX_RETRIES = 3;
 
 interface User {
     email: string;
     role: string;
+    id: string;
 }
 
 function validateEmail(email: string): boolean {
     return validator.isEmail(email);
-}
-
-function checkRBAC(user: User, requiredRole: string): boolean {
-    return user.role === requiredRole;
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
@@ -39,9 +37,7 @@ async function enviarHojaAsistenciaGmail(user: User, subject: string, rawHtml: s
         throw new Error('Invalid email address');
     }
 
-    if (!checkRBAC(user, 'admin')) {
-        throw new Error('Permission denied: insufficient role');
-    }
+    validateUserAccess(user, ['admin', 'coordinador']);
 
     const sanitizedHtml = sanitizeHtml(rawHtml);
 
