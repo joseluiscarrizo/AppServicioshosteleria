@@ -2,6 +2,7 @@ import pedidosData from '../fixtures/pedidos.json';
 import camarerosData from '../fixtures/camareros.json';
 import asignacionesData from '../fixtures/asignaciones.json';
 import coordinadoresData from '../fixtures/coordinadores.json';
+import clientesData from '../fixtures/clientes.json';
 
 let idCounter = 1000;
 const nextId = () => `generated-${++idCounter}`;
@@ -66,5 +67,6 @@ export const fixtures = {
   pedidos: pedidosData,
   camareros: camarerosData,
   asignaciones: asignacionesData,
-  coordinadores: coordinadoresData
+  coordinadores: coordinadoresData,
+  clientes: clientesData
 };

@@ -19,7 +19,7 @@
     ],
     "camisa": "blanca",
     "extra_transporte": false,
-    "notas": "Evento corporativo",
+    "notas": "Evento corporativo anual",
     "estado": "activo"
   },
   {
@@ -49,6 +49,81 @@
     "camisa": "negra",
     "extra_transporte": true,
     "notas": "Boda de 150 personas",
+    "estado": "activo"
+  },
+  {
+    "id": "pedido-3",
+    "codigo_pedido": "EVT-003",
+    "cliente": "TechStart BCN",
+    "cliente_id": "cliente-3",
+    "cliente_email_1": "events@techstart.io",
+    "cliente_telefono_1": "+34 600 000 003",
+    "cliente_persona_contacto_1": "Sofia Chen",
+    "lugar_evento": "22@Barcelona Hub, Barcelona",
+    "dia": "2026-03-28",
+    "turnos": [
+      {
+        "nombre": "Cóctel de Networking",
+        "hora_inicio": "19:00",
+        "hora_fin": "23:30",
+        "num_camareros": 5
+      }
+    ],
+    "camisa": "blanca",
+    "extra_transporte": false,
+    "notas": "Evento de networking tech startup. Cócteles especiales.",
+    "estado": "activo"
+  },
+  {
+    "id": "pedido-4",
+    "codigo_pedido": "EVT-004",
+    "cliente": "Catering Premium SL",
+    "cliente_id": "cliente-4",
+    "cliente_email_1": "info@cateringpremium.es",
+    "cliente_telefono_1": "+34 600 000 004",
+    "cliente_persona_contacto_1": "Roberto Fernández",
+    "lugar_evento": "Hotel Ritz, Madrid",
+    "dia": "2026-04-05",
+    "turnos": [
+      {
+        "nombre": "Recepción",
+        "hora_inicio": "14:00",
+        "hora_fin": "16:00",
+        "num_camareros": 3
+      },
+      {
+        "nombre": "Gala Dinner",
+        "hora_inicio": "20:00",
+        "hora_fin": "01:00",
+        "num_camareros": 8
+      }
+    ],
+    "camisa": "blanca",
+    "extra_transporte": true,
+    "notas": "Gala benéfica anual. Dress code formal.",
+    "estado": "activo"
+  },
+  {
+    "id": "pedido-5",
+    "codigo_pedido": "EVT-005",
+    "cliente": "Fundación Cultural",
+    "cliente_id": "cliente-5",
+    "cliente_email_1": "cultura@fundacion.org",
+    "cliente_telefono_1": "+34 600 000 005",
+    "cliente_persona_contacto_1": "Isabel Morales",
+    "lugar_evento": "Palau de la Música, Barcelona",
+    "dia": "2026-04-12",
+    "turnos": [
+      {
+        "nombre": "Pre-show Cóctel",
+        "hora_inicio": "19:00",
+        "hora_fin": "20:30",
+        "num_camareros": 4
+      }
+    ],
+    "camisa": "negra",
+    "extra_transporte": false,
+    "notas": "Inauguración exposición arte contemporáneo",
     "estado": "activo"
   }
 ]

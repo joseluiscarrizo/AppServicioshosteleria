@@ -1,0 +1,67 @@
+[
+  {
+    "id": "cliente-1",
+    "codigo": "CL001",
+    "nombre": "Empresa ABC",
+    "email_1": "contacto@empresaabc.com",
+    "email_2": "eventos@empresaabc.com",
+    "telefono_1": "+34 600 000 001",
+    "telefono_2": "+34 91 000 001",
+    "persona_contacto_1": "Juan García",
+    "persona_contacto_2": "Laura Pérez",
+    "notas": "Cliente VIP. Eventos corporativos anuales.",
+    "activo": true
+  },
+  {
+    "id": "cliente-2",
+    "codigo": "CL002",
+    "nombre": "Bodas Rodríguez",
+    "email_1": "familia@rodriguez.com",
+    "email_2": "",
+    "telefono_1": "+34 600 000 002",
+    "telefono_2": "",
+    "persona_contacto_1": "María Rodríguez",
+    "persona_contacto_2": "",
+    "notas": "Boda especial. Catering premium requerido.",
+    "activo": true
+  },
+  {
+    "id": "cliente-3",
+    "codigo": "CL003",
+    "nombre": "TechStart BCN",
+    "email_1": "events@techstart.io",
+    "email_2": "ceo@techstart.io",
+    "telefono_1": "+34 600 000 003",
+    "telefono_2": "+34 93 000 003",
+    "persona_contacto_1": "Sofia Chen",
+    "persona_contacto_2": "Alex Martín",
+    "notas": "Startup tecnológica. Eventos de networking frecuentes.",
+    "activo": true
+  },
+  {
+    "id": "cliente-4",
+    "codigo": "CL004",
+    "nombre": "Catering Premium SL",
+    "email_1": "info@cateringpremium.es",
+    "email_2": "",
+    "telefono_1": "+34 600 000 004",
+    "telefono_2": "+34 91 000 004",
+    "persona_contacto_1": "Roberto Fernández",
+    "persona_contacto_2": "",
+    "notas": "Empresa de catering que subcontrata personal para grandes eventos.",
+    "activo": true
+  },
+  {
+    "id": "cliente-5",
+    "codigo": "CL005",
+    "nombre": "Fundación Cultural",
+    "email_1": "cultura@fundacion.org",
+    "email_2": "eventos@fundacion.org",
+    "telefono_1": "+34 600 000 005",
+    "telefono_2": "+34 93 000 005",
+    "persona_contacto_1": "Isabel Morales",
+    "persona_contacto_2": "Carles Puig",
+    "notas": "Fundación sin ánimo de lucro. Inauguraciones y galas culturales.",
+    "activo": true
+  }
+]

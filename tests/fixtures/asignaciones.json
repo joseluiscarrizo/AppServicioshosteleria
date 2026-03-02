@@ -5,7 +5,7 @@
     "camarero_id": "camarero-1",
     "turno_index": 0,
     "estado": "pendiente",
-    "fecha_asignacion": "2026-02-20",
+    "fecha_asignacion": "2026-03-10",
     "hora_salida": "17:30",
     "notas": ""
   },
@@ -15,7 +15,7 @@
     "camarero_id": "camarero-2",
     "turno_index": 0,
     "estado": "confirmado",
-    "fecha_asignacion": "2026-02-20",
+    "fecha_asignacion": "2026-03-10",
     "hora_salida": "17:30",
     "notas": "Confirmado por WhatsApp"
   },
@@ -25,8 +25,38 @@
     "camarero_id": "camarero-3",
     "turno_index": 1,
     "estado": "enviado",
-    "fecha_asignacion": "2026-02-21",
+    "fecha_asignacion": "2026-04-01",
     "hora_salida": "14:30",
     "notas": ""
+  },
+  {
+    "id": "asignacion-4",
+    "pedido_id": "pedido-3",
+    "camarero_id": "camarero-4",
+    "turno_index": 0,
+    "estado": "confirmado",
+    "fecha_asignacion": "2026-03-20",
+    "hora_salida": "18:30",
+    "notas": "Coctelero principal del evento"
+  },
+  {
+    "id": "asignacion-5",
+    "pedido_id": "pedido-3",
+    "camarero_id": "camarero-5",
+    "turno_index": 0,
+    "estado": "pendiente",
+    "fecha_asignacion": "2026-03-20",
+    "hora_salida": "18:30",
+    "notas": ""
+  },
+  {
+    "id": "asignacion-6",
+    "pedido_id": "pedido-4",
+    "camarero_id": "camarero-7",
+    "turno_index": 1,
+    "estado": "confirmado",
+    "fecha_asignacion": "2026-03-25",
+    "hora_salida": "19:30",
+    "notas": "Maitre de la gala"
   }
 ]
