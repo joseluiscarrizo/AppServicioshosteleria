@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
