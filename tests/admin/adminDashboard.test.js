@@ -1,17 +1,5 @@
 import { describe, it, expect } from 'vitest';
-
-function calcularKPIs(camareros, pedidos, coordinadores, asignaciones) {
-  const hoy = new Date().toISOString().split('T')[0];
-  return {
-    totalCamareros: camareros.length,
-    camarerosDisponibles: camareros.filter(c => c.disponible && !c.en_reserva).length,
-    eventosActivos: pedidos.filter(p => p.dia >= hoy).length,
-    eventosHoy: pedidos.filter(p => p.dia === hoy).length,
-    totalCoordinadores: coordinadores.length,
-    asignacionesPendientes: asignaciones.filter(a => a.estado === 'pendiente').length,
-  };
-}
-
+import { calcularKPIs } from '../../src/components/admin/AdminDashboard.jsx';
 describe('calcularKPIs', () => {
   const hoy = new Date().toISOString().split('T')[0];
   const mañana = new Date(Date.now() + 86400000).toISOString().split('T')[0];
