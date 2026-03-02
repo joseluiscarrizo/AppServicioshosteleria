@@ -9,8 +9,7 @@
  */
 export function validateToken(token) {
   if (!token || typeof token !== 'string') return false;
-  const trimmed = token.trim();
-  return trimmed.length > 0;
+  return /^[A-Za-z0-9]{32,}$/.test(token);
 }
 
 /**

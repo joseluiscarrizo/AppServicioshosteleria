@@ -8,6 +8,46 @@
  */
 import { createClientFromRequest } from '@base44/sdk';
 
+// ── Rate Limiter in-memory ──────────────────────────────────────
+// Permite máximo 20 peticiones por IP cada 60 segundos
+// Nota: en entorno distribuido cada instancia mantiene su propio estado.
+// Para entornos de alta concurrencia, usar una solución distribuida (Redis, KV store).
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 60 segundos
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetIn: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    // Nueva ventana
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetIn: RATE_LIMIT_WINDOW_MS };
+  }
+
+  entry.count++;
+  const remaining = Math.max(0, RATE_LIMIT_MAX - entry.count);
+  const resetIn = entry.resetAt - now;
+
+  if (entry.count > RATE_LIMIT_MAX) {
+    return { allowed: false, remaining: 0, resetIn };
+  }
+
+  return { allowed: true, remaining, resetIn };
+}
+
+// Limpiar entradas expiradas periódicamente para evitar memory leak
+function cleanupRateLimitMap() {
+  const now = Date.now();
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (now > value.resetAt) {
+      rateLimitMap.delete(key);
+    }
+  }
+}
+// ─────────────────────────────────────────────────────────────────
+
 function calcularHoras(entrada, salida) {
   if (!entrada || !salida) return null;
   const [hE, mE] = entrada.split(':').map(Number);
@@ -29,6 +69,32 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Obtener IP del cliente
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || req.headers.get('x-real-ip')
+      || 'unknown';
+
+    // Aplicar rate-limiting solo a POST (no a GET de consulta)
+    if (req.method === 'POST') {
+      cleanupRateLimitMap();
+      const rateCheck = checkRateLimit(clientIp);
+
+      if (!rateCheck.allowed) {
+        return Response.json(
+          { error: 'Demasiadas peticiones. Espera un momento antes de intentarlo de nuevo.' },
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              'Retry-After': Math.ceil(rateCheck.resetIn / 1000).toString(),
+              'X-RateLimit-Limit': RATE_LIMIT_MAX.toString(),
+              'X-RateLimit-Remaining': '0',
+            }
+          }
+        );
+      }
+    }
+
     const base44 = createClientFromRequest(req);
     const url = new URL(req.url);
     const token = url.searchParams.get('token');
@@ -43,6 +109,18 @@ Deno.serve(async (req) => {
 
     if (!asignacion) {
       return Response.json({ error: 'Token no válido o asignación no encontrada' }, { status: 404, headers: corsHeaders });
+    }
+
+    // Verificar expiración del token QR
+    if (asignacion.qr_token_expires_at) {
+      const ahora = new Date();
+      const expiracion = new Date(asignacion.qr_token_expires_at);
+      if (ahora > expiracion && req.method === 'POST') {
+        return Response.json(
+          { ok: false, error: 'El código QR ha expirado. Solicita un nuevo código al coordinador.' },
+          { status: 410, headers: corsHeaders }
+        );
+      }
     }
 
     // Obtener pedido para contexto

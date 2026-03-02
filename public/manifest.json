@@ -1,0 +1,51 @@
+{
+  "name": "Camareros Bcn — Gestión de Servicios",
+  "short_name": "Camareros Bcn",
+  "description": "Plataforma profesional para coordinar camareros freelance en eventos de Barcelona. Fichaje QR, asignación inteligente y comunicación en tiempo real.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e3a5f",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Pedidos",
+      "short_name": "Pedidos",
+      "description": "Ver pedidos y eventos",
+      "url": "/pedidos",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Camareros",
+      "short_name": "Camareros",
+      "description": "Gestionar camareros",
+      "url": "/camareros",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": []
+}
