@@ -33,13 +33,17 @@ jobs:
             });
             
             const approvals = reviews.filter(r => r.state === 'APPROVED').length;
-            const { data: checkRuns } = await github.rest.checks.listForRef({
+            const { data: checks } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: pullRequest.head.sha
             });
+            const checkRuns = checks.check_runs ?? [];
             
-            const allChecksPassed = checkRuns.every(c => c.conclusion === 'success' || c.status === 'completed');
+            const allChecksPassed = checkRuns.length > 0 && checkRuns.every(c =>
+              c.status === 'completed' &&
+              ['success', 'neutral', 'skipped'].includes(c.conclusion)
+            );
             
             if (approvals > 0 && allChecksPassed && pullRequest.mergeable) {
               await github.rest.pulls.merge({
