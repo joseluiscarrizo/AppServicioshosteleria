@@ -135,7 +135,7 @@ export class NotificationService {
 
       return true;
     } catch (error) {
-      Logger.error('Error notificando cambio:', error);
+      console.error('Error notificando cambio:', error);
       return false;
     }
   }
