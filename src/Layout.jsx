@@ -93,7 +93,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import NotificationBell from './components/notificaciones/NotificationBell';
 import { useWebPushNotifications } from './components/notificaciones/WebPushService';
 import RateLimitHandler from './components/notificaciones/RateLimitHandler';
-import { useBackgroundServices } from './hooks/useBackgroundServices';
+import { useBackgroundServices } from './components/hooks/useBackgroundServices';
 
 const clientesSubmenu = [
   { name: 'Alta Cliente', page: 'Clientes', icon: Users },
