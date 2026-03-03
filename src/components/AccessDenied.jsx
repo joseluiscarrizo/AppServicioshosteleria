@@ -2,7 +2,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useRole } from '@/hooks/useRole';
+import { useRole } from '@/components/hooks/useRole';
 
 export default function AccessDenied() {
   const navigate = useNavigate();
