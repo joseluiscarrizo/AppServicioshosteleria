@@ -1,7 +1,15 @@
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
-  // other configurations...
-  sourcemap: 'hidden',
-  // other configurations...
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  build: {
+    sourcemap: 'hidden',
+  },
 });
