@@ -206,7 +206,7 @@ export class NotificationService {
       await base44.entities.Notificacion.update(notificacionId, { leida: true });
       return true;
     } catch (error) {
-      Logger.error('Error marcando como leída:', error);
+      console.error('Error marcando como leída:', error);
       return false;
     }
   }
