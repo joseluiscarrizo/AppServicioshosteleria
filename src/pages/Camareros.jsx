@@ -126,7 +126,7 @@ export default function Camareros() {
 
     const idx = (name) => headers.findIndex(h => h.includes(name));
 
-    let creados = 0, actualizados = 0, errores = 0, advertencias = 0;
+    let creados = 0, actualizados = 0, errores = 0;
     for (let i = 1; i < lines.length; i++) {
       const vals = parsear(lines[i]);
       if (!vals[idx('nombre')] && !vals[0]) continue;
