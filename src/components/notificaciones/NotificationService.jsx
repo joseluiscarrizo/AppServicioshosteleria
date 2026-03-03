@@ -164,7 +164,7 @@ export class NotificationService {
 
       return true;
     } catch (error) {
-      Logger.error('Error notificando cancelación:', error);
+      console.error('Error notificando cancelación:', error);
       return false;
     }
   }
