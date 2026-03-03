@@ -247,7 +247,7 @@ export class NotificationService {
 
       return true;
     } catch (error) {
-      Logger.error('Error verificando eventos próximos:', error);
+      console.error('Error verificando eventos próximos:', error);
       return false;
     }
   }
