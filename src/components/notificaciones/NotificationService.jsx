@@ -106,7 +106,7 @@ export class NotificationService {
 
       return true;
     } catch (error) {
-      Logger.error('Error notificando nueva asignación:', error);
+      console.error('Error notificando nueva asignación:', error);
       return false;
     }
   }
