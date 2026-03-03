@@ -12,4 +12,7 @@ export default defineConfig({
   build: {
     sourcemap: 'hidden',
   },
+  server: {
+    allowedHosts: 'all',
+  },
 });
