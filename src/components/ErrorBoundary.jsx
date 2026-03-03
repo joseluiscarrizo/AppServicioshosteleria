@@ -3,29 +3,41 @@ import React from 'react';
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false }; 
+    this.state = { hasError: false, retryCount: 0 }; 
   }
 
   componentDidCatch(_error, errorInfo) {
-    // Catch errors in any components below and re-render with error message
     this.setState({ hasError: true });
     console.error("ErrorBoundary caught an error:", errorInfo);
-    // You can also log the error to an error reporting service
+    // Reintentar después de 2 segundos
+    setTimeout(() => {
+      if (this.state.retryCount < 3) {
+        this.setState({ hasError: false, retryCount: this.state.retryCount + 1 });
+      } else {
+        window.location.href = '/';
+      }
+    }, 2000);
   }
 
   static getDerivedStateFromError(_error) {
-    // Update state so the next render will show the fallback UI
     return { hasError: true }; 
   }
 
   render() {
     if (this.state.hasError) {
-      // You can render any custom fallback UI
       return (
-        <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-          <h1>Error de autenticación</h1>
-          <p>Recargando...</p>
-          <script>{setTimeout(() => window.location.reload(), 2000)}</script>
+        <div style={{ 
+          padding: '40px', 
+          fontFamily: 'sans-serif', 
+          textAlign: 'center',
+          backgroundColor: '#f5f5f5',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center'
+        }}>
+          <h1>⏳ Cargando aplicación...</h1>
+          <p>Intento {this.state.retryCount + 1}/3</p>
         </div>
       );
     }
