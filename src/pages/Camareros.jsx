@@ -13,13 +13,7 @@ import { Plus, Pencil, User, Star, Search, MessageSquare, CalendarDays, UserChec
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
-const Logger = {
-  log: (...args) => console.log(...args),
-  warn: (...args) => console.warn(...args),
-  error: (...args) => console.error(...args),
-  info: (...args) => console.info(...args),
-};
-import { validateEmail, validatePhoneNumber } from '@/components/utils/validators.js';
+import { useState } from 'react';
 import GestionCamareros from '../components/asignacion/GestionCamareros';
 import ValoracionCamarero from '../components/camareros/ValoracionCamarero';
 import ValoracionesHistorial from '../components/camareros/ValoracionesHistorial';
