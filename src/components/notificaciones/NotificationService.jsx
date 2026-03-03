@@ -1,5 +1,4 @@
 import { base44 } from '@/api/base44Client';
-import Logger from '../../utils/logger';
 
 /**
  * Servicio centralizado para enviar notificaciones push a camareros
