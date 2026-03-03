@@ -182,7 +182,6 @@ export default function Camareros() {
       toast.success('Disponibilidad actualizada');
     },
     onError: (error) => {
-      Logger.error('Error al actualizar disponibilidad', { error: error?.message });
       toast.error('Error al actualizar disponibilidad: ' + (error.message || 'Error desconocido'));
     }
   });
