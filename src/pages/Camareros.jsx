@@ -159,7 +159,6 @@ export default function Camareros() {
           creados++;
         }
       } catch (error) {
-        Logger.error('Error processing CSV row', { row: i, error: error?.message });
         errores++;
       }
     }
