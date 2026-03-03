@@ -29,7 +29,7 @@ export class NotificationService {
       const campo = mapaTipos[tipoNotificacion];
       return campo ? (pref[campo] ?? true) : true;
     } catch (error) {
-      Logger.error('Error verificando preferencias:', error);
+      console.error('Error verificando preferencias:', error);
       return true;
     }
   }
