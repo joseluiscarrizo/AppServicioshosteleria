@@ -73,7 +73,7 @@ export class NotificationService {
 
         return true;
       } catch (error) {
-        Logger.error('Error enviando notificación:', error);
+        console.error('Error enviando notificación:', error);
         return false;
       }
     }
