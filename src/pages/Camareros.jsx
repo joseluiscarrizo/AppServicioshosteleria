@@ -148,14 +148,7 @@ export default function Camareros() {
         };
         if (!data.nombre) continue;
 
-        if (data.email && !validateEmail(data.email)) {
-          Logger.warn('Invalid email format in CSV row', { row: i, nombre: data.nombre, email: data.email });
-          advertencias++;
-        }
-        if (data.telefono && !validatePhoneNumber(data.telefono)) {
-          Logger.warn('Invalid phone number format in CSV row', { row: i, nombre: data.nombre, telefono: data.telefono });
-          advertencias++;
-        }
+
 
         const existente = camareros.find(c => c.codigo === data.codigo || c.email === data.email);
         if (existente) {
