@@ -108,7 +108,6 @@ export default function Camareros() {
     const headers = lines[0].split(sep).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
 
     if (!headers.includes('nombre')) {
-      Logger.error('CSV import failed: required header "nombre" not found', { headers });
       toast.error('El archivo CSV no contiene la columna requerida "nombre"');
       return;
     }
