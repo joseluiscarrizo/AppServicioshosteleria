@@ -35,7 +35,7 @@ export default function NotificacionesMasivas() {
     queryFn: () => base44.entities.AsignacionCamarero.list('-created_date', 1000)
   });
 
-  const { data: coordinadores = [] } = useQuery({
+  const { data: _coordinadores = [] } = useQuery({
     queryKey: ['coordinadores'],
     queryFn: () => base44.entities.Coordinador.list('nombre')
   });
