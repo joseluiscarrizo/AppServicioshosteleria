@@ -164,8 +164,7 @@ export default function Camareros() {
     }
 
     queryClient.invalidateQueries({ queryKey: ['camareros'] });
-    const advertenciasMsg = advertencias ? `, ${advertencias} advertencias` : '';
-    toast.success(`Importación: ${creados} creados, ${actualizados} actualizados${errores ? `, ${errores} errores` : ''}${advertenciasMsg}`);
+    toast.success(`Importación: ${creados} creados, ${actualizados} actualizados${errores ? `, ${errores} errores` : ''}`);
   };
 
   const { data: camareros = [] } = useQuery({
