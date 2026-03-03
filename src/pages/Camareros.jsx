@@ -21,7 +21,7 @@ import ValoracionesHistorial from '../components/camareros/ValoracionesHistorial
 import DocumentosWidget from '../components/camareros/DocumentosWidget';
 import GestionDisponibilidad from '../components/camareros/GestionDisponibilidad';
 import PreferenciasHorarias from '../components/camareros/PreferenciasHorarias';
-import { useRole } from '@/hooks/useRole';
+import { useRole } from '@/components/hooks/useRole';
 import AccessDenied from '@/components/AccessDenied';
 
 const especialidadColors = {
