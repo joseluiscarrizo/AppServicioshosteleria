@@ -13,6 +13,11 @@ export default defineConfig({
     sourcemap: 'hidden',
   },
   server: {
-    allowedHosts: 'all',
+    host: true,
+    allowedHosts: [
+      'all',
+      '.modal.host',
+      '.w.modal.host',
+    ],
   },
 });
