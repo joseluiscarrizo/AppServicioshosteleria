@@ -171,12 +171,7 @@ export default function Camareros() {
   const { data: camareros = [] } = useQuery({
     queryKey: ['camareros'],
     queryFn: async () => {
-      try {
-        return await base44.entities.Camarero.list('-created_date');
-      } catch (error) {
-        Logger.error('Error cargando camareros', { error: error?.message });
-        return [];
-      }
+      return await base44.entities.Camarero.list('-created_date');
     }
   });
 
