@@ -1,13 +1,6 @@
-// Polyfill para ErrorNotificationService - DEBE SER PRIMERO
-if (typeof window !== 'undefined' && !window.ErrorNotificationService) {
-  window.ErrorNotificationService = {
-    getMessage: (error) => error?.message || String(error) || 'Error',
-    getDetails: (error) => error?.details || '',
-    log: (error) => console.error('Error:', error)
-  };
-}
-
 import React, { useEffect, useRef } from 'react';
+// Importar polyfill primero
+import '@/components/ErrorNotificationServicePolyfill';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { createPageUrl } from './utils';
