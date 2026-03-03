@@ -39,7 +39,7 @@ export class NotificationService {
    */
   static enviarPush(titulo, mensaje, icono = '/icon.png', data = {}) {
     if (!('Notification' in window)) {
-      Logger.warn('Notificaciones push no soportadas');
+      console.warn('Notificaciones push no soportadas');
       return false;
     }
 
