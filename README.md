@@ -30,6 +30,14 @@ VITE_BASE44_BACKEND_URL=<url_del_backend_base44>
 
 Estos valores los obtenes desde el Dashboard de Base44 → Settings → API Keys.
 
+Para habilitar el proxy de Vite en desarrollo (evita problemas de CORS), añade también:
+
+```env
+VITE_BASE44_APP_BASE_URL=https://api.base44.com
+```
+
+Con esta variable definida, el plugin `@base44/vite-plugin` redirige las peticiones `/api/*` al backend, evitando restricciones de CORS durante el desarrollo local. El valor suele coincidir con `VITE_BASE44_BACKEND_URL`.
+
 > **Importante:** `requiresAuth` en `src/api/base44Client.js` debe estar en `true` para producción. Verificar las reglas de seguridad de cada entidad en el Dashboard de Base44.
 
 ---

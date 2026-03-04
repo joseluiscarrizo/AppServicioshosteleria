@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
+import { enviarWhatsApp } from '@/services/whatsapp';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -160,7 +161,7 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
         const baseUrl = globalThis.location.origin;
         const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
         const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
-        const response = await base44.functions.invoke('enviarWhatsAppDirecto', {
+        const resultado = await enviarWhatsApp({
           telefono: camarero.telefono,
           mensaje,
           camarero_id: camarero.id,
@@ -172,7 +173,6 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
           plantilla_usada: plantillaSeleccionada ? plantillas.find(p => p.id === plantillaSeleccionada)?.nombre : 'Manual'
         });
 
-        const resultado = response.data || response;
         if (!resultado.enviado_por_api) {
           throw new Error(`No se pudo enviar a ${camarero.nombre}: ${resultado.error_api || 'API no configurada'}`);
         }
