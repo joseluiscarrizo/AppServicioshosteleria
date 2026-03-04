@@ -21,16 +21,41 @@ Sistema de gestión de personal temporal para eventos de hostelería. Permite a 
 
 ## Variables de entorno
 
-Crea un archivo `.env.local` en la raíz con:
+Copia `.env.example` como `.env` y completa los valores:
 
-```env
-VITE_BASE44_APP_ID=<tu_app_id_de_base44>
-VITE_BASE44_BACKEND_URL=<url_del_backend_base44>
+```bash
+cp .env.example .env
 ```
 
-Estos valores los obtenes desde el Dashboard de Base44 → Settings → API Keys.
+### Variables requeridas (frontend)
+
+| Variable | Descripción |
+|----------|-------------|
+| `VITE_BASE44_APP_ID` | ID de la app en el Dashboard de Base44 → Settings → API Keys |
+| `VITE_BASE44_BACKEND_URL` | URL del backend Base44 (ej. `https://api.base44.com`) |
 
 > **Importante:** `requiresAuth` en `src/api/base44Client.js` debe estar en `true` para producción. Verificar las reglas de seguridad de cada entidad en el Dashboard de Base44.
+
+### Variables opcionales (Cloud Functions — WhatsApp Business API)
+
+Estas variables se configuran como secretos en el entorno de ejecución de las Cloud Functions de Base44 (no como variables `VITE_*`, ya que son confidenciales y se usan únicamente en el servidor):
+
+| Variable | Descripción |
+|----------|-------------|
+| `WHATSAPP_API_TOKEN` | Token Bearer de la WhatsApp Business Cloud API (Meta for Developers → App → WhatsApp → Configuration) |
+| `WHATSAPP_PHONE_NUMBER` | Phone Number ID del número remitente (identificador numérico de la Cloud API, p.ej. `123456789012345` — obtenido en Meta for Developers → WhatsApp → API Setup) |
+
+> Si `WHATSAPP_API_TOKEN` y `WHATSAPP_PHONE_NUMBER` no están configurados, la función `enviarWhatsAppDirecto` devuelve un enlace `wa.me/` que el coordinador puede abrir manualmente para enviar el mensaje desde WhatsApp Web.
+
+### Variables opcionales — Gmail y Google Sheets
+
+| Variable | Descripción |
+|----------|-------------|
+| `GMAIL_USER` | Cuenta de Gmail remitente |
+| `GMAIL_PASS` | Contraseña de aplicación de Gmail (16 caracteres) |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Email de la cuenta de servicio de Google |
+| `GOOGLE_PRIVATE_KEY` | Clave privada de la cuenta de servicio |
+| `GOOGLE_SPREADSHEET_ID` | ID de la hoja de Google Sheets destino |
 
 ---
 

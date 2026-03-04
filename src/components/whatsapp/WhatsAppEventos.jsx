@@ -174,7 +174,12 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
 
         const resultado = response.data || response;
         if (!resultado.enviado_por_api) {
-          throw new Error(`No se pudo enviar a ${camarero.nombre}: ${resultado.error_api || 'API no configurada'}`);
+          const waUrl = resultado.whatsapp_url;
+          if (waUrl && /^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(waUrl)) {
+            globalThis.open(waUrl, '_blank');
+          } else {
+            throw new Error(`No se pudo enviar a ${camarero.nombre}: ${resultado.error_api || 'API no configurada'}`);
+          }
         }
 
         await base44.entities.AsignacionCamarero.update(asignacion.id, { estado: 'enviado' });
