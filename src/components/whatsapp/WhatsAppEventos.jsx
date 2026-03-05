@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
+import { enviarWhatsApp } from '@/services/whatsapp';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -161,7 +162,7 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
         const baseUrl = globalThis.location.origin;
         const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
         const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
-        const response = await base44.functions.invoke('enviarWhatsAppDirecto', {
+        const resultado = await enviarWhatsApp({
           telefono: camarero.telefono,
           mensaje,
           camarero_id: camarero.id,
@@ -173,19 +174,8 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
           plantilla_usada: plantillaSeleccionada ? plantillas.find(p => p.id === plantillaSeleccionada)?.nombre : 'Manual'
         });
 
-        const resultado = response.data || response;
-        if (resultado.enviado_por_api) {
-          enviadosPorApi++;
-        } else if (resultado.whatsapp_url) {
-          // API not configured: open WhatsApp Web as fallback.
-          // Validate URL origin to prevent open-redirect abuse.
-          const url = new URL(resultado.whatsapp_url);
-          if (url.origin === 'https://wa.me' || url.origin === 'https://api.whatsapp.com') {
-            globalThis.open(resultado.whatsapp_url, '_blank', 'noopener,noreferrer');
-          }
-          enviadosPorWeb++;
-        } else {
-          throw new Error(`No se pudo enviar a ${camarero.nombre}: ${resultado.error_api || 'Error desconocido'}`);
+        if (!resultado.enviado_por_api) {
+          throw new Error(`No se pudo enviar a ${camarero.nombre}: ${resultado.error_api || 'API no configurada'}`);
         }
 
         await base44.entities.AsignacionCamarero.update(asignacion.id, { estado: 'enviado' });

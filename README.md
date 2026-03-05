@@ -46,6 +46,14 @@ Estas variables se configuran en el panel de Base44, **no** en el archivo `.env`
 
 > **Sin las variables de WhatsApp** el sistema usa WhatsApp Web como fallback (abre ventanas del navegador para envío manual). Con ellas los mensajes se envían directamente vía API y el estado se marca como `enviado_por_api`.
 
+Para habilitar el proxy de Vite en desarrollo (evita problemas de CORS), añade también:
+
+```env
+VITE_BASE44_APP_BASE_URL=https://api.base44.com
+```
+
+Con esta variable definida, el plugin `@base44/vite-plugin` redirige las peticiones `/api/*` al backend, evitando restricciones de CORS durante el desarrollo local. El valor suele coincidir con `VITE_BASE44_BACKEND_URL`.
+
 > **Importante:** `requiresAuth` en `src/api/base44Client.js` debe estar en `true` para producción. Verificar las reglas de seguridad de cada entidad en el Dashboard de Base44.
 
 ---
