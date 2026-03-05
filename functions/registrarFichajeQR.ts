@@ -2,13 +2,17 @@
  * registrarFichajeQR
  * Endpoint público (no requiere auth de usuario) que registra fichaje de entrada o salida.
  * El camarero accede escaneando su QR único.
- * 
+ *
  * GET  /?token=XXX          → devuelve info de la asignación
  * POST { token, tipo }      → tipo: "entrada" | "salida"  → registra fichaje
+ *
+ * Seguridad:
+ * - CORS restringido al dominio configurado en ALLOWED_ORIGIN (env var).
+ * - Tokens QR se invalidan automáticamente 48h después de la fecha del pedido.
  */
 import { createClientFromRequest } from '@base44/sdk';
 
-function calcularHoras(entrada, salida) {
+function calcularHoras(entrada: string, salida: string): number | null {
   if (!entrada || !salida) return null;
   const [hE, mE] = entrada.split(':').map(Number);
   const [hS, mS] = salida.split(':').map(Number);
@@ -17,9 +21,26 @@ function calcularHoras(entrada, salida) {
   return Math.round((minutos / 60) * 100) / 100;
 }
 
+/**
+ * Verifica si el token QR sigue siendo válido en relación a la fecha del pedido.
+ * El QR caduca 48 horas después de la fecha del evento.
+ */
+function isTokenExpired(pedidoDia: string | undefined | null): boolean {
+  if (!pedidoDia) return false; // Sin fecha no podemos validar — dejar pasar
+  try {
+    const fechaPedido = new Date(`${pedidoDia}T23:59:59`);
+    const ahora = new Date();
+    const diffHoras = (ahora.getTime() - fechaPedido.getTime()) / (1000 * 60 * 60);
+    return diffHoras > 48;
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
+  const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN') || '*';
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization'
   };
@@ -45,8 +66,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Token no válido o asignación no encontrada' }, { status: 404, headers: corsHeaders });
     }
 
-    // Obtener pedido para contexto
+    // Obtener pedido para contexto y validación TTL
     const pedido = await base44.asServiceRole.entities.Pedido.get(asignacion.pedido_id);
+
+    // Validar TTL del token QR: caducado 48h después de la fecha del pedido
+    if (isTokenExpired(pedido?.dia)) {
+      return Response.json({
+        error: 'El código QR ha caducado. El fichaje solo está disponible hasta 48 horas después del evento.',
+        caducado: true
+      }, { status: 410, headers: corsHeaders });
+    }
 
     if (req.method === 'GET') {
       return Response.json({
@@ -83,7 +112,7 @@ Deno.serve(async (req) => {
       const horaActual = `${ahora.getHours().toString().padStart(2, '0')}:${ahora.getMinutes().toString().padStart(2, '0')}`;
       const timestampActual = ahora.toISOString();
 
-      let updateData = {};
+      let updateData: Record<string, unknown> = {};
 
       if (tipo === 'entrada') {
         if (asignacion.hora_entrada_real) {
@@ -123,7 +152,7 @@ Deno.serve(async (req) => {
         tipo,
         hora: horaActual,
         camarero_nombre: asignacion.camarero_nombre,
-        horas_reales: updateData.horas_reales || null
+        horas_reales: updateData.horas_reales ?? null
       }, { headers: corsHeaders });
     }
 

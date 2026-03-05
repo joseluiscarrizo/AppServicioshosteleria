@@ -1,48 +1,38 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+/**
+ * getUser
+ * Devuelve el perfil del usuario autenticado usando el SDK de Base44.
+ * 
+ * NOTA: La versión anterior de este archivo usaba Supabase directamente
+ * (con SUPABASE_SERVICE_ROLE_KEY), lo cual fue eliminado por ser un
+ * vector de seguridad. Todo el acceso a datos se hace a través de Base44.
+ */
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
-serve(async (req) => {
-  const authHeader = req.headers.get("Authorization")
-  if (!authHeader) {
-    return new Response("Missing authorization", { status: 401 })
-  }
-
+Deno.serve(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    )
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
 
-    const { data: { user }, error } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    )
-
-    if (error || !user) {
-      return new Response("Unauthorized", { status: 401 })
+    if (!user) {
+      return Response.json({ error: 'No autenticado' }, { status: 401 });
     }
 
-    // Get user profile with role
-    const { data: profile, error: profileError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", user.id)
-      .single()
+    // Obtener perfil completo del usuario desde la entidad users de Base44
+    const perfiles = await base44.asServiceRole.entities.users.filter({ id: user.id });
+    const perfil = perfiles[0] || null;
 
-    if (profileError) {
-      return new Response(JSON.stringify({ error: profileError.message }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      })
-    }
-
-    return new Response(JSON.stringify({ user: profile }), {
+    return Response.json({
+      user: perfil || user
+    }, {
       status: 200,
-      headers: { "Content-Type": "application/json" }
-    })
+      headers: { 'Content-Type': 'application/json' }
+    });
+
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    })
+    console.error('Error en getUser:', (error as Error).message);
+    return Response.json(
+      { error: 'Error interno del servidor' },
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
-})
+});

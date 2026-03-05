@@ -15,11 +15,13 @@ import TareasPendientes from '../components/camareros/TareasPendientes';
 import useWebPushNotifications from '../components/notificaciones/WebPushService';
 import { useNotificationPolling } from '../components/notificaciones/NotificationPolling';
 import NotificacionesAutomaticas from '../components/notificaciones/NotificacionesAutomaticas';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function VistaMovil() {
   const [selectedCamarero, setSelectedCamarero] = useState(null);
   const [activeTab, setActiveTab] = useState('notificaciones');
   const { showNotification, permission, requestPermission, canNotify } = useWebPushNotifications();
+  const { user } = useAuth();
 
   const { data: camareros = [] } = useQuery({
     queryKey: ['camareros'],
@@ -50,16 +52,29 @@ export default function VistaMovil() {
   // Activar polling de notificaciones
   useNotificationPolling(selectedCamarero?.id, !!selectedCamarero?.id);
 
-  // Auto-seleccionar camarero desde localStorage
+  // Auto-seleccionar camarero desde localStorage con validación de permisos
   useEffect(() => {
     const savedCamareroId = localStorage.getItem('selectedCamareroId');
     if (savedCamareroId && camareros.length > 0) {
       const camarero = camareros.find(c => c.id === savedCamareroId);
       if (camarero) {
+        // Validar: si el usuario autenticado es un camarero, solo puede ver su propio perfil
+        // Los roles admin y coordinador pueden ver cualquier camarero
+        const userRole = user?.role;
+        // camarero_id vincula al usuario con su entidad Camarero; si no existe, usar user.id como fallback
+        const userCamareroId = user?.camarero_id || user?.id;
+        if (userRole === 'camarero' && userCamareroId && userCamareroId !== savedCamareroId) {
+          // Limpiar localStorage y no auto-seleccionar
+          localStorage.removeItem('selectedCamareroId');
+          return;
+        }
         setSelectedCamarero(camarero);
+      } else {
+        // Limpiar ID inválido del localStorage
+        localStorage.removeItem('selectedCamareroId');
       }
     }
-  }, [camareros]);
+  }, [camareros, user]);
 
   // Guardar selección
   useEffect(() => {
@@ -129,7 +144,18 @@ export default function VistaMovil() {
           <label className="text-sm font-medium text-slate-700 mb-2 block">Selecciona tu perfil</label>
           <Select 
             value={selectedCamarero?.id || ''} 
-            onValueChange={(id) => setSelectedCamarero(camareros.find(c => c.id === id))}
+            onValueChange={(id) => {
+              const camarero = camareros.find(c => c.id === id);
+              if (!camarero) return;
+              // Validar permisos antes de seleccionar
+              const userRole = user?.role;
+              // camarero_id vincula al usuario con su entidad Camarero; si no existe, usar user.id como fallback
+              const userCamareroId = user?.camarero_id || user?.id;
+              if (userRole === 'camarero' && userCamareroId && userCamareroId !== id) {
+                return; // No permitir seleccionar otro camarero
+              }
+              setSelectedCamarero(camarero);
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecciona tu nombre..." />

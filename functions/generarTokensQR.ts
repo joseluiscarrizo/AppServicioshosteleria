@@ -6,13 +6,17 @@
  */
 import { createClientFromRequest } from '@base44/sdk';
 
-function generarToken() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 32; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+/**
+ * Genera un token criptográficamente seguro de 48 caracteres URL-safe.
+ * Usa crypto.getRandomValues() de la Web Crypto API (disponible en Deno).
+ */
+function generarToken(): string {
+  const bytes = new Uint8Array(36);
+  crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
 }
 
 Deno.serve(async (req) => {
