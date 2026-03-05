@@ -174,7 +174,7 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
           plantilla_usada: plantillaSeleccionada ? plantillas.find(p => p.id === plantillaSeleccionada)?.nombre : 'Manual'
         });
 
-        const resultado = response.data || response;
+        // Usamos directamente el objeto normalizado devuelto por enviarWhatsApp
         if (!resultado.enviado_por_api && resultado.whatsapp_url) {
           window.open(resultado.whatsapp_url, '_blank');
           toast.info(`Abriendo WhatsApp Web para ${camarero.nombre} (API no configurada)`);
