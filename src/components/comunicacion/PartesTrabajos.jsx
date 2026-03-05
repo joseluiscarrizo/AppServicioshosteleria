@@ -11,8 +11,8 @@ import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import ParteServicio from '../pedidos/ParteServicio';
 
-export default function PartesTrabajos({ user }) {
-  const [vistaPrevia, setVistaPrevia] = useState(null);
+export default function PartesTrabajos({ user: _user }) {
+  const [_vistaPrevia, _setVistaPrevia] = useState(null);
   const [parteAbierto, setParteAbierto] = useState(null);
   const [enviando, setEnviando] = useState(null);
   const queryClient = useQueryClient();
@@ -50,7 +50,7 @@ export default function PartesTrabajos({ user }) {
     };
   });
 
-  const formatDia = (dia) => {
+  const _formatDia = (dia) => {
     if (!dia) return '-';
     const d = parseISO(dia);
     return format(d, "EEE, dd MMM yyyy", { locale: es });
@@ -79,7 +79,7 @@ export default function PartesTrabajos({ user }) {
     }
   };
 
-  const asCamareros = (pedidoId) =>
+  const _asCamareros = (pedidoId) =>
     asignaciones.filter(a => a.pedido_id === pedidoId && a.estado === 'confirmado');
 
   if (isLoading) {
