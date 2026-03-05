@@ -52,7 +52,7 @@ export function useConflictosHorario({ asignaciones = [], pedidos = [], enabled 
       if (stored) {
         JSON.parse(stored).forEach(k => yaNotificadosRef.current.add(k));
       }
-    } catch (_) { /* empty */ }
+    } catch { /* empty */ }
     const porCamarero = {};
     asignaciones.forEach(a => {
       if (!porCamarero[a.camarero_id]) porCamarero[a.camarero_id] = [];
@@ -105,6 +105,6 @@ export function useConflictosHorario({ asignaciones = [], pedidos = [], enabled 
     // Persistir en sessionStorage
     try {
       sessionStorage.setItem(NOTIFICADOS_KEY, JSON.stringify([...yaNotificadosRef.current]));
-    } catch (_) { /* empty */ }
+    } catch { /* empty */ }
   }, [asignaciones, pedidos, enabled]);
 }

@@ -58,16 +58,9 @@ export default function Asignacion() {
     soloDisponibles: true,
     valoracionMin: 0,
   });
-  // Compat: aliases usados en las funciones legadas
-  const filtroHabilidad = filtrosCamareros.habilidad;
-  const filtroEspecialidad = filtrosCamareros.especialidad;
-  const busquedaCamarero = filtrosCamareros.busqueda;
-  const setBusquedaCamarero = (v) => setFiltrosCamareros(f => ({ ...f, busqueda: v }));
-  const setFiltroHabilidad = (v) => setFiltrosCamareros(f => ({ ...f, habilidad: v }));
-  const setFiltroEspecialidad = (v) => setFiltrosCamareros(f => ({ ...f, especialidad: v }));
   const [mostrarCarga, setMostrarCarga] = useState(false);
   const [showAsignacionAuto, setShowAsignacionAuto] = useState(false);
-  const [showReglas, setShowReglas] = useState(false);
+  const [_showReglas, _setShowReglas] = useState(false);
   const [vistaCalendario, setVistaCalendario] = useState('interactivo'); // 'interactivo', 'avanzado' o 'clasico'
   const [edicionRapida, setEdicionRapida] = useState({ open: false, pedido: null, campo: null });
   const [duplicarDialog, setDuplicarDialog] = useState({ open: false, pedido: null });
@@ -377,6 +370,7 @@ Sistema de Gestión de Camareros
   };
 
   // Calcular estado del pedido
+  // eslint-disable-next-line unused-imports/no-unused-vars
   const getEstadoPedido = (pedido) => {
     const asignacionesPedido = getAsignacionesPedido(pedido.id);
     const cantidadNecesaria = pedido.cantidad_camareros || 0;
@@ -449,6 +443,7 @@ Sistema de Gestión de Camareros
   };
   
   // Obtener todas las habilidades únicas
+  // eslint-disable-next-line unused-imports/no-unused-vars
   const todasHabilidades = useMemo(() => {
     const habs = new Set();
     camareros.forEach(c => c.habilidades?.forEach(h => habs.add(h)));
@@ -641,7 +636,7 @@ Sistema de Gestión de Camareros
     }
   };
 
-  const isLoading = loadingPedidos;
+  const _isLoading = loadingPedidos;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
