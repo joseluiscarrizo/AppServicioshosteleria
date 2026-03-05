@@ -52,6 +52,34 @@ Las siguientes variables se configuran en el entorno de ejecución de las Cloud 
 
 > **Importante:** `requiresAuth` en `src/api/base44Client.js` debe estar en `true` para producción. Verificar las reglas de seguridad de cada entidad en el Dashboard de Base44.
 
+### Variables opcionales (frontend — proxy de desarrollo)
+
+Estas variables se usan únicamente en el entorno de desarrollo para configurar el proxy de Vite (por ejemplo, el endpoint `/api` utilizado por el servicio `src/services/whatsapp.js`).
+
+| Variable | Descripción |
+|----------|-------------|
+| `VITE_BASE44_APP_BASE_URL` | URL base de la app en desarrollo que se usa como target del proxy de Vite (ej. `http://localhost:5173` o la URL del backend local que expone `/api`). |
+### Variables opcionales (Cloud Functions — WhatsApp Business API)
+
+Estas variables se configuran como secretos en el entorno de ejecución de las Cloud Functions de Base44 (no como variables `VITE_*`, ya que son confidenciales y se usan únicamente en el servidor):
+
+| Variable | Descripción |
+|----------|-------------|
+| `WHATSAPP_API_TOKEN` | Token Bearer de la WhatsApp Business Cloud API (Meta for Developers → App → WhatsApp → Configuration) |
+| `WHATSAPP_PHONE_NUMBER` | Phone Number ID del número remitente (identificador numérico de la Cloud API, p.ej. `123456789012345` — obtenido en Meta for Developers → WhatsApp → API Setup) |
+
+> Si `WHATSAPP_API_TOKEN` y `WHATSAPP_PHONE_NUMBER` no están configurados, la función `enviarWhatsAppDirecto` devuelve un enlace `wa.me/` que el coordinador puede abrir manualmente para enviar el mensaje desde WhatsApp Web.
+
+### Variables opcionales — Gmail y Google Sheets
+
+| Variable | Descripción |
+|----------|-------------|
+| `GMAIL_USER` | Cuenta de Gmail remitente |
+| `GMAIL_PASS` | Contraseña de aplicación de Gmail (16 caracteres) |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Email de la cuenta de servicio de Google |
+| `GOOGLE_PRIVATE_KEY` | Clave privada de la cuenta de servicio |
+| `GOOGLE_SPREADSHEET_ID` | ID de la hoja de Google Sheets destino |
+
 ---
 
 ## Instalación y desarrollo
@@ -62,6 +90,9 @@ npm install
 
 # Servidor de desarrollo (http://localhost:5173)
 npm run dev
+
+# Servidor de desarrollo accesible en red local
+npm run dev -- --host
 
 # Build de producción
 npm run build
