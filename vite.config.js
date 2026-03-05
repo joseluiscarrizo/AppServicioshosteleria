@@ -37,9 +37,13 @@ export default defineConfig({
   server: {
     host: true,
     allowedHosts: [
-      'ta-01kjrshcaaaawd98qw17rnz9d8-5173-ruhene2vuqq11bkrsbdcludrh.w.modal.host',
       '.modal.host',
-      '.w.modal.host',
+    ],
+  },
+  preview: {
+    host: true,
+    allowedHosts: [
+      '.modal.host',
     ],
   },
 });
