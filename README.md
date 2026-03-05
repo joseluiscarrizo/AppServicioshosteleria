@@ -21,40 +21,48 @@ Sistema de gestión de personal temporal para eventos de hostelería. Permite a 
 
 ## Variables de entorno
 
-Copia `.env.example` a `.env` y completa los valores:
+Copia `.env.example` como `.env` y completa los valores:
 
 ```bash
 cp .env.example .env
 ```
 
-### Variables del frontend (`VITE_*`)
-
-| Variable | Requerida | Descripción |
-|----------|-----------|-------------|
-| `VITE_BASE44_APP_ID` | ✅ Sí | ID de la app en el Dashboard de Base44 → Settings → API Keys |
-| `VITE_BASE44_BACKEND_URL` | ✅ Sí | URL del backend Base44 (ej: `https://api.base44.com`) |
-| `VITE_BASE44_APP_BASE_URL` | ⚪ Opcional | Habilita el proxy `/api` en dev via `@base44/vite-plugin`. Sin ella Vite imprime *"Proxy not enabled"* (el servidor funciona igualmente). |
-
-### Variables del backend (Base44 Cloud Functions → Secrets)
-
-Estas variables se configuran en el panel de Base44, **no** en el archivo `.env` del frontend:
+### Variables requeridas (frontend)
 
 | Variable | Descripción |
 |----------|-------------|
-| `WHATSAPP_API_TOKEN` | Bearer token de la API de Meta/WhatsApp Business |
-| `WHATSAPP_PHONE_NUMBER` | ID del número de teléfono en Meta Business |
-
-> **Sin las variables de WhatsApp** el sistema usa WhatsApp Web como fallback (abre ventanas del navegador para envío manual). Con ellas los mensajes se envían directamente vía API y el estado se marca como `enviado_por_api`.
-
-Para habilitar el proxy de Vite en desarrollo (evita problemas de CORS), añade también:
-
-```env
-VITE_BASE44_APP_BASE_URL=https://api.base44.com
-```
-
-Con esta variable definida, el plugin `@base44/vite-plugin` redirige las peticiones `/api/*` al backend, evitando restricciones de CORS durante el desarrollo local. El valor suele coincidir con `VITE_BASE44_BACKEND_URL`.
+| `VITE_BASE44_APP_ID` | ID de la app en el Dashboard de Base44 → Settings → API Keys |
+| `VITE_BASE44_BACKEND_URL` | URL del backend Base44 (ej. `https://api.base44.com`) |
 
 > **Importante:** `requiresAuth` en `src/api/base44Client.js` debe estar en `true` para producción. Verificar las reglas de seguridad de cada entidad en el Dashboard de Base44.
+
+### Variables opcionales (frontend — proxy de desarrollo)
+
+Estas variables se usan únicamente en el entorno de desarrollo para configurar el proxy de Vite (por ejemplo, el endpoint `/api` utilizado por el servicio `src/services/whatsapp.js`).
+
+| Variable | Descripción |
+|----------|-------------|
+| `VITE_BASE44_APP_BASE_URL` | URL base de la app en desarrollo que se usa como target del proxy de Vite (ej. `http://localhost:5173` o la URL del backend local que expone `/api`). |
+### Variables opcionales (Cloud Functions — WhatsApp Business API)
+
+Estas variables se configuran como secretos en el entorno de ejecución de las Cloud Functions de Base44 (no como variables `VITE_*`, ya que son confidenciales y se usan únicamente en el servidor):
+
+| Variable | Descripción |
+|----------|-------------|
+| `WHATSAPP_API_TOKEN` | Token Bearer de la WhatsApp Business Cloud API (Meta for Developers → App → WhatsApp → Configuration) |
+| `WHATSAPP_PHONE_NUMBER` | Phone Number ID del número remitente (identificador numérico de la Cloud API, p.ej. `123456789012345` — obtenido en Meta for Developers → WhatsApp → API Setup) |
+
+> Si `WHATSAPP_API_TOKEN` y `WHATSAPP_PHONE_NUMBER` no están configurados, la función `enviarWhatsAppDirecto` devuelve un enlace `wa.me/` que el coordinador puede abrir manualmente para enviar el mensaje desde WhatsApp Web.
+
+### Variables opcionales — Gmail y Google Sheets
+
+| Variable | Descripción |
+|----------|-------------|
+| `GMAIL_USER` | Cuenta de Gmail remitente |
+| `GMAIL_PASS` | Contraseña de aplicación de Gmail (16 caracteres) |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Email de la cuenta de servicio de Google |
+| `GOOGLE_PRIVATE_KEY` | Clave privada de la cuenta de servicio |
+| `GOOGLE_SPREADSHEET_ID` | ID de la hoja de Google Sheets destino |
 
 ---
 
