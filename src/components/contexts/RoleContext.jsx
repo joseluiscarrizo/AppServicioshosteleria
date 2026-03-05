@@ -21,7 +21,7 @@ export function RoleProvider({ children }) {
   const isCoordinator = role === 'coordinador' || role === 'admin';
   const isCamarero = role === 'camarero';
 
-  const hasPermission = (action, resource, scope) => {
+  const hasPermission = (_action, _resource, _scope) => {
     if (isAdmin) return true;
     if (isCoordinator) return true;
     return false;

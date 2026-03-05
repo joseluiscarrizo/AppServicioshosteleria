@@ -20,7 +20,7 @@ export default function CargaTrabajoCamareros({ mes = new Date() }) {
     queryFn: () => base44.entities.AsignacionCamarero.list('-fecha_pedido', 2000)
   });
 
-  const { data: pedidos = [] } = useQuery({
+  const { data: _pedidos = [] } = useQuery({
     queryKey: ['pedidos'],
     queryFn: () => base44.entities.Pedido.list('-dia', 500)
   });

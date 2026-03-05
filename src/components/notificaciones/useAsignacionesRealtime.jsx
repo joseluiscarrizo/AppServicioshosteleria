@@ -35,7 +35,7 @@ async function crearNotificacionCoordinador({ tipo, titulo, mensaje, prioridad, 
       pedido_id,
       leida: false
     });
-  } catch (_) {
+  } catch {
     // No bloquear si falla la notificación
   }
 }
