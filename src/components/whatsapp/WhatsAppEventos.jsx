@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
+import { enviarWhatsApp } from '@/services/whatsapp';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,7 +151,8 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
       }
 
       const seleccionados = camarerosEvento.filter(({ camarero }) => selectedCamareros.includes(camarero.id));
-      let enviados = 0;
+      let enviadosPorApi = 0;
+      let enviadosPorWeb = 0;
 
       for (const { camarero, asignacion } of seleccionados) {
         if (!camarero.telefono) continue;
@@ -160,7 +162,7 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
         const baseUrl = globalThis.location.origin;
         const linkConfirmar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}`;
         const linkRechazar = `${baseUrl}/#/ConfirmarServicio?asignacion=${asignacion.id}&action=rechazar`;
-        const response = await base44.functions.invoke('enviarWhatsAppDirecto', {
+        const resultado = await enviarWhatsApp({
           telefono: camarero.telefono,
           mensaje,
           camarero_id: camarero.id,
@@ -172,7 +174,6 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
           plantilla_usada: plantillaSeleccionada ? plantillas.find(p => p.id === plantillaSeleccionada)?.nombre : 'Manual'
         });
 
-        const resultado = response.data || response;
         if (!resultado.enviado_por_api) {
           const waUrl = resultado.whatsapp_url;
           if (waUrl && /^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(waUrl)) {
@@ -199,14 +200,20 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
           leida: false, respondida: false, respuesta: 'pendiente'
         });
 
-        enviados++;
         await new Promise(r => setTimeout(r, 600));
       }
-      return enviados;
+      return { enviadosPorApi, enviadosPorWeb };
     },
-    onSuccess: (enviados) => {
+    onSuccess: ({ enviadosPorApi, enviadosPorWeb }) => {
       queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
-      toast.success(`✅ ${enviados} mensaje${enviados !== 1 ? 's' : ''} enviado${enviados !== 1 ? 's' : ''}`);
+      const total = enviadosPorApi + enviadosPorWeb;
+      if (enviadosPorApi > 0 && enviadosPorWeb === 0) {
+        toast.success(`✅ ${enviadosPorApi} mensaje${enviadosPorApi !== 1 ? 's' : ''} enviado${enviadosPorApi !== 1 ? 's' : ''} por WhatsApp API`);
+      } else if (enviadosPorWeb > 0 && enviadosPorApi === 0) {
+        toast.success(`📱 ${enviadosPorWeb} ventana${enviadosPorWeb !== 1 ? 's' : ''} de WhatsApp Web abiertas para envío manual`, { description: 'Si el navegador bloqueó los popups, permite las ventanas emergentes e inténtalo de nuevo.' });
+      } else if (total > 0) {
+        toast.success(`✅ ${enviadosPorApi} por API · 📱 ${enviadosPorWeb} por WhatsApp Web`);
+      }
       setSelectedCamareros([]);
     },
     onError: (e) => toast.error(e.message || 'Error al enviar mensajes')

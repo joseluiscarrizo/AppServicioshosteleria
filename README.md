@@ -68,6 +68,9 @@ npm install
 # Servidor de desarrollo (http://localhost:5173)
 npm run dev
 
+# Servidor de desarrollo accesible en red local
+npm run dev -- --host
+
 # Build de producción
 npm run build
 
