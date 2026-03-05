@@ -30,6 +30,7 @@ const especialidadColors = {
   buffet: 'bg-emerald-100 text-emerald-700'
 };
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 const nivelExperienciaColors = {
   junior: 'bg-blue-100 text-blue-700',
   intermedio: 'bg-emerald-100 text-emerald-700',
@@ -57,7 +58,7 @@ export default function Camareros() {
   const [filtroNivel, setFiltroNivel] = useState('todos');
 
   const queryClient = useQueryClient();
-  const importInputRef = useState(null);
+  const _importInputRef = useState(null);
 
   const exportarExcel = () => {
     const headers = ['Código', 'Nombre', 'Teléfono', 'Email', 'Disponible', 'En Reserva', 'Estado', 'Especialidad', 'Nivel Experiencia', 'Años Experiencia', 'Habilidades', 'Idiomas', 'Dirección', 'Notas', 'Valoración Promedio', 'Total Valoraciones'];
@@ -157,7 +158,7 @@ export default function Camareros() {
           await base44.entities.Camarero.create(data);
           creados++;
         }
-      } catch (error) {
+      } catch {
         errores++;
       }
     }
@@ -173,7 +174,7 @@ export default function Camareros() {
     }
   });
 
-  const toggleDisponibilidadMutation = useMutation({
+  const _toggleDisponibilidadMutation = useMutation({
     mutationFn: ({ id, disponible }) => base44.entities.Camarero.update(id, { disponible }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['camareros'] });
@@ -198,7 +199,7 @@ export default function Camareros() {
   if (!isAdmin && !isCoordinator) return <AccessDenied />;
 
   // Obtener habilidades únicas
-  const todasHabilidades = [...new Set(camareros.flatMap(c => c.habilidades || []))].sort();
+  const _todasHabilidades = [...new Set(camareros.flatMap(c => c.habilidades || []))].sort();
 
   // Filtrar camareros activos y en reserva
   const camarerosFiltrados = camareros.filter(c => {
