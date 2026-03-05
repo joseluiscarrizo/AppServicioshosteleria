@@ -174,19 +174,13 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
           plantilla_usada: plantillaSeleccionada ? plantillas.find(p => p.id === plantillaSeleccionada)?.nombre : 'Manual'
         });
 
-        if (!resultado.enviado_por_api) {
-          const waUrl = resultado.whatsapp_url;
-          if (waUrl && /^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(waUrl)) {
-            const newWindow = globalThis.open(waUrl, '_blank', 'noopener,noreferrer');
-            if (newWindow) {
-              newWindow.opener = null;
-              enviadosPorWeb++;
-            }
-          } else {
-            throw new Error(`No se pudo enviar a ${camarero.nombre}: ${resultado.error_api || 'API no configurada'}`);
+        // Usamos directamente el objeto normalizado devuelto por enviarWhatsApp
+        if (!resultado.enviado_por_api && resultado.whatsapp_url) {
+          const nuevaVentana = window.open(resultado.whatsapp_url, '_blank', 'noopener,noreferrer');
+          if (nuevaVentana) {
+            nuevaVentana.opener = null;
           }
-        } else {
-          enviadosPorApi++;
+          toast.info(`Abriendo WhatsApp Web para ${camarero.nombre} (API no configurada)`);
         }
 
         await base44.entities.AsignacionCamarero.update(asignacion.id, { estado: 'enviado' });

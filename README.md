@@ -21,18 +21,34 @@ Sistema de gestión de personal temporal para eventos de hostelería. Permite a 
 
 ## Variables de entorno
 
-Copia `.env.example` como `.env` y completa los valores:
+Copia `.env.example` a `.env` y completa los valores:
 
 ```bash
 cp .env.example .env
 ```
 
-### Variables requeridas (frontend)
+### Frontend (Vite) — requeridas
 
 | Variable | Descripción |
 |----------|-------------|
-| `VITE_BASE44_APP_ID` | ID de la app en el Dashboard de Base44 → Settings → API Keys |
-| `VITE_BASE44_BACKEND_URL` | URL del backend Base44 (ej. `https://api.base44.com`) |
+| `VITE_BASE44_APP_ID` | ID de la app en Base44 (Dashboard → Settings → API Keys) |
+| `VITE_BASE44_BACKEND_URL` | URL del backend Base44 (por defecto `https://api.base44.com`) |
+
+### Cloud Functions — opcionales
+
+Las siguientes variables se configuran en el entorno de ejecución de las Cloud Functions de Base44 (no en el `.env` del cliente):
+
+| Variable | Descripción |
+|----------|-------------|
+| `WHATSAPP_API_TOKEN` | Bearer token de la WhatsApp Business API (Meta for Developers) |
+| `WHATSAPP_PHONE_NUMBER` | ID numérico del número de teléfono registrado en WhatsApp Business |
+| `GMAIL_USER` | Cuenta de Gmail para envío de emails |
+| `GMAIL_PASS` | App password de 16 caracteres de Gmail |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Email de la cuenta de servicio de Google |
+| `GOOGLE_PRIVATE_KEY` | Clave privada de la cuenta de servicio de Google |
+| `GOOGLE_SPREADSHEET_ID` | ID del spreadsheet de Google Sheets |
+
+> **Nota:** Sin `WHATSAPP_API_TOKEN` y `WHATSAPP_PHONE_NUMBER`, la app usa WhatsApp Web (`wa.me`) como fallback automático para el envío de mensajes.
 
 > **Importante:** `requiresAuth` en `src/api/base44Client.js` debe estar en `true` para producción. Verificar las reglas de seguridad de cada entidad en el Dashboard de Base44.
 
