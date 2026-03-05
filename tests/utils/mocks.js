@@ -44,6 +44,10 @@ export const mockBase44 = {
       filter: vi.fn(),
       create: vi.fn(),
       update: vi.fn()
+    },
+    PlantillaWhatsApp: {
+      filter: vi.fn(),
+      list: vi.fn()
     }
   },
   functions: {

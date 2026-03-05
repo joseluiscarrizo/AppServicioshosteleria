@@ -21,14 +21,30 @@ Sistema de gestión de personal temporal para eventos de hostelería. Permite a 
 
 ## Variables de entorno
 
-Crea un archivo `.env.local` en la raíz con:
+Copia `.env.example` a `.env` y completa los valores:
 
-```env
-VITE_BASE44_APP_ID=<tu_app_id_de_base44>
-VITE_BASE44_BACKEND_URL=<url_del_backend_base44>
+```bash
+cp .env.example .env
 ```
 
-Estos valores los obtenes desde el Dashboard de Base44 → Settings → API Keys.
+### Variables del frontend (`VITE_*`)
+
+| Variable | Requerida | Descripción |
+|----------|-----------|-------------|
+| `VITE_BASE44_APP_ID` | ✅ Sí | ID de la app en el Dashboard de Base44 → Settings → API Keys |
+| `VITE_BASE44_BACKEND_URL` | ✅ Sí | URL del backend Base44 (ej: `https://api.base44.com`) |
+| `VITE_BASE44_APP_BASE_URL` | ⚪ Opcional | Habilita el proxy `/api` en dev via `@base44/vite-plugin`. Sin ella Vite imprime *"Proxy not enabled"* (el servidor funciona igualmente). |
+
+### Variables del backend (Base44 Cloud Functions → Secrets)
+
+Estas variables se configuran en el panel de Base44, **no** en el archivo `.env` del frontend:
+
+| Variable | Descripción |
+|----------|-------------|
+| `WHATSAPP_API_TOKEN` | Bearer token de la API de Meta/WhatsApp Business |
+| `WHATSAPP_PHONE_NUMBER` | ID del número de teléfono en Meta Business |
+
+> **Sin las variables de WhatsApp** el sistema usa WhatsApp Web como fallback (abre ventanas del navegador para envío manual). Con ellas los mensajes se envían directamente vía API y el estado se marca como `enviado_por_api`.
 
 Para habilitar el proxy de Vite en desarrollo (evita problemas de CORS), añade también:
 
@@ -50,6 +66,9 @@ npm install
 
 # Servidor de desarrollo (http://localhost:5173)
 npm run dev
+
+# Servidor de desarrollo accesible en red local
+npm run dev -- --host
 
 # Build de producción
 npm run build
