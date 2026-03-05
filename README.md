@@ -36,6 +36,13 @@ cp .env.example .env
 
 > **Importante:** `requiresAuth` en `src/api/base44Client.js` debe estar en `true` para producción. Verificar las reglas de seguridad de cada entidad en el Dashboard de Base44.
 
+### Variables opcionales (frontend — proxy de desarrollo)
+
+Estas variables se usan únicamente en el entorno de desarrollo para configurar el proxy de Vite (por ejemplo, el endpoint `/api` utilizado por el servicio `src/services/whatsapp.js`).
+
+| Variable | Descripción |
+|----------|-------------|
+| `VITE_BASE44_APP_BASE_URL` | URL base de la app en desarrollo que se usa como target del proxy de Vite (ej. `http://localhost:5173` o la URL del backend local que expone `/api`). |
 ### Variables opcionales (Cloud Functions — WhatsApp Business API)
 
 Estas variables se configuran como secretos en el entorno de ejecución de las Cloud Functions de Base44 (no como variables `VITE_*`, ya que son confidenciales y se usan únicamente en el servidor):
