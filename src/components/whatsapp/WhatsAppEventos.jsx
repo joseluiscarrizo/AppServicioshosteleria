@@ -176,7 +176,10 @@ export default function WhatsAppEventos({ pedidos = [], asignaciones = [], camar
 
         // Usamos directamente el objeto normalizado devuelto por enviarWhatsApp
         if (!resultado.enviado_por_api && resultado.whatsapp_url) {
-          window.open(resultado.whatsapp_url, '_blank');
+          const nuevaVentana = window.open(resultado.whatsapp_url, '_blank', 'noopener,noreferrer');
+          if (nuevaVentana) {
+            nuevaVentana.opener = null;
+          }
           toast.info(`Abriendo WhatsApp Web para ${camarero.nombre} (API no configurada)`);
         }
 
