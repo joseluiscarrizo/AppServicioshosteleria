@@ -45,7 +45,6 @@ export default defineConfig({
     host: true,
     allowedHosts: [
       '.modal.host',
-      '.w.modal.host',
     ],
   },
 });
