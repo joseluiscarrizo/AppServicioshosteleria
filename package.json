@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@base44/sdk": "latest",
+    "@base44/sdk": "^0.8.41",
     "@hello-pangea/dnd": "latest",
     "@radix-ui/react-accordion": "latest",
     "@radix-ui/react-alert-dialog": "latest",
@@ -63,7 +63,7 @@
     "vaul": "latest"
   },
   "devDependencies": {
-    "@base44/vite-plugin": "latest",
+    "@base44/vite-plugin": "^1.0.30",
     "@eslint/js": "^9.0.0",
     "@testing-library/dom": "latest",
     "@testing-library/jest-dom": "latest",
