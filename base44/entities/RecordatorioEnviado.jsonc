@@ -1,0 +1,41 @@
+{
+  "name": "RecordatorioEnviado",
+  "type": "object",
+  "properties": {
+    "asignacion_id": {
+      "type": "string",
+      "description": "ID de la asignaci\u00f3n"
+    },
+    "camarero_id": {
+      "type": "string",
+      "description": "ID del camarero"
+    },
+    "pedido_id": {
+      "type": "string",
+      "description": "ID del pedido"
+    },
+    "tipo_recordatorio": {
+      "type": "string",
+      "enum": [
+        "24h",
+        "2h"
+      ],
+      "description": "Tipo de recordatorio enviado"
+    },
+    "fecha_envio": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha y hora de env\u00edo"
+    },
+    "exito": {
+      "type": "boolean",
+      "default": true,
+      "description": "Si se envi\u00f3 correctamente"
+    }
+  },
+  "required": [
+    "asignacion_id",
+    "camarero_id",
+    "tipo_recordatorio"
+  ]
+}

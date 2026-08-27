@@ -1,0 +1,69 @@
+{
+  "name": "Disponibilidad",
+  "type": "object",
+  "properties": {
+    "camarero_id": {
+      "type": "string",
+      "description": "ID del camarero"
+    },
+    "camarero_nombre": {
+      "type": "string",
+      "description": "Nombre del camarero"
+    },
+    "fecha": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha de disponibilidad"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "disponible",
+        "no_disponible",
+        "festivo",
+        "vacaciones",
+        "baja",
+        "parcial",
+        "preferencia"
+      ],
+      "default": "disponible",
+      "description": "Tipo de disponibilidad"
+    },
+    "hora_inicio": {
+      "type": "string",
+      "description": "Hora de inicio disponible (para tipo parcial)"
+    },
+    "hora_fin": {
+      "type": "string",
+      "description": "Hora de fin disponible (para tipo parcial)"
+    },
+    "motivo": {
+      "type": "string",
+      "description": "Motivo de la ausencia o restricci\u00f3n"
+    },
+    "recurrente": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si aplica semanalmente"
+    },
+    "dia_semana": {
+      "type": "number",
+      "description": "D\u00eda de la semana (0-6) para recurrencias"
+    },
+    "prioridad": {
+      "type": "string",
+      "enum": [
+        "alta",
+        "media",
+        "baja"
+      ],
+      "default": "media",
+      "description": "Prioridad de la restricci\u00f3n"
+    }
+  },
+  "required": [
+    "camarero_id",
+    "fecha",
+    "tipo"
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "name": "Tarea",
+  "type": "object",
+  "properties": {
+    "camarero_id": {
+      "type": "string",
+      "description": "ID del camarero"
+    },
+    "camarero_nombre": {
+      "type": "string",
+      "description": "Nombre del camarero"
+    },
+    "pedido_id": {
+      "type": "string",
+      "description": "ID del pedido relacionado"
+    },
+    "asignacion_id": {
+      "type": "string",
+      "description": "ID de la asignaci\u00f3n relacionada"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "confirmar_asistencia",
+        "recoger_uniforme",
+        "revisar_detalles",
+        "confirmar_transporte",
+        "reportar_llegada",
+        "reportar_incidencias",
+        "completar_servicio"
+      ],
+      "description": "Tipo de tarea"
+    },
+    "titulo": {
+      "type": "string",
+      "description": "T\u00edtulo de la tarea"
+    },
+    "descripcion": {
+      "type": "string",
+      "description": "Descripci\u00f3n detallada"
+    },
+    "completada": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si la tarea est\u00e1 completada"
+    },
+    "fecha_completada": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha en que se complet\u00f3"
+    },
+    "fecha_limite": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha l\u00edmite para completar"
+    },
+    "prioridad": {
+      "type": "string",
+      "enum": [
+        "baja",
+        "media",
+        "alta",
+        "urgente"
+      ],
+      "default": "media"
+    },
+    "orden": {
+      "type": "number",
+      "description": "Orden de la tarea en el flujo"
+    }
+  },
+  "required": [
+    "camarero_id",
+    "pedido_id",
+    "tipo",
+    "titulo"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "role": "coordinador"
+          },
+          {
+            "$and": [
+              {
+                "role": "camarero"
+              },
+              {
+                "$eq": [
+                  "$record.camarero_id",
+                  "$user.camarero_id"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "write": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "role": "coordinador"
+          }
+        ]
+      }
+    },
+    "update": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "role": "coordinador"
+          },
+          {
+            "$and": [
+              {
+                "role": "camarero"
+              },
+              {
+                "$eq": [
+                  "$record.camarero_id",
+                  "$user.camarero_id"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "role": "coordinador"
+          }
+        ]
+      }
+    }
+  }
+}

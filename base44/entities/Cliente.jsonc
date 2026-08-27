@@ -1,0 +1,58 @@
+{
+  "name": "Cliente",
+  "type": "object",
+  "properties": {
+    "codigo": {
+      "type": "string",
+      "description": "C\u00f3digo autom\u00e1tico del cliente (CL001, CL002, etc.)"
+    },
+    "nombre": {
+      "type": "string",
+      "description": "Nombre del cliente"
+    },
+    "coordinador_codigo": {
+      "type": "string",
+      "description": "C\u00f3digo del coordinador asignado al cliente"
+    },
+    "coordinador_nombre": {
+      "type": "string",
+      "description": "Nombre del coordinador asignado al cliente"
+    },
+    "email_1": {
+      "type": "string",
+      "description": "Email 1"
+    },
+    "email_2": {
+      "type": "string",
+      "description": "Email 2"
+    },
+    "telefono_1": {
+      "type": "string",
+      "description": "Tel\u00e9fono 1"
+    },
+    "telefono_2": {
+      "type": "string",
+      "description": "Tel\u00e9fono 2"
+    },
+    "persona_contacto_1": {
+      "type": "string",
+      "description": "Persona de contacto 1"
+    },
+    "persona_contacto_2": {
+      "type": "string",
+      "description": "Persona de contacto 2"
+    },
+    "notas": {
+      "type": "string",
+      "description": "Notas sobre el cliente"
+    },
+    "activo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Si el cliente est\u00e1 activo"
+    }
+  },
+  "required": [
+    "nombre"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "name": "ConfiguracionRecordatorios",
+  "type": "object",
+  "properties": {
+    "recordatorio_24h_activo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Activar recordatorio 24 horas antes"
+    },
+    "recordatorio_24h_horas": {
+      "type": "number",
+      "default": 24,
+      "description": "Horas antes para el primer recordatorio"
+    },
+    "recordatorio_2h_activo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Activar recordatorio 2 horas antes"
+    },
+    "recordatorio_2h_horas": {
+      "type": "number",
+      "default": 2,
+      "description": "Horas antes para el recordatorio final"
+    },
+    "coordinador_id": {
+      "type": "string",
+      "description": "ID del coordinador desde cuyo n\u00famero se env\u00edan los recordatorios"
+    },
+    "mensaje_24h_template": {
+      "type": "string",
+      "default": "\ud83d\udd14 Recordatorio: Ma\u00f1ana tienes servicio confirmado",
+      "description": "Plantilla del mensaje 24h antes"
+    },
+    "mensaje_2h_template": {
+      "type": "string",
+      "default": "\u23f0 Recordatorio Final: Tu servicio es en 2 horas",
+      "description": "Plantilla del mensaje 2h antes"
+    }
+  },
+  "required": []
+}

@@ -1,0 +1,107 @@
+{
+  "name": "Notificacion",
+  "type": "object",
+  "properties": {
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "estado_cambio",
+        "evento_proximo",
+        "recordatorio",
+        "alerta"
+      ],
+      "description": "Tipo de notificaci\u00f3n"
+    },
+    "titulo": {
+      "type": "string",
+      "description": "T\u00edtulo de la notificaci\u00f3n"
+    },
+    "mensaje": {
+      "type": "string",
+      "description": "Contenido del mensaje"
+    },
+    "pedido_id": {
+      "type": "string",
+      "description": "ID del pedido relacionado"
+    },
+    "coordinador": {
+      "type": "string",
+      "description": "Coordinador destinatario"
+    },
+    "leida": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si la notificaci\u00f3n ha sido le\u00edda"
+    },
+    "email_enviado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si se envi\u00f3 email"
+    },
+    "prioridad": {
+      "type": "string",
+      "enum": [
+        "baja",
+        "media",
+        "alta",
+        "urgente"
+      ],
+      "default": "media"
+    }
+  },
+  "required": [
+    "tipo",
+    "titulo",
+    "mensaje"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "role": "coordinador"
+          }
+        ]
+      }
+    },
+    "write": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "role": "coordinador"
+          }
+        ]
+      }
+    },
+    "update": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "role": "coordinador"
+          }
+        ]
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "role": "coordinador"
+          }
+        ]
+      }
+    }
+  }
+}

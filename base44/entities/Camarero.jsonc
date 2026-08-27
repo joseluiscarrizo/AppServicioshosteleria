@@ -1,0 +1,201 @@
+{
+  "name": "Camarero",
+  "type": "object",
+  "properties": {
+    "codigo": {
+      "type": "string",
+      "description": "C\u00f3digo identificador \u00fanico"
+    },
+    "nombre": {
+      "type": "string",
+      "description": "Nombre completo"
+    },
+    "telefono": {
+      "type": "string",
+      "description": "Tel\u00e9fono de contacto"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email de contacto"
+    },
+    "disponible": {
+      "type": "boolean",
+      "default": true,
+      "description": "Si est\u00e1 disponible para asignaciones"
+    },
+    "en_reserva": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si est\u00e1 en reserva (no aparece en lista activa)"
+    },
+    "estado_actual": {
+      "type": "string",
+      "enum": [
+        "disponible",
+        "ocupado",
+        "no_disponible"
+      ],
+      "default": "disponible",
+      "description": "Estado actual del camarero"
+    },
+    "direccion": {
+      "type": "string",
+      "description": "Direcci\u00f3n del camarero"
+    },
+    "latitud": {
+      "type": "number",
+      "description": "Latitud de ubicaci\u00f3n del camarero"
+    },
+    "longitud": {
+      "type": "number",
+      "description": "Longitud de ubicaci\u00f3n del camarero"
+    },
+    "radio_trabajo_km": {
+      "type": "number",
+      "default": 20,
+      "description": "Radio m\u00e1ximo de trabajo en km"
+    },
+    "tallas_camisa": {
+      "type": "string",
+      "description": "Tallas de camisa disponibles"
+    },
+    "especialidad": {
+      "type": "string",
+      "enum": [
+        "general",
+        "cocteleria",
+        "banquetes",
+        "eventos_vip",
+        "buffet"
+      ],
+      "default": "general"
+    },
+    "nivel_experiencia": {
+      "type": "string",
+      "enum": [
+        "junior",
+        "intermedio",
+        "senior",
+        "experto"
+      ],
+      "default": "intermedio",
+      "description": "Nivel de experiencia del camarero"
+    },
+    "habilidades": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de habilidades espec\u00edficas"
+    },
+    "idiomas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Idiomas que habla"
+    },
+    "experiencia_anios": {
+      "type": "number",
+      "description": "A\u00f1os de experiencia"
+    },
+    "certificaciones": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Certificaciones profesionales"
+    },
+    "documentos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "cv",
+              "certificado",
+              "dni",
+              "contrato",
+              "otro"
+            ]
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "fecha_subida": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "description": "Documentos adjuntos (CV, certificados, etc.)"
+    },
+    "valoracion_promedio": {
+      "type": "number",
+      "description": "Valoraci\u00f3n promedio (1-5)"
+    },
+    "total_valoraciones": {
+      "type": "number",
+      "default": 0,
+      "description": "N\u00famero total de valoraciones"
+    },
+    "cancelaciones_last_minute": {
+      "type": "number",
+      "default": 0,
+      "description": "N\u00famero de cancelaciones realizadas con menos de 2 horas de antelaci\u00f3n al evento"
+    },
+    "veces_en_reserva": {
+      "type": "number",
+      "default": 0,
+      "description": "N\u00famero de veces que el camarero ha estado en lista de Reserva"
+    },
+    "preferencias_horarias": {
+      "type": "object",
+      "properties": {
+        "hora_inicio_preferida": {
+          "type": "string"
+        },
+        "hora_fin_preferida": {
+          "type": "string"
+        },
+        "turnos_preferidos": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "ma\u00f1ana",
+              "tarde",
+              "noche",
+              "madrugada"
+            ]
+          }
+        },
+        "dias_preferidos": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "D\u00edas de la semana preferidos (0-6)"
+        }
+      },
+      "description": "Preferencias de horario del camarero"
+    },
+    "notas": {
+      "type": "string",
+      "description": "Notas adicionales"
+    },
+    "coordinador_id": {
+      "type": "string",
+      "description": "ID del coordinador asignado"
+    }
+  },
+  "required": [
+    "codigo",
+    "nombre"
+  ]
+}

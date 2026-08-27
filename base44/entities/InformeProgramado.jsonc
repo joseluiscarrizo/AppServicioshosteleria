@@ -1,0 +1,53 @@
+{
+  "name": "InformeProgramado",
+  "type": "object",
+  "properties": {
+    "cliente": {
+      "type": "string",
+      "description": "Nombre del cliente"
+    },
+    "frecuencia": {
+      "type": "string",
+      "enum": [
+        "semanal",
+        "mensual"
+      ],
+      "description": "Frecuencia de env\u00edo del informe"
+    },
+    "dia_envio_semanal": {
+      "type": "number",
+      "description": "D\u00eda de la semana para env\u00edo semanal (1=Lunes, 7=Domingo)"
+    },
+    "dia_envio_mensual": {
+      "type": "number",
+      "description": "D\u00eda del mes para env\u00edo mensual (1-28)"
+    },
+    "destinatarios": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de emails destinatarios"
+    },
+    "activo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Si el informe programado est\u00e1 activo"
+    },
+    "ultimo_envio": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha del \u00faltimo env\u00edo realizado"
+    },
+    "proximo_envio": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha estimada del pr\u00f3ximo env\u00edo"
+    }
+  },
+  "required": [
+    "cliente",
+    "frecuencia",
+    "destinatarios"
+  ]
+}

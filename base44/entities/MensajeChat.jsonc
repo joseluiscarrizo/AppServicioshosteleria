@@ -1,0 +1,83 @@
+{
+  "name": "MensajeChat",
+  "type": "object",
+  "properties": {
+    "grupo_id": {
+      "type": "string",
+      "description": "ID del grupo de chat"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "ID del usuario que env\u00eda el mensaje"
+    },
+    "nombre_usuario": {
+      "type": "string",
+      "description": "Nombre del usuario"
+    },
+    "rol_usuario": {
+      "type": "string",
+      "enum": [
+        "camarero",
+        "coordinador",
+        "admin"
+      ],
+      "description": "Rol del usuario"
+    },
+    "mensaje": {
+      "type": "string",
+      "description": "Contenido del mensaje"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "texto",
+        "sistema",
+        "archivo",
+        "masivo"
+      ],
+      "default": "texto",
+      "description": "Tipo de mensaje"
+    },
+    "destinatario_id": {
+      "type": "string",
+      "description": "ID del usuario destinatario si es mensaje individual (null = todos)"
+    },
+    "destinatario_nombre": {
+      "type": "string",
+      "description": "Nombre del destinatario si es mensaje individual"
+    },
+    "archivo_url": {
+      "type": "string",
+      "description": "URL del archivo adjunto"
+    },
+    "archivo_nombre": {
+      "type": "string",
+      "description": "Nombre del archivo adjunto"
+    },
+    "archivo_tipo": {
+      "type": "string",
+      "description": "Tipo MIME del archivo adjunto"
+    },
+    "leido_por": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "IDs de usuarios que han le\u00eddo el mensaje"
+    },
+    "leido_por_nombres": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Nombres de usuarios que han le\u00eddo el mensaje"
+    }
+  },
+  "required": [
+    "grupo_id",
+    "user_id",
+    "mensaje"
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "name": "ReglaAsignacion",
+  "type": "object",
+  "properties": {
+    "nombre": {
+      "type": "string",
+      "description": "Nombre de la regla"
+    },
+    "activa": {
+      "type": "boolean",
+      "default": true,
+      "description": "Si la regla est\u00e1 activa"
+    },
+    "prioridad": {
+      "type": "number",
+      "default": 5,
+      "description": "Prioridad de la regla (1-10)"
+    },
+    "tipo_regla": {
+      "type": "string",
+      "enum": [
+        "cliente_preferido",
+        "valoracion_minima",
+        "distancia_maxima",
+        "especialidad_obligatoria",
+        "experiencia_minima",
+        "evitar_eventos_consecutivos",
+        "limite_eventos_mes",
+        "preferencia_tipo_evento",
+        "historial_rendimiento"
+      ],
+      "description": "Tipo de regla de asignaci\u00f3n"
+    },
+    "cliente_id": {
+      "type": "string",
+      "description": "ID del cliente (para reglas espec\u00edficas de cliente)"
+    },
+    "camareros_preferidos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs de camareros preferidos para este cliente"
+    },
+    "camareros_excluidos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs de camareros a excluir"
+    },
+    "valoracion_minima": {
+      "type": "number",
+      "description": "Valoraci\u00f3n m\u00ednima requerida (1-5)"
+    },
+    "distancia_maxima_km": {
+      "type": "number",
+      "description": "Distancia m\u00e1xima permitida en km"
+    },
+    "especialidades_requeridas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Especialidades que deben tener los camareros"
+    },
+    "experiencia_minima_anios": {
+      "type": "number",
+      "description": "A\u00f1os m\u00ednimos de experiencia"
+    },
+    "horas_descanso_entre_eventos": {
+      "type": "number",
+      "default": 8,
+      "description": "Horas m\u00ednimas de descanso entre eventos consecutivos"
+    },
+    "max_eventos_por_mes": {
+      "type": "number",
+      "description": "M\u00e1ximo de eventos al mes por camarero"
+    },
+    "tipos_evento_preferidos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tipos de evento que el camarero prefiere"
+    },
+    "puntuacion_minima_ultimos_eventos": {
+      "type": "number",
+      "description": "Puntuaci\u00f3n m\u00ednima promedio en \u00faltimos N eventos"
+    },
+    "cantidad_eventos_historial": {
+      "type": "number",
+      "default": 5,
+      "description": "Cantidad de eventos a considerar en el historial"
+    },
+    "bonus_puntos": {
+      "type": "number",
+      "default": 0,
+      "description": "Puntos extra a sumar si cumple la regla"
+    },
+    "penalizacion_puntos": {
+      "type": "number",
+      "default": 0,
+      "description": "Puntos a restar si no cumple criterio opcional"
+    },
+    "es_obligatoria": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si es obligatoria (descarta candidatos que no cumplen)"
+    },
+    "aplicar_solo_cliente_id": {
+      "type": "string",
+      "description": "Aplicar regla solo para un cliente espec\u00edfico"
+    },
+    "descripcion": {
+      "type": "string",
+      "description": "Descripci\u00f3n de la regla"
+    }
+  },
+  "required": [
+    "nombre",
+    "tipo_regla"
+  ]
+}

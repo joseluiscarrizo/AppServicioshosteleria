@@ -1,0 +1,70 @@
+{
+  "name": "HistorialWhatsApp",
+  "type": "object",
+  "properties": {
+    "destinatario_id": {
+      "type": "string",
+      "description": "ID del camarero destinatario"
+    },
+    "destinatario_nombre": {
+      "type": "string",
+      "description": "Nombre del destinatario"
+    },
+    "telefono": {
+      "type": "string",
+      "description": "N\u00famero de tel\u00e9fono"
+    },
+    "mensaje": {
+      "type": "string",
+      "description": "Contenido del mensaje enviado"
+    },
+    "plantilla_usada": {
+      "type": "string",
+      "description": "Nombre de la plantilla si se us\u00f3"
+    },
+    "pedido_id": {
+      "type": "string",
+      "description": "ID del pedido relacionado"
+    },
+    "asignacion_id": {
+      "type": "string",
+      "description": "ID de la asignaci\u00f3n relacionada"
+    },
+    "estado": {
+      "type": "string",
+      "enum": [
+        "enviado",
+        "fallido",
+        "pendiente"
+      ],
+      "default": "enviado",
+      "description": "Estado del env\u00edo"
+    },
+    "error": {
+      "type": "string",
+      "description": "Mensaje de error si fall\u00f3"
+    },
+    "proveedor": {
+      "type": "string",
+      "enum": [
+        "twilio",
+        "whatsapp_web",
+        "manual"
+      ],
+      "default": "whatsapp_web",
+      "description": "Proveedor usado para el env\u00edo"
+    },
+    "mensaje_id_proveedor": {
+      "type": "string",
+      "description": "ID del mensaje en el proveedor"
+    },
+    "coordinador_id": {
+      "type": "string",
+      "description": "ID del coordinador que envi\u00f3"
+    }
+  },
+  "required": [
+    "telefono",
+    "mensaje"
+  ]
+}

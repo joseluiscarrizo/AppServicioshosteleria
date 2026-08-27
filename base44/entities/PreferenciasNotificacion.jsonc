@@ -1,0 +1,120 @@
+{
+  "name": "PreferenciasNotificacion",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID del usuario (para vincular con User entity)"
+    },
+    "push_habilitadas": {
+      "type": "boolean",
+      "default": true,
+      "description": "Si las notificaciones push est\u00e1n habilitadas"
+    },
+    "nuevas_asignaciones": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notificar sobre nuevas asignaciones"
+    },
+    "cambios_horario": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notificar sobre cambios de horario"
+    },
+    "cancelaciones": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notificar sobre cancelaciones"
+    },
+    "recordatorios": {
+      "type": "boolean",
+      "default": true,
+      "description": "Recibir recordatorios autom\u00e1ticos"
+    },
+    "mensajes_coordinador": {
+      "type": "boolean",
+      "default": true,
+      "description": "Notificar sobre mensajes del coordinador"
+    },
+    "tareas_pendientes": {
+      "type": "boolean",
+      "default": true,
+      "description": "Recordatorios de tareas pendientes"
+    },
+    "email_habilitado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Recibir notificaciones por email"
+    },
+    "sonido_habilitado": {
+      "type": "boolean",
+      "default": true,
+      "description": "Reproducir sonido con las notificaciones"
+    },
+    "tipo_sonido": {
+      "type": "string",
+      "enum": [
+        "default",
+        "suave",
+        "alerta",
+        "campana",
+        "silencioso"
+      ],
+      "default": "default",
+      "description": "Tipo de sonido de notificaci\u00f3n"
+    },
+    "volumen_sonido": {
+      "type": "number",
+      "default": 0.5,
+      "description": "Volumen del sonido (0.0 - 1.0)"
+    },
+    "vibrar_habilitado": {
+      "type": "boolean",
+      "default": true,
+      "description": "Vibrar al recibir notificaci\u00f3n"
+    },
+    "no_molestar_habilitado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Habilitar modo no molestar"
+    },
+    "no_molestar_inicio": {
+      "type": "string",
+      "default": "22:00",
+      "description": "Hora de inicio de no molestar (HH:MM)"
+    },
+    "no_molestar_fin": {
+      "type": "string",
+      "default": "08:00",
+      "description": "Hora de fin de no molestar (HH:MM)"
+    },
+    "no_molestar_dias": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "default": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "description": "D\u00edas de la semana para no molestar (0=Domingo, 6=S\u00e1bado)"
+    },
+    "permitir_urgentes_no_molestar": {
+      "type": "boolean",
+      "default": true,
+      "description": "Permitir notificaciones urgentes durante no molestar"
+    },
+    "subscription_endpoint": {
+      "type": "string",
+      "description": "Endpoint de suscripci\u00f3n push"
+    }
+  },
+  "required": [
+    "user_id"
+  ]
+}

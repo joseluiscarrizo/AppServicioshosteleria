@@ -1,0 +1,215 @@
+{
+  "name": "Pedido",
+  "type": "object",
+  "properties": {
+    "codigo_pedido": {
+      "type": "string",
+      "description": "C\u00f3digo autom\u00e1tico del pedido (P001, P002, etc.)"
+    },
+    "numero_cliente": {
+      "type": "number",
+      "description": "N\u00famero autom\u00e1tico del cliente"
+    },
+    "numero_pedido_cliente": {
+      "type": "number",
+      "description": "N\u00famero autom\u00e1tico del pedido del cliente"
+    },
+    "cliente_id": {
+      "type": "string",
+      "description": "ID del cliente (vinculaci\u00f3n con entidad Cliente)"
+    },
+    "cliente": {
+      "type": "string",
+      "description": "Nombre del cliente"
+    },
+    "cliente_email_1": {
+      "type": "string",
+      "description": "Email 1 del cliente"
+    },
+    "cliente_email_2": {
+      "type": "string",
+      "description": "Email 2 del cliente"
+    },
+    "cliente_telefono_1": {
+      "type": "string",
+      "description": "Tel\u00e9fono 1 del cliente"
+    },
+    "cliente_telefono_2": {
+      "type": "string",
+      "description": "Tel\u00e9fono 2 del cliente"
+    },
+    "cliente_persona_contacto_1": {
+      "type": "string",
+      "description": "Persona de contacto 1"
+    },
+    "cliente_persona_contacto_2": {
+      "type": "string",
+      "description": "Persona de contacto 2"
+    },
+    "origen_pedido": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "email",
+        "whatsapp"
+      ],
+      "default": "manual",
+      "description": "Origen del pedido"
+    },
+    "lugar_evento": {
+      "type": "string",
+      "description": "Ubicaci\u00f3n del evento"
+    },
+    "dia": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha del evento"
+    },
+    "link_ubicacion": {
+      "type": "string",
+      "description": "Link de Google Maps a la ubicaci\u00f3n"
+    },
+    "camisa": {
+      "type": "string",
+      "enum": [
+        "negra",
+        "blanca"
+      ],
+      "default": "blanca",
+      "description": "Color de camisa requerida"
+    },
+    "turnos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "cantidad_camareros": {
+            "type": "number",
+            "description": "Cantidad de camareros para este turno"
+          },
+          "entrada": {
+            "type": "string",
+            "description": "Hora de entrada"
+          },
+          "salida": {
+            "type": "string",
+            "description": "Hora de salida"
+          },
+          "t_horas": {
+            "type": "number",
+            "description": "Horas calculadas"
+          }
+        }
+      },
+      "description": "Turnos del evento con horarios distintos"
+    },
+    "extra_transporte": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si incluye extra de transporte"
+    },
+    "notas": {
+      "type": "string",
+      "description": "Notas adicionales"
+    },
+    "cantidad_camareros": {
+      "type": "number",
+      "description": "Cantidad total de camareros (retrocompatibilidad)"
+    },
+    "entrada": {
+      "type": "string",
+      "description": "Hora de entrada principal (retrocompatibilidad)"
+    },
+    "salida": {
+      "type": "string",
+      "description": "Hora de salida principal (retrocompatibilidad)"
+    },
+    "t_horas": {
+      "type": "number",
+      "description": "Total de horas (retrocompatibilidad)"
+    },
+    "direccion_completa": {
+      "type": "string",
+      "description": "Direcci\u00f3n completa para navegaci\u00f3n"
+    },
+    "latitud": {
+      "type": "number",
+      "description": "Latitud del evento"
+    },
+    "longitud": {
+      "type": "number",
+      "description": "Longitud del evento"
+    },
+    "estado_evento": {
+      "type": "string",
+      "enum": [
+        "planificado",
+        "en_curso",
+        "finalizado",
+        "cancelado"
+      ],
+      "default": "planificado",
+      "description": "Estado del evento en el tablero"
+    },
+    "habilidades_requeridas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Habilidades requeridas para el evento"
+    },
+    "idiomas_requeridos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Idiomas requeridos"
+    },
+    "especialidad_requerida": {
+      "type": "string",
+      "enum": [
+        "general",
+        "cocteleria",
+        "banquetes",
+        "eventos_vip",
+        "buffet"
+      ],
+      "description": "Especialidad requerida"
+    },
+    "es_recurrente": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si el evento se repite peri\u00f3dicamente"
+    },
+    "frecuencia_recurrencia": {
+      "type": "string",
+      "enum": [
+        "semanal",
+        "quincenal",
+        "mensual",
+        "personalizado"
+      ],
+      "description": "Frecuencia de repetici\u00f3n del evento"
+    },
+    "dias_semana_recurrencia": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "D\u00edas de la semana (0-6) para eventos recurrentes"
+    },
+    "fecha_fin_recurrencia": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha hasta la cual se repite el evento"
+    },
+    "evento_padre_id": {
+      "type": "string",
+      "description": "ID del evento original si es generado por recurrencia"
+    }
+  },
+  "required": [
+    "cliente",
+    "dia"
+  ]
+}

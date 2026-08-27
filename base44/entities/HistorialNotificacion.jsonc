@@ -1,0 +1,80 @@
+{
+  "name": "HistorialNotificacion",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID del usuario"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "nueva_asignacion",
+        "cambio_horario",
+        "cancelacion",
+        "recordatorio",
+        "mensaje",
+        "tarea_pendiente",
+        "alerta",
+        "sistema"
+      ],
+      "description": "Tipo de notificaci\u00f3n"
+    },
+    "titulo": {
+      "type": "string",
+      "description": "T\u00edtulo de la notificaci\u00f3n"
+    },
+    "mensaje": {
+      "type": "string",
+      "description": "Contenido del mensaje"
+    },
+    "prioridad": {
+      "type": "string",
+      "enum": [
+        "baja",
+        "media",
+        "alta",
+        "urgente"
+      ],
+      "default": "media",
+      "description": "Prioridad de la notificaci\u00f3n"
+    },
+    "leida": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si la notificaci\u00f3n ha sido le\u00edda"
+    },
+    "enviada_push": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si se envi\u00f3 notificaci\u00f3n push"
+    },
+    "enviada_email": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si se envi\u00f3 email"
+    },
+    "bloqueada_no_molestar": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si fue bloqueada por modo no molestar"
+    },
+    "pedido_id": {
+      "type": "string",
+      "description": "ID del pedido relacionado"
+    },
+    "asignacion_id": {
+      "type": "string",
+      "description": "ID de la asignaci\u00f3n relacionada"
+    },
+    "data_adicional": {
+      "type": "object",
+      "description": "Datos adicionales en formato JSON"
+    }
+  },
+  "required": [
+    "user_id",
+    "tipo",
+    "titulo"
+  ]
+}

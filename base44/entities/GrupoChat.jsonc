@@ -1,0 +1,63 @@
+{
+  "name": "GrupoChat",
+  "type": "object",
+  "properties": {
+    "pedido_id": {
+      "type": "string",
+      "description": "ID del pedido/evento relacionado"
+    },
+    "nombre": {
+      "type": "string",
+      "description": "Nombre del grupo"
+    },
+    "descripcion": {
+      "type": "string",
+      "description": "Descripci\u00f3n del evento"
+    },
+    "fecha_evento": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha del evento"
+    },
+    "hora_fin_evento": {
+      "type": "string",
+      "description": "Hora de fin del evento"
+    },
+    "miembros": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "rol": {
+            "type": "string",
+            "enum": [
+              "camarero",
+              "coordinador"
+            ]
+          }
+        }
+      },
+      "description": "Lista de miembros del grupo"
+    },
+    "activo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Si el grupo est\u00e1 activo"
+    },
+    "fecha_eliminacion_programada": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha programada para eliminar el grupo (24h despu\u00e9s del evento)"
+    }
+  },
+  "required": [
+    "pedido_id",
+    "nombre"
+  ]
+}

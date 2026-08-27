@@ -1,0 +1,125 @@
+{
+  "name": "EnvioProgramado",
+  "type": "object",
+  "properties": {
+    "nombre": {
+      "type": "string",
+      "description": "Nombre descriptivo del env\u00edo programado"
+    },
+    "plantilla_id": {
+      "type": "string",
+      "description": "ID de la plantilla a usar"
+    },
+    "destinatarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "camarero_id": {
+            "type": "string"
+          },
+          "camarero_nombre": {
+            "type": "string"
+          },
+          "telefono": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Lista de destinatarios"
+    },
+    "tipo_envio": {
+      "type": "string",
+      "enum": [
+        "unico",
+        "recurrente"
+      ],
+      "default": "unico",
+      "description": "Si es un env\u00edo \u00fanico o recurrente"
+    },
+    "fecha_envio": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha y hora del env\u00edo \u00fanico"
+    },
+    "recurrencia": {
+      "type": "object",
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "enum": [
+            "diario",
+            "semanal",
+            "mensual"
+          ],
+          "description": "Tipo de recurrencia"
+        },
+        "dias_semana": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "D\u00edas de la semana (0-6) para env\u00edo semanal"
+        },
+        "dia_mes": {
+          "type": "number",
+          "description": "D\u00eda del mes (1-31) para env\u00edo mensual"
+        },
+        "hora": {
+          "type": "string",
+          "description": "Hora del env\u00edo (HH:MM)"
+        }
+      },
+      "description": "Configuraci\u00f3n de recurrencia"
+    },
+    "estado": {
+      "type": "string",
+      "enum": [
+        "activo",
+        "pausado",
+        "completado",
+        "cancelado"
+      ],
+      "default": "activo",
+      "description": "Estado del env\u00edo programado"
+    },
+    "fecha_inicio": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha de inicio de env\u00edos recurrentes"
+    },
+    "fecha_fin": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha de fin (opcional)"
+    },
+    "ultimo_envio": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha del \u00faltimo env\u00edo realizado"
+    },
+    "proximo_envio": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha del pr\u00f3ximo env\u00edo programado"
+    },
+    "total_enviados": {
+      "type": "number",
+      "default": 0,
+      "description": "Total de mensajes enviados"
+    },
+    "coordinador_id": {
+      "type": "string",
+      "description": "ID del coordinador que programa el env\u00edo"
+    },
+    "mensaje_personalizado": {
+      "type": "string",
+      "description": "Mensaje personalizado si no usa plantilla"
+    }
+  },
+  "required": [
+    "nombre",
+    "tipo_envio",
+    "destinatarios"
+  ]
+}

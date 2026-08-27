@@ -1,0 +1,85 @@
+{
+  "name": "AsignacionCamarero",
+  "type": "object",
+  "properties": {
+    "pedido_id": {
+      "type": "string",
+      "description": "ID del pedido"
+    },
+    "camarero_id": {
+      "type": "string",
+      "description": "ID del camarero"
+    },
+    "camarero_nombre": {
+      "type": "string",
+      "description": "Nombre del camarero"
+    },
+    "camarero_codigo": {
+      "type": "string",
+      "description": "C\u00f3digo del camarero"
+    },
+    "estado": {
+      "type": "string",
+      "enum": [
+        "pendiente",
+        "enviado",
+        "confirmado",
+        "alta"
+      ],
+      "default": "pendiente",
+      "description": "Estado de la asignaci\u00f3n"
+    },
+    "fecha_pedido": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha del pedido para b\u00fasquedas"
+    },
+    "hora_entrada": {
+      "type": "string",
+      "description": "Hora de entrada planificada"
+    },
+    "hora_salida": {
+      "type": "string",
+      "description": "Hora de salida planificada"
+    },
+    "turno_index": {
+      "type": "number",
+      "description": "\u00cdndice del turno asignado (si hay m\u00faltiples turnos)"
+    },
+    "posicion_slot": {
+      "type": "number",
+      "description": "Posici\u00f3n espec\u00edfica del slot dentro del turno"
+    },
+    "qr_token": {
+      "type": "string",
+      "description": "Token \u00fanico para el c\u00f3digo QR de fichaje"
+    },
+    "hora_entrada_real": {
+      "type": "string",
+      "description": "Hora real de entrada registrada por QR o manualmente"
+    },
+    "hora_salida_real": {
+      "type": "string",
+      "description": "Hora real de salida registrada por QR o manualmente"
+    },
+    "horas_reales": {
+      "type": "number",
+      "description": "Total de horas reales trabajadas calculado autom\u00e1ticamente"
+    },
+    "fichaje_entrada_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp exacto del fichaje de entrada"
+    },
+    "fichaje_salida_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp exacto del fichaje de salida"
+    }
+  },
+  "required": [
+    "pedido_id",
+    "camarero_id",
+    "estado"
+  ]
+}

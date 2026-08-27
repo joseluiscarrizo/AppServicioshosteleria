@@ -1,0 +1,80 @@
+{
+  "name": "Valoracion",
+  "type": "object",
+  "properties": {
+    "camarero_id": {
+      "type": "string",
+      "description": "ID del camarero valorado"
+    },
+    "camarero_nombre": {
+      "type": "string",
+      "description": "Nombre del camarero"
+    },
+    "pedido_id": {
+      "type": "string",
+      "description": "ID del pedido relacionado"
+    },
+    "cliente": {
+      "type": "string",
+      "description": "Cliente del evento"
+    },
+    "fecha_evento": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha del evento"
+    },
+    "puntuacion": {
+      "type": "number",
+      "description": "Puntuaci\u00f3n del 1 al 5"
+    },
+    "puntualidad": {
+      "type": "number",
+      "description": "Puntuaci\u00f3n de puntualidad (1-5)"
+    },
+    "profesionalidad": {
+      "type": "number",
+      "description": "Puntuaci\u00f3n de profesionalidad (1-5)"
+    },
+    "actitud": {
+      "type": "number",
+      "description": "Puntuaci\u00f3n de actitud (1-5)"
+    },
+    "presentacion": {
+      "type": "number",
+      "description": "Puntuaci\u00f3n de presentaci\u00f3n personal (1-5)"
+    },
+    "trabajo_equipo": {
+      "type": "number",
+      "description": "Puntuaci\u00f3n de trabajo en equipo (1-5)"
+    },
+    "resolucion_problemas": {
+      "type": "number",
+      "description": "Capacidad de resolver problemas (1-5)"
+    },
+    "comentario": {
+      "type": "string",
+      "description": "Comentario del coordinador"
+    },
+    "aspectos_positivos": {
+      "type": "string",
+      "description": "Aspectos positivos destacados"
+    },
+    "areas_mejora": {
+      "type": "string",
+      "description": "\u00c1reas de mejora sugeridas"
+    },
+    "recomendaria": {
+      "type": "boolean",
+      "description": "Si recomendar\u00eda al camarero para futuros eventos"
+    },
+    "coordinador": {
+      "type": "string",
+      "description": "Coordinador que realiz\u00f3 la valoraci\u00f3n"
+    }
+  },
+  "required": [
+    "camarero_id",
+    "pedido_id",
+    "puntuacion"
+  ]
+}

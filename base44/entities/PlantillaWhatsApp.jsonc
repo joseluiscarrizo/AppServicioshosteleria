@@ -1,0 +1,62 @@
+{
+  "name": "PlantillaWhatsApp",
+  "type": "object",
+  "properties": {
+    "nombre": {
+      "type": "string",
+      "description": "Nombre de la plantilla"
+    },
+    "descripcion": {
+      "type": "string",
+      "description": "Descripci\u00f3n breve de cu\u00e1ndo usar esta plantilla"
+    },
+    "contenido": {
+      "type": "string",
+      "description": "Contenido del mensaje con campos din\u00e1micos"
+    },
+    "campos_disponibles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "{{cliente}}",
+        "{{dia}}",
+        "{{lugar_evento}}",
+        "{{hora_entrada}}",
+        "{{hora_salida}}",
+        "{{camisa}}",
+        "{{link_confirmar}}",
+        "{{link_rechazar}}",
+        "{{link_ubicacion}}"
+      ],
+      "description": "Lista de campos din\u00e1micos disponibles"
+    },
+    "es_predeterminada": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si es la plantilla por defecto"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "confirmacion",
+        "recordatorio",
+        "cambio",
+        "cancelacion",
+        "general"
+      ],
+      "default": "general",
+      "description": "Tipo de plantilla"
+    },
+    "activa": {
+      "type": "boolean",
+      "default": true,
+      "description": "Si la plantilla est\u00e1 activa"
+    }
+  },
+  "required": [
+    "nombre",
+    "contenido"
+  ]
+}

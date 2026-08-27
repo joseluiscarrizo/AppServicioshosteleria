@@ -1,0 +1,170 @@
+{
+  "name": "NotificacionCamarero",
+  "type": "object",
+  "properties": {
+    "camarero_id": {
+      "type": "string",
+      "description": "ID del camarero destinatario"
+    },
+    "camarero_nombre": {
+      "type": "string",
+      "description": "Nombre del camarero"
+    },
+    "asignacion_id": {
+      "type": "string",
+      "description": "ID de la asignaci\u00f3n relacionada"
+    },
+    "pedido_id": {
+      "type": "string",
+      "description": "ID del pedido"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "nueva_asignacion",
+        "recordatorio",
+        "cambio_horario",
+        "cancelacion"
+      ],
+      "default": "nueva_asignacion"
+    },
+    "titulo": {
+      "type": "string"
+    },
+    "mensaje": {
+      "type": "string"
+    },
+    "cliente": {
+      "type": "string"
+    },
+    "lugar_evento": {
+      "type": "string"
+    },
+    "fecha": {
+      "type": "string",
+      "format": "date"
+    },
+    "hora_entrada": {
+      "type": "string"
+    },
+    "hora_salida": {
+      "type": "string"
+    },
+    "leida": {
+      "type": "boolean",
+      "default": false
+    },
+    "respondida": {
+      "type": "boolean",
+      "default": false
+    },
+    "respuesta": {
+      "type": "string",
+      "enum": [
+        "pendiente",
+        "aceptado",
+        "rechazado"
+      ],
+      "default": "pendiente"
+    },
+    "motivo_rechazo": {
+      "type": "string"
+    },
+    "prioridad": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "importante",
+        "urgente"
+      ],
+      "default": "normal",
+      "description": "Prioridad de la notificaci\u00f3n"
+    },
+    "es_masiva": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si es una notificaci\u00f3n masiva"
+    }
+  },
+  "required": [
+    "camarero_id",
+    "tipo",
+    "titulo"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "role": "coordinador"
+          },
+          {
+            "$and": [
+              {
+                "role": "camarero"
+              },
+              {
+                "$eq": [
+                  "$record.camarero_id",
+                  "$user.camarero_id"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "write": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "role": "coordinador"
+          }
+        ]
+      }
+    },
+    "update": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "role": "coordinador"
+          },
+          {
+            "$and": [
+              {
+                "role": "camarero"
+              },
+              {
+                "$eq": [
+                  "$record.camarero_id",
+                  "$user.camarero_id"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "$or": [
+          {
+            "role": "admin"
+          },
+          {
+            "role": "coordinador"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "Coordinador",
+  "type": "object",
+  "properties": {
+    "codigo": {
+      "type": "string",
+      "description": "C\u00f3digo identificador \u00fanico del coordinador"
+    },
+    "nombre": {
+      "type": "string",
+      "description": "Nombre del coordinador"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email para notificaciones"
+    },
+    "telefono": {
+      "type": "string",
+      "description": "Tel\u00e9fono de contacto"
+    },
+    "notificaciones_email": {
+      "type": "boolean",
+      "default": true,
+      "description": "Recibir notificaciones por email"
+    },
+    "notificaciones_app": {
+      "type": "boolean",
+      "default": true,
+      "description": "Recibir notificaciones in-app"
+    }
+  },
+  "required": [
+    "codigo",
+    "nombre",
+    "email"
+  ]
+}

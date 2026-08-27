@@ -1,0 +1,61 @@
+{
+  "name": "ConfiguracionNotificaciones",
+  "type": "object",
+  "properties": {
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "evento_proximo",
+        "tarea_pendiente",
+        "pedido_incompleto"
+      ],
+      "description": "Tipo de notificaci\u00f3n autom\u00e1tica"
+    },
+    "activa": {
+      "type": "boolean",
+      "default": true,
+      "description": "Si la notificaci\u00f3n est\u00e1 activa"
+    },
+    "horas_anticipacion": {
+      "type": "number",
+      "description": "Horas de anticipaci\u00f3n para la notificaci\u00f3n"
+    },
+    "mensaje_template": {
+      "type": "string",
+      "description": "Plantilla del mensaje"
+    },
+    "roles_destinatarios": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Roles que reciben esta notificaci\u00f3n"
+    }
+  },
+  "required": [
+    "tipo",
+    "activa"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "write": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
