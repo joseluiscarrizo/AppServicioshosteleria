@@ -30,7 +30,7 @@ const especialidadColors = {
   buffet: 'bg-emerald-100 text-emerald-700'
 };
 
-// eslint-disable-next-line unused-imports/no-unused-vars
+// eslint-disable-next-line no-unused-vars
 const nivelExperienciaColors = {
   junior: 'bg-blue-100 text-blue-700',
   intermedio: 'bg-emerald-100 text-emerald-700',

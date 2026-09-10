@@ -34,10 +34,7 @@ export default [
       "unused-imports": pluginUnusedImports,
     },
     rules: {
-      "no-unused-vars": "off",
-      "react/jsx-uses-vars": "error",
-      "unused-imports/no-unused-imports": "error",
-      "unused-imports/no-unused-vars": [
+      "no-unused-vars": [
         "warn",
         {
           vars: "all",
@@ -46,6 +43,7 @@ export default [
           argsIgnorePattern: "^_",
         },
       ],
+      "react/jsx-uses-vars": "error",
       "react/prop-types": "off",
       "react/react-in-jsx-scope": "off",
       "react/no-unknown-property": [

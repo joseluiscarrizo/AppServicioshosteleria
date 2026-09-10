@@ -370,7 +370,7 @@ Sistema de Gestión de Camareros
   };
 
   // Calcular estado del pedido
-  // eslint-disable-next-line unused-imports/no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const getEstadoPedido = (pedido) => {
     const asignacionesPedido = getAsignacionesPedido(pedido.id);
     const cantidadNecesaria = pedido.cantidad_camareros || 0;
@@ -443,7 +443,7 @@ Sistema de Gestión de Camareros
   };
   
   // Obtener todas las habilidades únicas
-  // eslint-disable-next-line unused-imports/no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const todasHabilidades = useMemo(() => {
     const habs = new Set();
     camareros.forEach(c => c.habilidades?.forEach(h => habs.add(h)));

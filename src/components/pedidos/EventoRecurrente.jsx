@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Repeat, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addWeeks, addMonths, eachDayOfInterval } from 'date-fns';
+import { es as esLocale } from 'date-fns/locale';
 
 const diasSemana = [
   { value: 1, label: 'Lunes' },
@@ -217,7 +218,7 @@ export default function EventoRecurrente({ open, onOpenChange, pedidoBase }) {
                 {previsualizacion.slice(0, 10).map((fecha, idx) => (
                   <div key={idx} className="text-xs text-slate-600 flex items-center gap-2">
                     <Calendar className="w-3 h-3" />
-                    {format(new Date(fecha), "dd 'de' MMMM yyyy", { locale: require('date-fns/locale/es') })}
+                    {format(new Date(fecha), "dd 'de' MMMM yyyy", { locale: esLocale })}
                   </div>
                 ))}
                 {previsualizacion.length > 10 && (

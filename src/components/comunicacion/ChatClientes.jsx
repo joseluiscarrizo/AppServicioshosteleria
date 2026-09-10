@@ -18,7 +18,7 @@ function diasHastaEvento(dia) {
 }
 
 // --- Subcomponente: Sugerencia IA ---
-// eslint-disable-next-line unused-imports/no-unused-vars
+// eslint-disable-next-line no-unused-vars
 function SugerenciaIA({ sugerencia, onAplicar, onDescartar }) {
   return (
     <div className="mx-3 mb-2 p-3 rounded-xl border border-violet-200 bg-violet-50 text-sm">
