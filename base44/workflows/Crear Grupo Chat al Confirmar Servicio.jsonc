@@ -1,0 +1,37 @@
+{
+  "name": "Crear Grupo Chat al Confirmar Servicio",
+  "description": "Cuando una asignaci\u00f3n se marca como confirmado, crea autom\u00e1ticamente un grupo de chat y notifica a los camareros",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "update"
+      ],
+      "entity_name": "AsignacionCamarero"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "crear_grupo_chat_al_confirmar_servicio",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "autoCrearGrupoChatConfirmado",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "autoCrearGrupoChatConfirmado"
+  }
+}

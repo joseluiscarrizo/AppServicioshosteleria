@@ -1,0 +1,37 @@
+{
+  "name": "Sugerencias IA al crear pedido",
+  "description": "Cuando se crea un nuevo pedido, la IA analiza autom\u00e1ticamente y sugiere los mejores camareros, notificando a los coordinadores",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "Pedido"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "sugerencias_ia_al_crear_pedido",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sugerirYNotificarPedido",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "sugerirYNotificarPedido"
+  }
+}
